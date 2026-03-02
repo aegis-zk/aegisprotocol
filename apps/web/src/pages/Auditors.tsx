@@ -24,7 +24,7 @@ const RED = "#F87171";
 const BLUE = "#60A5FA";
 
 // ── Types ────────────────────────────────────────────────────
-interface MockAuditor {
+interface Auditor {
   commitment: string;
   stake: number;
   reputation: number;
@@ -38,50 +38,8 @@ interface MockAuditor {
   recentSkills: string[];
 }
 
-// ── Mock Data ────────────────────────────────────────────────
-function randomHex(len: number) {
-  return [...Array(len)].map(() => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-}
-
-const SKILL_NAMES = [
-  "web-scraper-v3", "sql-executor-safe", "email-sender-v2", "api-caller-v4",
-  "file-access-v1", "llm-proxy-secure", "pdf-parser-v2", "browser-agent-v1",
-  "code-sandbox-v3", "data-pipeline-v2", "auth-handler-v1", "webhook-relay-v3",
-  "vector-search-v1", "image-resize-v2", "cron-scheduler-v1", "rate-limiter-v2",
-  "log-aggregator-v1", "cache-manager-v3", "queue-worker-v2", "secret-vault-v1",
-];
-
-function getTier(rep: number): "Bronze" | "Silver" | "Gold" | "Diamond" {
-  if (rep >= 50) return "Diamond";
-  if (rep >= 25) return "Gold";
-  if (rep >= 10) return "Silver";
-  return "Bronze";
-}
-
-const MOCK_AUDITORS: MockAuditor[] = Array.from({ length: 16 }, (_, i) => {
-  const attestations = 5 + Math.floor(Math.random() * 80);
-  const reputation = Math.floor(attestations * (0.6 + Math.random() * 0.4));
-  const disputes = Math.floor(Math.random() * 4);
-  const slashed = i === 13;
-  const l1 = Math.floor(attestations * 0.5);
-  const l2 = Math.floor(attestations * 0.35);
-  const l3 = attestations - l1 - l2;
-  return {
-    commitment: `0x${randomHex(4).toUpperCase()}...${randomHex(4).toUpperCase()}`,
-    stake: Math.round((0.05 + Math.random() * 2) * 1000) / 1000,
-    reputation,
-    attestations,
-    disputes,
-    slashed,
-    registeredDaysAgo: 5 + Math.floor(Math.random() * 180),
-    tier: getTier(reputation),
-    levels: [l1, l2, l3],
-    status: slashed ? "slashed" : (disputes > 2 ? "suspended" : "active"),
-    recentSkills: Array.from({ length: 3 + Math.floor(Math.random() * 3) }, () =>
-      SKILL_NAMES[Math.floor(Math.random() * SKILL_NAMES.length)]
-    ),
-  };
-});
+// ── Auditor Data (empty — populated from on-chain as auditors register) ──
+const AUDITOR_DATA: Auditor[] = [];
 
 // ── Tier Config ──────────────────────────────────────────────
 const TIER_COLORS: Record<string, string> = {
@@ -354,7 +312,7 @@ function Step({ number, title, description, icon }: { number: number; title: str
 const GRID = "minmax(140px, 1fr) 100px 100px 80px 130px 100px 90px 40px";
 
 function AuditorRow({ auditor, expanded, onToggle, index }: {
-  auditor: MockAuditor; expanded: boolean; onToggle: () => void; index: number;
+  auditor: Auditor; expanded: boolean; onToggle: () => void; index: number;
 }) {
   const dateStr = (() => {
     const d = new Date(Date.now() - auditor.registeredDaysAgo * 86400000);
@@ -600,7 +558,7 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
   }
 
   const filtered = (() => {
-    let data = [...MOCK_AUDITORS];
+    let data = [...AUDITOR_DATA];
     if (search) {
       const q = search.toLowerCase();
       data = data.filter(a =>
@@ -628,10 +586,10 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
 
   const tierCounts: Record<string, number> = { Bronze: 0, Silver: 0, Gold: 0, Diamond: 0 };
   const statusCounts: Record<string, number> = { active: 0, suspended: 0, slashed: 0 };
-  MOCK_AUDITORS.forEach(a => { tierCounts[a.tier]++; statusCounts[a.status]++; });
+  AUDITOR_DATA.forEach(a => { tierCounts[a.tier]++; statusCounts[a.status]++; });
 
-  const totalStake = MOCK_AUDITORS.reduce((s, a) => s + a.stake, 0);
-  const totalAttestations = MOCK_AUDITORS.reduce((s, a) => s + a.attestations, 0);
+  const totalStake = AUDITOR_DATA.reduce((s, a) => s + a.stake, 0);
+  const totalAttestations = AUDITOR_DATA.reduce((s, a) => s + a.attestations, 0);
 
   const scrollToTable = useCallback(() => {
     const el = document.getElementById("auditor-table");
@@ -671,9 +629,9 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
             padding: "4px 14px", borderRadius: 20, border: `1px solid ${BORDER}`,
             marginBottom: 20, background: `${ACCENT}06`,
           }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN, animation: "pulse 2s infinite" }} />
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: AUDITOR_DATA.length > 0 ? GREEN : TEXT_MUTED, animation: AUDITOR_DATA.length > 0 ? "pulse 2s infinite" : "none" }} />
             <span style={{ color: TEXT_DIM, fontSize: 11, fontFamily: FONT }}>
-              {statusCounts.active} auditors active on Base
+              {AUDITOR_DATA.length > 0 ? `${statusCounts.active} auditors active on Base` : "No auditors registered yet"}
             </span>
           </div>
 
@@ -697,10 +655,10 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
 
           {/* Stats Row */}
           <div style={{ display: "flex", gap: 12, marginBottom: 0 }}>
-            <StatCard label="Total Auditors" value={String(MOCK_AUDITORS.length)} sub={`${statusCounts.active} active`} />
+            <StatCard label="Total Auditors" value={String(AUDITOR_DATA.length)} sub={`${statusCounts.active} active`} />
             <StatCard label="Total Staked" value={`${totalStake.toFixed(1)} ETH`} sub="Bonded across all auditors" accent />
             <StatCard label="Attestations" value={totalAttestations.toLocaleString()} sub="Skills verified" />
-            <StatCard label="Disputes" value={String(MOCK_AUDITORS.reduce((s, a) => s + a.disputes, 0))} sub={`${statusCounts.slashed} slashed`} />
+            <StatCard label="Disputes" value={String(AUDITOR_DATA.reduce((s, a) => s + a.disputes, 0))} sub={`${statusCounts.slashed} slashed`} />
           </div>
         </div>
 
@@ -901,7 +859,7 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
           {/* Filters */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
             <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Tier</span>
-            <FilterChip label="All" count={MOCK_AUDITORS.length} active={tierFilter === null} onClick={() => { setTierFilter(null); setPage(1); }} />
+            <FilterChip label="All" count={AUDITOR_DATA.length} active={tierFilter === null} onClick={() => { setTierFilter(null); setPage(1); }} />
             {["Bronze", "Silver", "Gold", "Diamond"].map(t => (
               <FilterChip key={t} label={t} count={tierCounts[t]} active={tierFilter === t} onClick={() => { setTierFilter(prev => prev === t ? null : t); setPage(1); }} />
             ))}
@@ -972,7 +930,7 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
             Showing {Math.min((currentPage - 1) * PER_PAGE + 1, filtered.length)}-{Math.min(currentPage * PER_PAGE, filtered.length)} of {filtered.length} auditors
           </span>
           <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
-            Last indexed: 8 seconds ago &middot; Base L2
+            Base Sepolia &middot; Registry 0x851C...D6Bba
           </span>
         </div>
 
