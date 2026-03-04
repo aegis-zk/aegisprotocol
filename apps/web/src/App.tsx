@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ConnectWallet } from './components/ConnectWallet';
 import { Landing } from './pages/Landing';
 import { Registry } from './pages/Registry';
@@ -11,7 +12,6 @@ import { RegisterSkill } from './pages/RegisterSkill';
 import { Verify } from './pages/Verify';
 import { Status } from './pages/Status';
 
-type View = 'landing' | 'registry' | 'developers' | 'auditors' | 'docs' | 'dapp';
 type Tab = 'home' | 'auditor' | 'skill' | 'verify' | 'status';
 
 const TABS: { id: Tab; label: string }[] = [
@@ -22,52 +22,20 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'status', label: 'Status' },
 ];
 
-export function App() {
-  const [view, setView] = useState<View>('landing');
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
+function DApp() {
   const [tab, setTab] = useState<Tab>('home');
-
-  if (view === 'landing') {
-    return (
-      <Landing
-        onEnterApp={() => setView('dapp')}
-        onExploreRegistry={() => setView('registry')}
-        onDevelopers={() => setView('developers')}
-        onAuditors={() => setView('auditors')}
-        onDocs={() => setView('docs')}
-      />
-    );
-  }
-
-  const navProps = {
-    onBack: () => setView('landing'),
-    onRegistry: () => setView('registry'),
-    onDevelopers: () => setView('developers'),
-    onAuditors: () => setView('auditors'),
-    onDocs: () => setView('docs'),
-  };
-
-  if (view === 'registry') {
-    return <Registry {...navProps} />;
-  }
-
-  if (view === 'developers') {
-    return <Developers {...navProps} />;
-  }
-
-  if (view === 'auditors') {
-    return <Auditors {...navProps} />;
-  }
-
-  if (view === 'docs') {
-    return <Docs {...navProps} />;
-  }
-
   return (
     <div className="app-container">
       <header className="app-header">
-        <div className="app-logo" onClick={() => setView('landing')} style={{ cursor: 'pointer' }}>
+        <a href="#/" className="app-logo" style={{ cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
           <span>AEGIS</span> Protocol
-        </div>
+        </a>
         <ConnectWallet />
       </header>
 
@@ -91,5 +59,21 @@ export function App() {
         {tab === 'status' && <Status />}
       </main>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <HashRouter>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/registry" element={<Registry />} />
+        <Route path="/developers" element={<Developers />} />
+        <Route path="/auditors" element={<Auditors />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/app" element={<DApp />} />
+      </Routes>
+    </HashRouter>
   );
 }

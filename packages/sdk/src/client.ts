@@ -4,12 +4,23 @@ import type {
   Address,
   Attestation,
   AuditorReputation,
+  UnstakeRequest,
+  BountyInfo,
   Hex,
   RegisterSkillParams,
   SkillRegisteredEvent,
   AuditorRegisteredEvent,
   DisputeOpenedEvent,
   DisputeResolvedEvent,
+  BountyPostedEvent,
+  ValidationStatus,
+  ValidationSummary,
+  ReputationSummary,
+  AgentRegistration,
+  RequestErc8004ValidationParams,
+  RespondToErc8004ValidationParams,
+  TrustProfile,
+  SkillTrustScore,
 } from './types';
 import {
   createReadClient,
@@ -17,6 +28,7 @@ import {
   verifyAttestation as _verifyAttestation,
   getAuditorReputation as _getAuditorReputation,
   getMetadataURI as _getMetadataURI,
+  getUnstakeRequest as _getUnstakeRequest,
   listAllSkills as _listAllSkills,
   listAllAuditors as _listAllAuditors,
   listDisputes as _listDisputes,
@@ -26,8 +38,34 @@ import {
   registerSkill as _registerSkill,
   openDispute as _openDispute,
   resolveDispute as _resolveDispute,
+  initiateUnstake as _initiateUnstake,
+  completeUnstake as _completeUnstake,
+  cancelUnstake as _cancelUnstake,
+  getBounty as _getBounty,
+  listBounties as _listBounties,
+  postBounty as _postBounty,
+  reclaimBounty as _reclaimBounty,
 } from './registry';
 import { REGISTRY_ADDRESSES } from './constants';
+import {
+  ERC8004_CHAIN_ADDRESSES,
+  AUDIT_LEVEL_SCORES,
+} from './erc8004-constants';
+import {
+  resolveErc8004Addresses,
+  registerAgent as _registerAgent,
+  setAgentMetadata as _setAgentMetadata,
+  requestErc8004Validation as _requestErc8004Validation,
+  respondToErc8004Validation as _respondToErc8004Validation,
+  getValidationSummary as _getValidationSummary,
+  getReputationSummary as _getReputationSummary,
+  getValidationStatus as _getValidationStatus,
+  createAgentRegistration as _createAgentRegistration,
+} from './erc8004';
+import {
+  buildTrustProfile as _buildTrustProfile,
+  buildSkillTrustScore as _buildSkillTrustScore,
+} from './trust';
 
 /**
  * High-level client for interacting with the AEGIS protocol.
@@ -206,6 +244,224 @@ export class AegisClient {
       this.config.registryAddress,
       disputeId,
       auditorFault,
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  //  Unstaking Operations
+  // ──────────────────────────────────────────────
+
+  /** Get a pending unstake request for an auditor */
+  async getUnstakeRequest(auditorCommitment: Hex): Promise<UnstakeRequest> {
+    return _getUnstakeRequest(this.publicClient, this.config.registryAddress, auditorCommitment);
+  }
+
+  /** Initiate an unstake with a 3-day cooldown */
+  async initiateUnstake(auditorCommitment: Hex, amount: bigint): Promise<Hex> {
+    return _initiateUnstake(
+      this.requireWallet(),
+      this.config.registryAddress,
+      auditorCommitment,
+      amount,
+    );
+  }
+
+  /** Complete a pending unstake after the cooldown period */
+  async completeUnstake(auditorCommitment: Hex): Promise<Hex> {
+    return _completeUnstake(
+      this.requireWallet(),
+      this.config.registryAddress,
+      auditorCommitment,
+    );
+  }
+
+  /** Cancel a pending unstake request */
+  async cancelUnstake(auditorCommitment: Hex): Promise<Hex> {
+    return _cancelUnstake(
+      this.requireWallet(),
+      this.config.registryAddress,
+      auditorCommitment,
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  //  Bounty Operations
+  // ──────────────────────────────────────────────
+
+  /** Get bounty details for a skill */
+  async getBounty(skillHash: Hex): Promise<BountyInfo> {
+    return _getBounty(this.publicClient, this.config.registryAddress, skillHash);
+  }
+
+  /**
+   * List all posted bounties by scanning on-chain events.
+   * Optionally filter by skillHash.
+   */
+  async listBounties(
+    options?: { skillHash?: Hex; fromBlock?: bigint; toBlock?: bigint },
+  ): Promise<BountyPostedEvent[]> {
+    return _listBounties(this.publicClient, this.config.registryAddress, options);
+  }
+
+  /** Post a bounty to incentivize auditors for a skill */
+  async postBounty(skillHash: Hex, requiredLevel: number, amount: bigint): Promise<Hex> {
+    return _postBounty(
+      this.requireWallet(),
+      this.config.registryAddress,
+      skillHash,
+      requiredLevel,
+      amount,
+    );
+  }
+
+  /** Reclaim an expired, unclaimed bounty */
+  async reclaimBounty(skillHash: Hex): Promise<Hex> {
+    return _reclaimBounty(
+      this.requireWallet(),
+      this.config.registryAddress,
+      skillHash,
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  //  ERC-8004 Integration
+  // ──────────────────────────────────────────────
+
+  private requireErc8004Addresses() {
+    return resolveErc8004Addresses(this.config.chainId);
+  }
+
+  /** Check if ERC-8004 contracts are available on this chain */
+  hasErc8004Support(): boolean {
+    return !!ERC8004_CHAIN_ADDRESSES[this.config.chainId];
+  }
+
+  /** Register a new agent in the ERC-8004 IdentityRegistry */
+  async registerAgent(agentURI: string): Promise<{ txHash: Hex }> {
+    this.requireErc8004Addresses();
+    return _registerAgent(this.requireWallet(), this.config.chainId, agentURI);
+  }
+
+  /**
+   * Step 1: Request ERC-8004 validation (called by agent owner).
+   * Submits a validation request to the ValidationRegistry, naming the
+   * AEGIS validator who will respond separately.
+   */
+  async requestErc8004Validation(params: RequestErc8004ValidationParams): Promise<{
+    requestHash: Hex;
+    requestTxHash: Hex;
+  }> {
+    this.requireErc8004Addresses();
+    return _requestErc8004Validation(this.requireWallet(), this.config.chainId, params);
+  }
+
+  /**
+   * Step 2: Respond to ERC-8004 validation (called by AEGIS validator).
+   * Submits the validation response with mapped AEGIS score + optional reputation.
+   * Must be called by a different wallet than the one that submitted the request.
+   */
+  async respondToErc8004Validation(params: RespondToErc8004ValidationParams): Promise<{
+    responseTxHash: Hex;
+    reputationTxHash?: Hex;
+  }> {
+    this.requireErc8004Addresses();
+    return _respondToErc8004Validation(this.requireWallet(), this.config.chainId, params);
+  }
+
+  /** Get ERC-8004 validation summary for an agent (filtered by AEGIS tag) */
+  async getErc8004ValidationSummary(
+    agentId: bigint,
+    validatorAddresses?: Address[],
+  ): Promise<ValidationSummary> {
+    this.requireErc8004Addresses();
+    return _getValidationSummary(
+      this.publicClient,
+      this.config.chainId,
+      agentId,
+      validatorAddresses,
+    );
+  }
+
+  /** Get ERC-8004 reputation summary for an agent */
+  async getErc8004ReputationSummary(
+    agentId: bigint,
+    clientAddresses?: Address[],
+  ): Promise<ReputationSummary> {
+    this.requireErc8004Addresses();
+    return _getReputationSummary(
+      this.publicClient,
+      this.config.chainId,
+      agentId,
+      clientAddresses,
+    );
+  }
+
+  /** Link a skill hash to an agent's ERC-8004 metadata */
+  async linkSkillToAgent(
+    agentId: bigint,
+    skillHash: Hex,
+    auditLevel: 1 | 2 | 3,
+  ): Promise<Hex> {
+    this.requireErc8004Addresses();
+    const metadataKey = `aegis:skill:${skillHash}`;
+    const value = `0x${Buffer.from(
+      JSON.stringify({ skillHash, auditLevel, score: AUDIT_LEVEL_SCORES[auditLevel] }),
+    ).toString('hex')}` as Hex;
+    return _setAgentMetadata(
+      this.requireWallet(),
+      this.config.chainId,
+      agentId,
+      metadataKey,
+      value,
+    );
+  }
+
+  /** Generate ERC-8004 agent registration JSON */
+  createAgentRegistration(
+    params: Omit<AgentRegistration, 'agentURI'>,
+  ): Record<string, unknown> {
+    return _createAgentRegistration(params);
+  }
+
+  // ──────────────────────────────────────────────
+  //  Trust Profile (Direct Mode)
+  // ──────────────────────────────────────────────
+
+  /**
+   * Build an aggregated trust profile for an agent (direct mode).
+   * Pulls data from AEGIS Registry + ERC-8004 registries on-chain.
+   * No x402 payment required — but makes multiple RPC calls.
+   *
+   * @param agentId - The ERC-8004 agent identity ID
+   * @param options.knownSkillHashes - Skip skill scan by providing known linked skill hashes
+   */
+  async getTrustProfile(
+    agentId: bigint,
+    options?: { knownSkillHashes?: Hex[] },
+  ): Promise<TrustProfile> {
+    this.requireErc8004Addresses();
+    return _buildTrustProfile(
+      this.publicClient,
+      this.config.registryAddress,
+      this.config.chainId,
+      agentId,
+      options,
+    );
+  }
+
+  /**
+   * Build trust data for a single skill (direct mode).
+   * Returns attestations, dispute status, and highest audit level.
+   */
+  async getSkillTrustScore(
+    skillHash: Hex,
+    options?: { verify?: boolean },
+  ): Promise<SkillTrustScore> {
+    return _buildSkillTrustScore(
+      this.publicClient,
+      this.config.registryAddress,
+      skillHash,
+      options,
     );
   }
 }

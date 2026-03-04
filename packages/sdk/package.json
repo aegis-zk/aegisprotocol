@@ -29,7 +29,9 @@
     "skill",
     "base",
     "blockchain",
-    "zero-knowledge"
+    "zero-knowledge",
+    "erc-8004",
+    "x402"
   ],
   "license": "MIT",
   "repository": {
@@ -48,6 +50,18 @@
     "@aztec/bb.js": "3.0.0-nightly.20260102",
     "@noir-lang/noir_js": "1.0.0-beta.18",
     "viem": "^2.21.0"
+  },
+  "peerDependencies": {
+    "@x402/fetch": ">=0.1.0",
+    "@x402/express": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@x402/fetch": {
+      "optional": true
+    },
+    "@x402/express": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

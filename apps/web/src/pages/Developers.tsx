@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 
 // ── Design System ────────────────────────────────────────────
@@ -864,6 +865,110 @@ result = await load_proof_from_files(
 print(result.proof)
 print(result.public_inputs)`,
   },
+
+  // ── Trust API ──
+  {
+    name: "getTrustProfile",
+    signature: "(agentId, options?) → Promise<TrustProfile>",
+    description: "Build an aggregated trust profile for an agent. Combines AEGIS attestation data with ERC-8004 validation and reputation into a composite 0-100 trust score and level classification (unknown/basic/verified/trusted). Direct mode — queries on-chain, no x402 payment needed.",
+    group: "Trust API",
+    returnType: "Promise<TrustProfile>",
+    params: [
+      { name: "agentId", type: "bigint", required: true, description: "ERC-8004 agent identity ID" },
+      { name: "options.knownSkillHashes", type: "Hex[]", required: false, description: "Skip skill scan by providing known linked skill hashes" },
+    ],
+    tsExample: `const profile = await client.getTrustProfile(42n);
+
+console.log(profile.overall.trustScore);  // 85
+console.log(profile.overall.level);       // 'trusted'
+console.log(profile.skills.length);       // 3
+console.log(profile.validation);          // { count: 2n, averageScore: 66 }`,
+    pyExample: `profile = await client.get_trust_profile(42)
+
+print(profile.overall.trust_score)  # 85
+print(profile.overall.level)        # 'trusted'
+print(len(profile.skills))          # 3`,
+  },
+  {
+    name: "getSkillTrustScore",
+    signature: "(skillHash, options?) → Promise<SkillTrustScore>",
+    description: "Get trust data for a single skill including attestations, dispute status, and highest audit level. Direct mode — queries on-chain, no x402 payment needed.",
+    group: "Trust API",
+    returnType: "Promise<SkillTrustScore>",
+    params: [
+      { name: "skillHash", type: "Hex", required: true, description: "The bytes32 skill hash" },
+      { name: "options.verify", type: "boolean", required: false, description: "Re-verify ZK proofs on-chain (default: false, assumes valid)" },
+    ],
+    tsExample: `const score = await client.getSkillTrustScore(
+  '0x1234...abcd'
+);
+
+console.log(score.highestLevel);      // 3
+console.log(score.hasActiveDisputes); // false
+console.log(score.attestations);      // [{ auditorCommitment, auditLevel, ... }]`,
+    pyExample: `score = await client.get_skill_trust_score(
+    "0x1234...abcd"
+)
+
+print(score.highest_level)       # 3
+print(score.has_active_disputes) # False`,
+  },
+  {
+    name: "createTrustApiClient",
+    signature: "(walletClient, baseUrl) → Promise<TrustApiClient>",
+    description: "Create a typed client for the x402-gated Trust Profile API. Wraps fetch with automatic USDC micropayments on Base via Coinbase's x402 protocol.",
+    group: "Trust API",
+    returnType: "Promise<TrustApiClient>",
+    params: [
+      { name: "walletClient", type: "WalletClient", required: true, description: "Viem wallet client for signing USDC payments" },
+      { name: "baseUrl", type: "string", required: true, description: "Trust API server URL" },
+    ],
+    tsExample: `import { createTrustApiClient } from '@aegisaudit/sdk';
+
+const api = await createTrustApiClient(
+  wallet,
+  'https://trust.aegisprotocol.tech'
+);
+
+// Pay 10c USDC, get aggregated profile
+const profile = await api.getProfile(42n);
+
+// Pay 50c USDC, batch query
+const profiles = await api.batchProfiles([1n, 2n, 3n]);`,
+    pyExample: `# Python client not yet available
+# Use direct HTTP with x402 headers`,
+  },
+  {
+    name: "createTrustApiMiddleware",
+    signature: "(config) → Promise<Express.Router>",
+    description: "Create Express middleware for hosting an x402-gated Trust Profile API. Serves aggregated trust data for USDC micropayments on Base. Returns a Router with 3 endpoints.",
+    group: "Trust API",
+    returnType: "Promise<Express.Router>",
+    params: [
+      { name: "config.paymentAddress", type: "Address", required: true, description: "Wallet address to receive USDC payments" },
+      { name: "config.chainId", type: "number", required: true, description: "Chain ID (8453 or 84532)" },
+      { name: "config.pricing", type: "TrustApiPricing", required: true, description: "USDC prices: { profileQuery, skillQuery, batchQuery }" },
+    ],
+    tsExample: `import express from 'express';
+import { createTrustApiMiddleware } from '@aegisaudit/sdk';
+
+const app = express();
+app.use(express.json());
+
+const router = await createTrustApiMiddleware({
+  paymentAddress: '0xYour...',
+  chainId: 84532,
+  pricing: {
+    profileQuery: '0.10',
+    skillQuery: '0.05',
+    batchQuery: '0.50',
+  },
+});
+
+app.use(router);
+app.listen(3001);`,
+    pyExample: `# Server middleware is TypeScript/Express only`,
+  },
 ];
 
 // ── Sidebar Sections ─────────────────────────────────────────
@@ -880,6 +985,9 @@ const SECTIONS: SidenavSection[] = [
   { id: "method-listAllAuditors", label: "listAllAuditors()", indent: true },
   { id: "method-getMetadataURI", label: "getMetadataURI()", indent: true },
   { id: "method-listDisputes", label: "listDisputes()", indent: true },
+  { id: "audit-metadata", label: "Audit Metadata" },
+  { id: "method-createAuditTemplate", label: "createAuditTemplate()", indent: true },
+  { id: "method-validateAuditMetadata", label: "validateAuditMetadata()", indent: true },
   { id: "submitting", label: "Write Operations" },
   { id: "method-registerSkill", label: "registerSkill()", indent: true },
   { id: "method-registerAuditor", label: "registerAuditor()", indent: true },
@@ -890,6 +998,11 @@ const SECTIONS: SidenavSection[] = [
   { id: "disputes", label: "Disputes" },
   { id: "method-openDispute", label: "openDispute()", indent: true },
   { id: "method-resolveDispute", label: "resolveDispute()", indent: true },
+  { id: "trust-api", label: "Trust API" },
+  { id: "method-getTrustProfile", label: "getTrustProfile()", indent: true },
+  { id: "method-getSkillTrustScore", label: "getSkillTrustScore()", indent: true },
+  { id: "method-createTrustApiClient", label: "createTrustApiClient()", indent: true },
+  { id: "method-createTrustApiMiddleware", label: "createTrustApiMiddleware()", indent: true },
   { id: "events", label: "Contract Events" },
   { id: "errors", label: "Error Handling" },
 ];
@@ -901,6 +1014,9 @@ const EVENTS = [
   { name: "StakeAdded", params: "auditorCommitment (indexed bytes32), amount (uint256), totalStake (uint256)", description: "Emitted when an auditor adds to their stake" },
   { name: "DisputeOpened", params: "disputeId (indexed uint256), skillHash (indexed bytes32)", description: "Emitted when a dispute is opened against an attestation" },
   { name: "DisputeResolved", params: "disputeId (indexed uint256), auditorSlashed (bool)", description: "Emitted when a dispute is resolved by governance" },
+  { name: "UnstakeInitiated", params: "auditorCommitment (indexed bytes32), amount (uint256), unlockTimestamp (uint256)", description: "Emitted when an auditor starts the 3-day unstake cooldown" },
+  { name: "UnstakeCompleted", params: "auditorCommitment (indexed bytes32), amount (uint256)", description: "Emitted when unstaked ETH is withdrawn after cooldown" },
+  { name: "UnstakeCancelled", params: "auditorCommitment (indexed bytes32), amount (uint256)", description: "Emitted when a pending unstake request is cancelled" },
 ];
 
 // ── Error Codes ──────────────────────────────────────────────
@@ -915,12 +1031,17 @@ const ERRORS = [
   { code: "AttestationNotFound", message: "Attestation index out of bounds", fix: "Check attestation exists via getAttestations() before verifying or disputing" },
   { code: "DisputeAlreadyResolved", message: "Dispute has already been resolved", fix: "This dispute was already resolved. No further action needed." },
   { code: "Unauthorized", message: "Caller is not authorized for this action", fix: "Only the contract owner (protocol admin) can resolve disputes" },
+  { code: "InvalidUnstakeAmount", message: "Unstake amount is invalid", fix: "Amount must be > 0, <= totalStake, and leave at least 0.01 ETH (or be a full withdrawal)" },
+  { code: "ActiveDisputesExist", message: "Cannot unstake while disputes are active", fix: "Wait for all active disputes to be resolved before unstaking" },
+  { code: "UnstakeAlreadyPending", message: "An unstake request is already in progress", fix: "Cancel or complete the existing request before starting a new one" },
+  { code: "NoActiveUnstakeRequest", message: "No pending unstake request found", fix: "Call initiateUnstake() first to start the cooldown" },
+  { code: "UnstakeCooldownNotMet", message: "3-day cooldown has not elapsed", fix: "Wait for the unlockTimestamp to pass before calling completeUnstake()" },
+  { code: "UnstakeTransferFailed", message: "ETH transfer failed during unstake", fix: "Ensure the receiving address can accept ETH (not a contract that rejects transfers)" },
 ];
 
 // ── NavBar ───────────────────────────────────────────────────
-function DevNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
-  onBack?: () => void; onRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void;
-}) {
+function DevNavBar() {
+  const navigate = useNavigate();
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
@@ -929,7 +1050,7 @@ function DevNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
       backdropFilter: "blur(20px)",
       borderBottom: `1px solid ${BORDER}`,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={onBack}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/")}>
         <div style={{
           width: 28, height: 28, border: `2px solid ${ACCENT}`, borderRadius: 4,
           transform: "rotate(45deg)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -949,10 +1070,10 @@ function DevNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
         {[
-          { label: "Registry", onClick: onRegistry },
-          { label: "Developers", onClick: onDevelopers },
-          { label: "Auditors", onClick: onAuditors },
-          { label: "Docs", onClick: onDocs },
+          { label: "Registry", onClick: () => navigate("/registry") },
+          { label: "Developers", onClick: () => navigate("/developers") },
+          { label: "Auditors", onClick: () => navigate("/auditors") },
+          { label: "Docs", onClick: () => navigate("/docs") },
         ].map(item => (
           <a key={item.label} href="#" style={{
             color: item.label === "Developers" ? TEXT : TEXT_DIM,
@@ -994,9 +1115,7 @@ function DevNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
 }
 
 // ── Main Component ───────────────────────────────────────────
-export function Developers({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
-  onBack?: () => void; onRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void;
-}) {
+export function Developers() {
   const [lang, setLang] = useState<Lang>("ts");
   const [activeSection, setActiveSection] = useState("quick-start");
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
@@ -1042,6 +1161,7 @@ export function Developers({ onBack, onRegistry, onDevelopers, onAuditors, onDoc
   const discoveryOps = METHODS.filter(m => m.group === "Discovery");
   const writeOps = METHODS.filter(m => m.group === "Write Operations");
   const disputeOps = METHODS.filter(m => m.group === "Disputes");
+  const trustOps = METHODS.filter(m => m.group === "Trust API");
 
   return (
     <>
@@ -1055,7 +1175,7 @@ export function Developers({ onBack, onRegistry, onDevelopers, onAuditors, onDoc
         ::-webkit-scrollbar-thumb { background: ${BORDER}; border-radius: 3px; }
       `}</style>
 
-      <DevNavBar onBack={onBack} onRegistry={onRegistry} onDevelopers={onDevelopers} onAuditors={onAuditors} onDocs={onDocs} />
+      <DevNavBar />
 
       <div style={{ display: "flex", paddingTop: 64, minHeight: "100vh" }}>
         {/* Sidebar */}
@@ -1272,6 +1392,175 @@ pip install aegis-sdk[proving]`}
             ))}
           </section>
 
+          {/* ═══ Audit Metadata ═══ */}
+          <section id="audit-metadata" ref={setRef("audit-metadata")} style={{ marginTop: 56 }}>
+            <h2 style={{
+              fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700,
+              color: TEXT, marginBottom: 8,
+            }}>
+              Audit Metadata
+            </h2>
+            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+              Every attestation includes a metadata URI pointing to a JSON document that records what was audited and what was found.
+              The SDK provides helpers for creating, validating, and hashing metadata against the{" "}
+              <code style={{ color: SYN_FN, background: SURFACE2, padding: "1px 4px", borderRadius: 3 }}>aegis/audit-metadata@1</code> schema.
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.3.0</span>
+            </p>
+          </section>
+
+          <section id="method-createAuditTemplate" ref={setRef("method-createAuditTemplate")} style={{ marginTop: 16 }}>
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12,
+              padding: "20px 24px", marginBottom: 16,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <code style={{ fontFamily: FONT_CODE, fontSize: 14, fontWeight: 700, color: SYN_FN }}>createAuditTemplate()</code>
+                <span style={{
+                  fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
+                  background: "#4ADE80", padding: "2px 8px", borderRadius: 3,
+                }}>HELPER</span>
+              </div>
+              <p style={{ fontFamily: FONT, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
+                Generate a pre-populated metadata template with all required criteria for a given audit level. Fill in results as you perform each check.
+              </p>
+              <div style={{
+                background: "#0D0D10", borderRadius: 8, padding: "16px 20px",
+                fontFamily: FONT_CODE, fontSize: 12, lineHeight: 1.6, overflow: "auto",
+                border: `1px solid ${BORDER}`,
+              }}>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", color: SYN_DEFAULT }}>{highlight(lang === "ts" ? `import {
+  createAuditTemplate,
+  validateAuditMetadata,
+  computeCriteriaHash,
+  getRequiredCriteria,
+  uploadMetadata,
+} from '@aegisaudit/sdk';
+
+// 1. Create template — pre-fills all required criteria for L2
+const metadata = createAuditTemplate(2, {
+  name: 'Uniswap Swap Executor',
+  description: 'Executes token swaps via Uniswap V3',
+  version: '1.2.0',
+  sourceHash: 'sha256:ab3f...c901',
+});
+
+// 2. Fill in results as you audit each criterion
+metadata.audit.criteria[0].pass = true;
+metadata.audit.criteria[0].notes = 'Executed 50 swap scenarios successfully';
+
+// 3. Validate — checks all required criteria are present and pass
+const { valid, errors } = validateAuditMetadata(metadata);
+if (!valid) throw new Error(errors.join(', '));
+
+// 4. Compute the on-chain criteria hash
+const criteriaHash = computeCriteriaHash(getRequiredCriteria(2));
+
+// 5. Upload to IPFS and use the URI in registerSkill()
+const metadataURI = await uploadMetadata(metadata);` : `# Python pseudo-code (use the TypeScript SDK)
+# Create template for L2 audit
+template = create_audit_template(2, {
+    "name": "Uniswap Swap Executor",
+    "description": "Executes token swaps via Uniswap V3",
+    "version": "1.2.0",
+    "source_hash": "sha256:ab3f...c901",
+})
+
+# Fill in criteria results
+template["audit"]["criteria"][0]["pass"] = True
+template["audit"]["criteria"][0]["notes"] = "50 scenarios passed"
+
+# Validate and upload
+result = validate_audit_metadata(template)
+metadata_uri = upload_metadata(template)`, lang)}</pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="method-validateAuditMetadata" ref={setRef("method-validateAuditMetadata")} style={{ marginTop: 16 }}>
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12,
+              padding: "20px 24px", marginBottom: 16,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <code style={{ fontFamily: FONT_CODE, fontSize: 14, fontWeight: 700, color: SYN_FN }}>validateAuditMetadata()</code>
+                <span style={{
+                  fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
+                  background: "#4ADE80", padding: "2px 8px", borderRadius: 3,
+                }}>HELPER</span>
+              </div>
+              <p style={{ fontFamily: FONT, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
+                Validates a metadata document against the AEGIS schema. Checks that the schema version is recognized,
+                all required fields exist, all criteria for the declared audit level are present, and all required criteria pass.
+              </p>
+
+              <div style={{
+                marginBottom: 16, padding: "14px 18px", background: SURFACE2,
+                borderRadius: 8, border: `1px solid ${BORDER}`,
+              }}>
+                <p style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Audit Level Criteria</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT, fontSize: 11.5 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left", padding: "6px 10px", color: TEXT_DIM, borderBottom: `1px solid ${BORDER}` }}>Level</th>
+                      <th style={{ textAlign: "left", padding: "6px 10px", color: TEXT_DIM, borderBottom: `1px solid ${BORDER}` }}>Name</th>
+                      <th style={{ textAlign: "left", padding: "6px 10px", color: TEXT_DIM, borderBottom: `1px solid ${BORDER}` }}>Criteria Count</th>
+                      <th style={{ textAlign: "left", padding: "6px 10px", color: TEXT_DIM, borderBottom: `1px solid ${BORDER}` }}>Focus</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: "6px 10px", color: TEXT_DIM }}>L1</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>Functional</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>4 criteria</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>Execution, output format, deps, docs</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "6px 10px", color: TEXT_DIM }}>L2</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>Robust</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>9 criteria (L1 + 5)</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>Edge cases, validation, errors, resources</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "6px 10px", color: TEXT_DIM }}>L3</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>Security</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>14 criteria (L1 + L2 + 5)</td>
+                      <td style={{ padding: "6px 10px", color: TEXT }}>Injection, exfiltration, sandbox, supply chain</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{
+                background: "#0D0D10", borderRadius: 8, padding: "16px 20px",
+                fontFamily: FONT_CODE, fontSize: 12, lineHeight: 1.6, overflow: "auto",
+                border: `1px solid ${BORDER}`,
+              }}>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", color: SYN_DEFAULT }}>{highlight(`import {
+  fetchAuditMetadata,
+  validateAuditMetadata,
+  getRequiredCriteria,
+  L1_CRITERIA,
+  L2_CRITERIA,
+  L3_CRITERIA,
+} from '@aegisaudit/sdk';
+
+// Fetch and validate metadata from an attestation
+const metadata = await fetchAuditMetadata(metadataURI);
+const { valid, errors } = validateAuditMetadata(metadata);
+
+if (!valid) {
+  // This attestation has invalid metadata — grounds for dispute
+  console.error('Validation errors:', errors);
+}
+
+// Check what criteria are required for each level
+const l1 = getRequiredCriteria(1); // ['L1.EXEC', 'L1.OUTPUT', 'L1.DEPS', 'L1.DOCS']
+const l2 = getRequiredCriteria(2); // L1 criteria + 5 L2 criteria
+const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}</pre>
+              </div>
+            </div>
+          </section>
+
           {/* ═══ Submitting Attestations ═══ */}
           <section id="submitting" ref={setRef("submitting")} style={{ marginTop: 56 }}>
             <h2 style={{
@@ -1334,6 +1623,31 @@ pip install aegis-sdk[proving]`}
             </p>
 
             {disputeOps.map(m => (
+              <div key={m.name} id={`method-${m.name}`} ref={setRef(`method-${m.name}`)}>
+                <MethodCard
+                  method={m}
+                  lang={lang}
+                  expanded={expandedMethod === m.name}
+                  onToggle={() => toggleMethod(m.name)}
+                />
+              </div>
+            ))}
+          </section>
+
+          {/* ═══ Trust API ═══ */}
+          <section id="trust-api" ref={setRef("trust-api")} style={{ marginTop: 56 }}>
+            <h2 style={{
+              fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700,
+              color: TEXT, marginBottom: 8,
+            }}>
+              Trust API
+            </h2>
+            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+              Aggregated trust profiles combining AEGIS attestations with ERC-8004 validation and reputation data.
+              Direct mode queries on-chain for free; API mode serves via x402 USDC micropayments on Base.
+            </p>
+
+            {trustOps.map(m => (
               <div key={m.name} id={`method-${m.name}`} ref={setRef(`method-${m.name}`)}>
                 <MethodCard
                   method={m}

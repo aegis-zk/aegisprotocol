@@ -92,7 +92,7 @@ contract AegisE2E is Test {
         // Verify auditor is registered
         (uint256 score, uint256 totalStake, uint256 attestationCount) =
             registry.getAuditorReputation(auditorCommitment);
-        assertEq(totalStake, 0.1 ether, "Auditor stake mismatch");
+        assertEq(totalStake, 0.095 ether, "Auditor stake mismatch (0.1 ETH - 5% fee)");
         assertEq(attestationCount, 0, "Should have 0 attestations initially");
 
         // Step 2: Register skill with real ZK proof
@@ -103,7 +103,8 @@ contract AegisE2E is Test {
             proof,
             publicInputs,
             auditorCommitment,
-            auditLevel
+            auditLevel,
+            address(0)
         );
 
         // Step 3: Verify the attestation was stored correctly
@@ -113,7 +114,7 @@ contract AegisE2E is Test {
         assertEq(attestations[0].auditCriteriaHash, criteriaHash, "Stored criteria_hash mismatch");
         assertEq(attestations[0].auditorCommitment, auditorCommitment, "Stored auditor_commitment mismatch");
         assertEq(attestations[0].auditLevel, auditLevel, "Stored audit_level mismatch");
-        assertEq(attestations[0].stakeAmount, 0.1 ether, "Stored stake amount mismatch");
+        assertEq(attestations[0].stakeAmount, 0.095 ether, "Stored stake amount mismatch (0.1 ETH - 5% fee)");
 
         // Step 4: Verify auditor reputation was updated
         (score, totalStake, attestationCount) = registry.getAuditorReputation(auditorCommitment);
@@ -148,7 +149,7 @@ contract AegisE2E is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel
+            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel, address(0)
         );
 
         // Re-verify the stored attestation through the registry
@@ -177,7 +178,7 @@ contract AegisE2E is Test {
         vm.prank(publisher);
         vm.expectRevert();
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel
+            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel, address(0)
         );
     }
 
@@ -200,7 +201,7 @@ contract AegisE2E is Test {
         vm.prank(publisher);
         vm.expectRevert();
         registry.registerSkill{value: 0.001 ether}(
-            wrongInputs[0], "ipfs://QmTest123", proof, wrongInputs, auditorCommitment, auditLevel
+            wrongInputs[0], "ipfs://QmTest123", proof, wrongInputs, auditorCommitment, auditLevel, address(0)
         );
     }
 }

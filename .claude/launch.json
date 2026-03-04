@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-dev",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npx vite --host --port 5173 --strictPort"],
+      "port": 5173,
+      "cwd": "apps/web"
+    }
+  ]
+}

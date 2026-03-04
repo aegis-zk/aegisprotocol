@@ -27,7 +27,8 @@ contract DeployScript is Script {
 /// @dev Use this for production / testnet deployments with real proof verification
 contract DeployAegis is Script {
     function run() external {
-        vm.startBroadcast();
+        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        vm.startBroadcast(deployerKey);
 
         HonkVerifier verifier = new HonkVerifier();
         console2.log("HonkVerifier deployed at:", address(verifier));

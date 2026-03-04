@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 
 // ── Design System (matches Landing / Registry / Developers) ──
@@ -51,9 +52,9 @@ const TIER_COLORS: Record<string, string> = {
 
 const TIER_REQUIREMENTS = [
   { tier: "Bronze", rep: "0 – 9", stake: "≥ 0.01 ETH", perks: "Eligible for L1 audits" },
-  { tier: "Silver", rep: "10 – 24", stake: "≥ 0.05 ETH", perks: "Eligible for L1 & L2 audits" },
-  { tier: "Gold", rep: "25 – 49", stake: "≥ 0.25 ETH", perks: "Eligible for all levels, priority queue" },
-  { tier: "Diamond", rep: "50+", stake: "≥ 1.0 ETH", perks: "All levels, governance votes, bonus rewards" },
+  { tier: "Silver", rep: "10 – 24", stake: "≥ 0.025 ETH", perks: "Eligible for L1 & L2 audits" },
+  { tier: "Gold", rep: "25 – 49", stake: "≥ 0.1 ETH", perks: "Eligible for all levels, priority queue" },
+  { tier: "Diamond", rep: "50+", stake: "≥ 0.5 ETH", perks: "All levels, governance votes, bonus rewards" },
 ];
 
 // ── Animated Counter ─────────────────────────────────────────
@@ -276,17 +277,152 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
   );
 }
 
+// ── Circuit Connector SVG (runs between step cards) ─────────
+function CircuitConnectors({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
+  const [dims, setDims] = useState<{ w: number; h: number; cards: DOMRect[] } | null>(null);
+
+  useEffect(() => {
+    const measure = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const cards = Array.from(el.querySelectorAll<HTMLElement>("[data-step-card]")).map(c => {
+        const cr = c.getBoundingClientRect();
+        return new DOMRect(cr.left - rect.left, cr.top - rect.top, cr.width, cr.height);
+      });
+      if (cards.length === 4) setDims({ w: rect.width, h: rect.height, cards });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [containerRef]);
+
+  if (!dims || dims.cards.length < 4) return null;
+
+  const { w, h, cards } = dims;
+
+  // Build paths connecting each card pair through the gaps
+  // Each connector: exits right side of card N, routes through gap, enters left side of card N+1
+  const connectors: { path: string; nodes: [number, number][]; delay: number }[] = [];
+
+  for (let i = 0; i < 3; i++) {
+    const from = cards[i];
+    const to = cards[i + 1];
+    const exitX = from.x + from.width;
+    const enterX = to.x;
+    const midX = (exitX + enterX) / 2;
+
+    // Main trace — exits at ~35% height, jogs through the gap with right angles
+    const y1 = from.y + from.height * 0.32;
+    const y2 = to.y + to.height * 0.38;
+    const path = `M ${exitX} ${y1} H ${midX - 2} V ${y2} H ${enterX}`;
+
+    // Secondary trace — exits at ~65% height, different routing
+    const y3 = from.y + from.height * 0.68;
+    const y4 = to.y + to.height * 0.62;
+    const path2 = `M ${exitX} ${y3} H ${midX + 2} V ${y4} H ${enterX}`;
+
+    connectors.push(
+      { path, nodes: [[midX - 2, y1], [midX - 2, y2], [enterX, y2]], delay: i * 0.6 },
+      { path: path2, nodes: [[midX + 2, y3], [midX + 2, y4]], delay: i * 0.6 + 0.3 },
+    );
+  }
+
+  return (
+    <svg
+      width={w}
+      height={h}
+      style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", zIndex: 5 }}
+    >
+      <defs>
+        <filter id="circuit-glow">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {connectors.map(({ path, nodes, delay }, i) => (
+        <g key={i}>
+          {/* Static dim trace */}
+          <path d={path} fill="none" stroke={ACCENT} strokeWidth="1.5" opacity="0.15" strokeLinecap="round" />
+
+          {/* Animated flowing pulse */}
+          <path
+            d={path}
+            fill="none"
+            stroke={ACCENT}
+            strokeWidth="2"
+            strokeLinecap="round"
+            filter="url(#circuit-glow)"
+            strokeDasharray="16 200"
+            style={{
+              animation: `circuitFlow ${3 + delay}s linear ${delay}s infinite`,
+              opacity: 0.85,
+            }}
+          />
+
+          {/* Junction nodes */}
+          {nodes.map(([cx, cy], j) => (
+            <circle
+              key={j}
+              cx={cx}
+              cy={cy}
+              r="3"
+              fill={ACCENT}
+              opacity="0.5"
+              style={{ animation: `nodeFlicker ${1.8 + j * 0.3}s ease-in-out ${delay}s infinite` }}
+            />
+          ))}
+        </g>
+      ))}
+
+      {/* Entry/exit port dots on each card edge */}
+      {cards.map((card, ci) => {
+        const dots: [number, number][] = [];
+        if (ci > 0) {
+          // Left edge entry ports
+          dots.push([card.x, card.y + card.height * 0.38]);
+          dots.push([card.x, card.y + card.height * 0.62]);
+        }
+        if (ci < 3) {
+          // Right edge exit ports
+          dots.push([card.x + card.width, card.y + card.height * 0.32]);
+          dots.push([card.x + card.width, card.y + card.height * 0.68]);
+        }
+        return dots.map(([cx, cy], di) => (
+          <circle
+            key={`port-${ci}-${di}`}
+            cx={cx}
+            cy={cy}
+            r="3.5"
+            fill={BG}
+            stroke={ACCENT}
+            strokeWidth="1.5"
+            opacity="0.7"
+            style={{ animation: `nodeFlicker 2s ease-in-out ${ci * 0.4}s infinite` }}
+          />
+        ));
+      })}
+    </svg>
+  );
+}
+
 // ── How It Works Step ────────────────────────────────────────
 function Step({ number, title, description, icon }: { number: number; title: string; description: string; icon: string }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
+      data-step-card
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         flex: 1, padding: "28px 24px", background: hovered ? SURFACE2 : SURFACE,
         border: `1px solid ${hovered ? `${ACCENT}30` : BORDER}`,
         borderRadius: 12, position: "relative", transition: "all 0.2s ease",
+        zIndex: 1,
       }}
     >
       <div style={{
@@ -304,6 +440,40 @@ function Step({ number, title, description, icon }: { number: number; title: str
       <p style={{
         fontFamily: FONT, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6, margin: 0,
       }}>{description}</p>
+    </div>
+  );
+}
+
+// ── Steps + Circuit Connectors (wrapper) ─────────────────────
+function StepsWithCircuits() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  return (
+    <div ref={containerRef} style={{ display: "flex", gap: 14, position: "relative" }}>
+      <CircuitConnectors containerRef={containerRef} />
+      <Step
+        number={1}
+        title="Generate Commitment"
+        description="Create a Pedersen hash from your private key. This is your anonymous on-chain identity — no wallet address, no KYC, just math."
+        icon="🔐"
+      />
+      <Step
+        number={2}
+        title="Stake & Register"
+        description="Register on-chain by staking at least 0.01 ETH. Your stake is your bond — slashed if disputes prove bad audits. A 5% protocol fee applies."
+        icon="⚡"
+      />
+      <Step
+        number={3}
+        title="Audit Against Criteria"
+        description="Evaluate skills against structured criteria — L1 (4 checks), L2 (9 checks), or L3 (14 checks). Generate a ZK proof and publish metadata to IPFS."
+        icon="🔍"
+      />
+      <Step
+        number={4}
+        title="Build Trust On-Chain"
+        description="Attestations feed into ERC-8004 validation scores and composite trust profiles. Your work becomes part of the global agent trust layer."
+        icon="📈"
+      />
     </div>
   );
 }
@@ -392,9 +562,9 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               {[
-                { label: "L1 Basic", count: auditor.levels[0], color: TEXT_DIM },
-                { label: "L2 Standard", count: auditor.levels[1], color: ACCENT2 },
-                { label: "L3 Comprehensive", count: auditor.levels[2], color: ACCENT },
+                { label: "L1 Functional", count: auditor.levels[0], color: TEXT_DIM },
+                { label: "L2 Robust", count: auditor.levels[1], color: ACCENT2 },
+                { label: "L3 Security", count: auditor.levels[2], color: ACCENT },
               ].map(l => (
                 <div key={l.label} style={{
                   flex: 1, padding: "10px 14px", background: SURFACE,
@@ -452,9 +622,8 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
 }
 
 // ── NavBar ───────────────────────────────────────────────────
-function AuditorNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
-  onBack?: () => void; onRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void;
-}) {
+function AuditorNavBar() {
+  const navigate = useNavigate();
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
@@ -467,10 +636,10 @@ function AuditorNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }:
           width: 28, height: 28, border: `2px solid ${ACCENT}`, borderRadius: 4,
           transform: "rotate(45deg)", display: "flex", alignItems: "center", justifyContent: "center",
           cursor: "pointer",
-        }} onClick={onBack}>
+        }} onClick={() => navigate("/")}>
           <div style={{ width: 8, height: 8, background: ACCENT, borderRadius: 1 }} />
         </div>
-        <span style={{ fontFamily: FONT_HEAD, fontSize: 18, fontWeight: 700, color: TEXT, letterSpacing: "-0.02em", cursor: "pointer" }} onClick={onBack}>
+        <span style={{ fontFamily: FONT_HEAD, fontSize: 18, fontWeight: 700, color: TEXT, letterSpacing: "-0.02em", cursor: "pointer" }} onClick={() => navigate("/")}>
           AEGIS
         </span>
         <span style={{
@@ -483,10 +652,10 @@ function AuditorNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }:
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
         {[
-          { label: "Registry", onClick: onRegistry },
-          { label: "Developers", onClick: onDevelopers },
-          { label: "Auditors", onClick: onAuditors },
-          { label: "Docs", onClick: onDocs },
+          { label: "Registry", onClick: () => navigate("/registry") },
+          { label: "Developers", onClick: () => navigate("/developers") },
+          { label: "Auditors", onClick: () => navigate("/auditors") },
+          { label: "Docs", onClick: () => navigate("/docs") },
         ].map(item => (
           <a key={item.label} href="#" style={{
             color: item.label === "Auditors" ? TEXT : TEXT_DIM,
@@ -539,9 +708,7 @@ function SubtleBG() {
 // ── Main Page ────────────────────────────────────────────────
 const PER_PAGE = 8;
 
-export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
-  onBack?: () => void; onRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void;
-}) {
+export function Auditors() {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -610,13 +777,21 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
           0%, 100% { opacity: 0.4; }
           50% { opacity: 1; }
         }
+        @keyframes circuitFlow {
+          0% { stroke-dashoffset: 200; }
+          100% { stroke-dashoffset: 0; }
+        }
+        @keyframes nodeFlicker {
+          0%, 100% { opacity: 0.2; r: 1.5; }
+          50% { opacity: 0.9; r: 2.5; }
+        }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: ${BG}; }
         ::-webkit-scrollbar-thumb { background: ${BORDER}; border-radius: 3px; }
       `}</style>
 
       <SubtleBG />
-      <AuditorNavBar onBack={onBack} onRegistry={onRegistry} onDevelopers={onDevelopers} onAuditors={onAuditors} onDocs={onDocs} />
+      <AuditorNavBar />
 
       <div style={{ paddingTop: 64, position: "relative", zIndex: 1 }}>
         {/* ── Hero Section ─────────────────────────── */}
@@ -676,31 +851,251 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
             color: TEXT, letterSpacing: "-0.01em", margin: "0 0 28px",
           }}>From anonymous identity to trusted attestation</h2>
 
-          <div style={{ display: "flex", gap: 14 }}>
-            <Step
-              number={1}
-              title="Generate Commitment"
-              description="Create a Pedersen hash from your private key. This is your anonymous on-chain identity — no wallet address, no KYC, just math."
-              icon="🔐"
-            />
-            <Step
-              number={2}
-              title="Stake ETH"
-              description="Register on-chain by staking at least 0.01 ETH. Your stake is your bond — it backs every attestation you sign."
-              icon="⚡"
-            />
-            <Step
-              number={3}
-              title="Audit & Prove"
-              description="Review skill source code, run security analysis. Generate a ZK proof that verifies your audit without revealing the code."
-              icon="🔍"
-            />
-            <Step
-              number={4}
-              title="Earn Reputation"
-              description="Each successful attestation increases your reputation score. Higher tiers unlock higher audit levels and governance rights."
-              icon="📈"
-            />
+          <StepsWithCircuits />
+        </div>
+
+        {/* ── Audit Criteria ───────────────────────── */}
+        <div style={{
+          padding: "48px 48px", maxWidth: 1200, margin: "0 auto",
+          borderBottom: `1px solid ${BORDER}`,
+        }}>
+          <div style={{
+            fontFamily: FONT, fontSize: 12, color: BLUE,
+            textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
+          }}>Evaluation Framework</div>
+          <h2 style={{
+            fontFamily: FONT_HEAD, fontSize: 22, fontWeight: 700,
+            color: TEXT, letterSpacing: "-0.01em", margin: "0 0 8px",
+          }}>Structured audit criteria</h2>
+          <p style={{
+            fontFamily: FONT, fontSize: 13, color: TEXT_DIM, lineHeight: 1.6,
+            margin: "0 0 28px", maxWidth: 640,
+          }}>
+            Each audit level defines specific checks the auditor must perform and document.
+            Higher levels include all checks from lower levels. Metadata is published to IPFS
+            and linked on-chain via a criteria hash.
+          </p>
+
+          <div style={{ display: "flex", gap: 16 }}>
+            {[
+              {
+                level: "L1",
+                name: "Functional",
+                color: TEXT_DIM,
+                score: "33",
+                checks: [
+                  { id: "L1.EXEC", label: "Execution" },
+                  { id: "L1.OUTPUT", label: "Output Format" },
+                  { id: "L1.DEPS", label: "Dependencies" },
+                  { id: "L1.DOCS", label: "Documentation" },
+                ],
+              },
+              {
+                level: "L2",
+                name: "Robust",
+                color: ACCENT2,
+                score: "66",
+                checks: [
+                  { id: "L2.EDGE", label: "Edge Cases" },
+                  { id: "L2.ERROR", label: "Error Handling" },
+                  { id: "L2.VALIDATE", label: "Input Validation" },
+                  { id: "L2.RESOURCE", label: "Resource Limits" },
+                  { id: "L2.IDEMPOTENT", label: "Consistency" },
+                ],
+              },
+              {
+                level: "L3",
+                name: "Security",
+                color: ACCENT,
+                score: "100",
+                checks: [
+                  { id: "L3.INJECTION", label: "Prompt Injection" },
+                  { id: "L3.EXFIL", label: "Data Exfiltration" },
+                  { id: "L3.SANDBOX", label: "Sandbox Escape" },
+                  { id: "L3.SUPPLY", label: "Supply Chain" },
+                  { id: "L3.ADVERSARIAL", label: "Adversarial Testing" },
+                ],
+              },
+            ].map((tier, i) => (
+              <div key={tier.level} style={{
+                flex: 1, background: SURFACE, border: `1px solid ${BORDER}`,
+                borderRadius: 12, overflow: "hidden",
+              }}>
+                {/* Header */}
+                <div style={{
+                  padding: "20px 20px 16px",
+                  borderBottom: `1px solid ${BORDER}`,
+                  background: `${tier.color}08`,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{
+                      fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 800, color: tier.color,
+                    }}>{tier.level}</span>
+                    <span style={{
+                      fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                      color: tier.color, background: `${tier.color}18`,
+                      border: `1px solid ${tier.color}30`,
+                      padding: "2px 8px", borderRadius: 4,
+                    }}>ERC-8004: {tier.score}</span>
+                  </div>
+                  <div style={{ fontFamily: FONT_HEAD, fontSize: 14, fontWeight: 700, color: TEXT }}>
+                    {tier.name}
+                  </div>
+                  <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, marginTop: 4 }}>
+                    {i === 0 ? "4 checks" : i === 1 ? "L1 + 5 checks (9 total)" : "L1 + L2 + 5 checks (14 total)"}
+                  </div>
+                </div>
+                {/* Checks */}
+                <div style={{ padding: "16px 20px" }}>
+                  {tier.checks.map(check => (
+                    <div key={check.id} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "8px 0",
+                      borderBottom: `1px solid ${BORDER}40`,
+                    }}>
+                      <code style={{
+                        fontFamily: FONT, fontSize: 10, color: tier.color,
+                        background: `${tier.color}12`, padding: "2px 6px",
+                        borderRadius: 3, whiteSpace: "nowrap",
+                      }}>{check.id}</code>
+                      <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM }}>
+                        {check.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* On-chain commitment note */}
+          <div style={{
+            marginTop: 20, padding: "16px 20px",
+            background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10,
+            display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <span style={{ fontSize: 18 }}>&#x1f517;</span>
+            <div>
+              <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2 }}>
+                On-chain criteria hash
+              </div>
+              <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, lineHeight: 1.5 }}>
+                Each attestation stores <code style={{ fontFamily: FONT, color: ACCENT, fontSize: 11 }}>keccak256(sorted criteria IDs)</code> on-chain,
+                linking the attestation to its IPFS metadata. Disputes reference specific criteria IDs.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Trust Ecosystem ────────────────────────── */}
+        <div style={{
+          padding: "48px 48px", maxWidth: 1200, margin: "0 auto",
+          borderBottom: `1px solid ${BORDER}`,
+        }}>
+          <div style={{
+            fontFamily: FONT, fontSize: 12, color: GREEN,
+            textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
+          }}>Trust Pipeline</div>
+          <h2 style={{
+            fontFamily: FONT_HEAD, fontSize: 22, fontWeight: 700,
+            color: TEXT, letterSpacing: "-0.01em", margin: "0 0 8px",
+          }}>From audit to trust score</h2>
+          <p style={{
+            fontFamily: FONT, fontSize: 13, color: TEXT_DIM, lineHeight: 1.6,
+            margin: "0 0 28px", maxWidth: 640,
+          }}>
+            Your audit attestations flow through the ERC-8004 ecosystem to produce
+            composite trust profiles that AI agents query before interacting with each other.
+          </p>
+
+          {/* Pipeline flow */}
+          <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
+            {[
+              {
+                label: "AEGIS Audit",
+                sub: "ZK attestation on-chain",
+                detail: "L1/L2/L3 criteria, IPFS metadata, stake-backed proof",
+                color: ACCENT,
+                icon: "🛡️",
+              },
+              {
+                label: "ERC-8004 Validation",
+                sub: "Cross-protocol bridge",
+                detail: "Audit scores mapped to 33/66/100 and submitted as validations",
+                color: BLUE,
+                icon: "🔗",
+              },
+              {
+                label: "ERC-8004 Reputation",
+                sub: "Consumer feedback",
+                detail: "Users submit on-chain reputation after consuming an audit report",
+                color: PURPLE,
+                icon: "⭐",
+              },
+              {
+                label: "Trust Profile",
+                sub: "Composite 0-100 score",
+                detail: "Weighted aggregate: 60% audit + 20% validation + 10% reputation + 10% multi-skill",
+                color: GREEN,
+                icon: "📊",
+              },
+            ].map((step, i) => (
+              <div key={step.label} style={{ flex: 1, display: "flex", alignItems: "stretch" }}>
+                <div style={{
+                  flex: 1, padding: "24px 20px", background: SURFACE,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: i === 0 ? "12px 0 0 12px" : i === 3 ? "0 12px 12px 0" : 0,
+                  borderRight: i < 3 ? "none" : `1px solid ${BORDER}`,
+                  position: "relative",
+                }}>
+                  <div style={{ fontSize: 24, marginBottom: 12 }}>{step.icon}</div>
+                  <div style={{
+                    fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                    color: step.color, textTransform: "uppercase",
+                    letterSpacing: "0.06em", marginBottom: 6,
+                  }}>{step.label}</div>
+                  <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 6 }}>
+                    {step.sub}
+                  </div>
+                  <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, lineHeight: 1.5 }}>
+                    {step.detail}
+                  </div>
+                  {i < 3 && (
+                    <div style={{
+                      position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)",
+                      width: 16, height: 16, background: BG, border: `1px solid ${BORDER}`,
+                      borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                      zIndex: 2, fontSize: 10, color: TEXT_MUTED,
+                    }}>&#x2192;</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trust levels */}
+          <div style={{
+            marginTop: 20, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2,
+          }}>
+            {[
+              { level: "Unknown", range: "< 20", req: "No audits", color: TEXT_MUTED },
+              { level: "Basic", range: "20 – 49", req: "L1+ audit", color: TEXT_DIM },
+              { level: "Verified", range: "50 – 79", req: "L2+, no disputes", color: BLUE },
+              { level: "Trusted", range: "80 – 100", req: "L3+, no disputes", color: GREEN },
+            ].map((t, i) => (
+              <div key={t.level} style={{
+                padding: "16px 18px", background: SURFACE,
+                borderRadius: i === 0 ? "10px 0 0 10px" : i === 3 ? "0 10px 10px 0" : 0,
+                borderRight: i < 3 ? `1px solid ${BORDER}` : "none",
+              }}>
+                <div style={{
+                  fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                  color: t.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4,
+                }}>{t.level}</div>
+                <div style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>{t.range}</div>
+                <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, marginTop: 4 }}>{t.req}</div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -930,7 +1325,7 @@ export function Auditors({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
             Showing {Math.min((currentPage - 1) * PER_PAGE + 1, filtered.length)}-{Math.min(currentPage * PER_PAGE, filtered.length)} of {filtered.length} auditors
           </span>
           <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
-            Base Sepolia &middot; Registry 0x851C...D6Bba
+            Base Mainnet &middot; Registry 0xBED5...7E1D
           </span>
         </div>
 

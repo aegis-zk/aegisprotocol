@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 
 // ── Design System ────────────────────────────────────────────
@@ -188,9 +189,10 @@ const SECTIONS: SidenavSection[] = [
   { id: "arch-sdk", label: "SDK", indent: true },
   { id: "arch-cli", label: "CLI", indent: true },
   { id: "audit-levels", label: "Audit Levels" },
-  { id: "level-1", label: "L1 Basic", indent: true },
-  { id: "level-2", label: "L2 Standard", indent: true },
-  { id: "level-3", label: "L3 Comprehensive", indent: true },
+  { id: "level-1", label: "L1 Functional", indent: true },
+  { id: "level-2", label: "L2 Robust", indent: true },
+  { id: "level-3", label: "L3 Security", indent: true },
+  { id: "metadata-schema", label: "Metadata Schema", indent: true },
   { id: "contract-ref", label: "Contract Reference" },
   { id: "contract-functions", label: "Functions", indent: true },
   { id: "contract-events", label: "Events", indent: true },
@@ -203,6 +205,9 @@ const SECTIONS: SidenavSection[] = [
   { id: "mcp-server", label: "MCP Server" },
   { id: "mcp-install", label: "Installation", indent: true },
   { id: "mcp-tools", label: "Available Tools", indent: true },
+  { id: "erc8004", label: "ERC-8004 Integration" },
+  { id: "erc8004-bridging", label: "Bridging Flow", indent: true },
+  { id: "x402-trust-api", label: "x402 Trust API", indent: true },
   { id: "cli-ref", label: "CLI Reference" },
   { id: "deployment", label: "Deployment" },
 ];
@@ -247,9 +252,8 @@ function Callout({ color, label, children }: { color: string; label: string; chi
 }
 
 // ── NavBar ───────────────────────────────────────────────────
-function DocsNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
-  onBack?: () => void; onRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void;
-}) {
+function DocsNavBar() {
+  const navigate = useNavigate();
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
@@ -257,7 +261,7 @@ function DocsNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
       background: "rgba(9,9,11,0.95)", backdropFilter: "blur(20px)",
       borderBottom: `1px solid ${BORDER}`,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={onBack}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/")}>
         <div style={{
           width: 28, height: 28, border: `2px solid ${ACCENT}`, borderRadius: 4,
           transform: "rotate(45deg)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -275,10 +279,10 @@ function DocsNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
         {[
-          { label: "Registry", onClick: onRegistry },
-          { label: "Developers", onClick: onDevelopers },
-          { label: "Auditors", onClick: onAuditors },
-          { label: "Docs", onClick: onDocs },
+          { label: "Registry", onClick: () => navigate("/registry") },
+          { label: "Developers", onClick: () => navigate("/developers") },
+          { label: "Auditors", onClick: () => navigate("/auditors") },
+          { label: "Docs", onClick: () => navigate("/docs") },
         ].map(item => (
           <a key={item.label} href="#" style={{
             color: item.label === "Docs" ? TEXT : TEXT_DIM,
@@ -316,9 +320,7 @@ function DocsNavBar({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
 }
 
 // ── Main Component ───────────────────────────────────────────
-export function Docs({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
-  onBack?: () => void; onRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void;
-}) {
+export function Docs() {
   const [activeSection, setActiveSection] = useState("overview");
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -388,7 +390,7 @@ export function Docs({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
         ::-webkit-scrollbar-thumb { background: ${BORDER}; border-radius: 3px; }
       `}</style>
 
-      <DocsNavBar onBack={onBack} onRegistry={onRegistry} onDevelopers={onDevelopers} onAuditors={onAuditors} onDocs={onDocs} />
+      <DocsNavBar />
 
       <div style={{ display: "flex", paddingTop: 64, minHeight: "100vh" }}>
         {/* Sidebar */}
@@ -565,7 +567,10 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
           <section id="audit-levels" ref={setRef("audit-levels")} style={{ marginTop: 56 }}>
             <SectionHeading>Audit Levels</SectionHeading>
             <Para>
-              AEGIS supports three tiers of security audits. Each level builds on the previous one with increasingly rigorous verification criteria. The audit level is stored on-chain as part of the attestation and is a public input to the ZK circuit.
+              AEGIS defines three audit levels with <strong style={{ color: TEXT }}>structured evaluation criteria</strong>. Each level builds on the previous — L2 includes all L1 checks, L3 includes all L1 + L2 checks. The audit level and a hash of the checked criteria are stored on-chain as part of the attestation, creating a verifiable link to the off-chain audit report.
+            </Para>
+            <Para>
+              Auditors submit metadata (hosted on IPFS) documenting which criteria they checked and their findings. This follows an <strong style={{ color: TEXT }}>optimistic model</strong> — attestations are accepted by default and can be challenged via the dispute system if the metadata is missing, incomplete, or demonstrably false.
             </Para>
           </section>
 
@@ -579,18 +584,22 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                   fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
                   background: TEXT_DIM, padding: "3px 10px", borderRadius: 4,
                 }}>LEVEL 1</span>
-                <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Basic Safety</span>
+                <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Functional</span>
               </div>
-              <Para>Automated static analysis. Checks for known vulnerability patterns, dangerous system calls, and obvious malicious behavior. Minimum stake: 0.01 ETH.</Para>
+              <Para>Does the skill do what it says it does? L1 verifies basic execution correctness under normal conditions. This is the baseline — the skill runs, produces the right output format, and has its dependencies in order.</Para>
               <InfoTable
-                headers={["Check", "Description"]}
+                headers={["Criteria ID", "Check", "Description"]}
                 rows={[
-                  ["Dangerous imports", "Flags use of eval(), exec(), subprocess, os.system"],
-                  ["Network access", "Identifies outbound HTTP calls, socket connections"],
-                  ["File system access", "Detects read/write operations outside sandbox"],
-                  ["Code injection", "Scans for dynamic code generation patterns"],
+                  ["L1.EXEC", "Execution", "Skill executes without error on provided test inputs"],
+                  ["L1.OUTPUT", "Output format", "Output conforms to the declared schema/format"],
+                  ["L1.DEPS", "Dependencies", "All dependencies are declared and resolvable"],
+                  ["L1.DOCS", "Documentation", "Skill has a description and usage documentation"],
                 ]}
               />
+              <div style={{ marginTop: 12, padding: "10px 14px", background: SURFACE2, borderRadius: 8, border: `1px solid ${BORDER}` }}>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT }}>Input/output hashes, execution logs</span>
+              </div>
             </div>
           </section>
 
@@ -604,19 +613,26 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                   fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
                   background: ACCENT2, padding: "3px 10px", borderRadius: 4,
                 }}>LEVEL 2</span>
-                <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Standard</span>
+                <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Robust</span>
               </div>
-              <Para>All L1 checks plus manual code review, input validation analysis, and data flow tracking. Minimum stake: 0.05 ETH.</Para>
+              <Para>Can the skill handle the real world? L2 includes all L1 checks plus edge case handling, input validation, error states, and resource limits. Tests that the skill behaves correctly when things go wrong.</Para>
               <InfoTable
-                headers={["Check", "Description"]}
+                headers={["Criteria ID", "Check", "Description"]}
                 rows={[
-                  ["Input validation", "Verifies all inputs are sanitized and bounded"],
-                  ["Data flow analysis", "Tracks data from input to output for leakage"],
-                  ["Error handling", "Confirms graceful failure without information disclosure"],
-                  ["Resource limits", "Validates memory, CPU, and time bounds are enforced"],
-                  ["Dependency audit", "Reviews third-party dependencies for known CVEs"],
+                  ["L2.EDGE", "Edge cases", "Handles boundary/edge case inputs gracefully"],
+                  ["L2.ERROR", "Error handling", "Returns meaningful errors without leaking internal state"],
+                  ["L2.VALIDATE", "Input validation", "Validates and sanitizes all inputs before processing"],
+                  ["L2.RESOURCE", "Resource limits", "Operates within declared resource limits (time, memory, tokens)"],
+                  ["L2.IDEMPOTENT", "Consistency", "Produces consistent results across repeated invocations"],
                 ]}
               />
+              <div style={{ marginTop: 12, padding: "10px 14px", background: SURFACE2, borderRadius: 8, border: `1px solid ${BORDER}` }}>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT }}>Test suite hash, edge case matrix, resource profiling output</span>
+              </div>
+              <div style={{ marginTop: 8, padding: "10px 14px", background: `${ACCENT2}08`, borderRadius: 8, border: `1px solid ${ACCENT2}20` }}>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: ACCENT2 }}>+ all L1 criteria required</span>
+              </div>
             </div>
           </section>
 
@@ -630,21 +646,108 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                   fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
                   background: ACCENT, padding: "3px 10px", borderRadius: 4,
                 }}>LEVEL 3</span>
-                <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Comprehensive</span>
+                <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Security</span>
               </div>
-              <Para>All L1 + L2 checks plus formal verification, fuzzing, and adversarial testing. Minimum stake: 0.25 ETH. Reserved for Gold and Diamond tier auditors.</Para>
+              <Para>Is this skill safe to run in an untrusted environment? L3 includes all L1 + L2 checks plus adversarial testing, prompt injection resistance, data exfiltration checks, and dependency vulnerability scanning.</Para>
               <InfoTable
-                headers={["Check", "Description"]}
+                headers={["Criteria ID", "Check", "Description"]}
                 rows={[
-                  ["Formal verification", "Mathematical proof of safety properties"],
-                  ["Fuzz testing", "Automated random input generation (1000+ iterations)"],
-                  ["Adversarial testing", "Simulated prompt injection and manipulation attacks"],
-                  ["Sandbox escape", "Attempts to break out of execution environment"],
-                  ["Side-channel analysis", "Checks for timing attacks and information leakage"],
+                  ["L3.INJECTION", "Prompt injection", "Resistant to prompt injection and instruction manipulation"],
+                  ["L3.EXFIL", "Data exfiltration", "No unauthorized data exfiltration (network, filesystem, env vars)"],
+                  ["L3.SANDBOX", "Sandbox escape", "Cannot escape execution sandbox or escalate privileges"],
+                  ["L3.SUPPLY", "Supply chain", "Third-party dependencies audited for known vulnerabilities"],
+                  ["L3.ADVERSARIAL", "Adversarial inputs", "Tested against adversarial/malicious input patterns"],
                 ]}
               />
+              <div style={{ marginTop: 12, padding: "10px 14px", background: SURFACE2, borderRadius: 8, border: `1px solid ${BORDER}` }}>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT }}>Security tool output hashes, adversarial test results, dependency audit report</span>
+              </div>
+              <div style={{ marginTop: 8, padding: "10px 14px", background: `${ACCENT}08`, borderRadius: 8, border: `1px solid ${ACCENT}20` }}>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: ACCENT }}>+ all L1 + L2 criteria required</span>
+              </div>
             </div>
           </section>
+
+          {/* ═══ Metadata Schema ═══ */}
+          <section id="metadata-schema" ref={setRef("metadata-schema")} style={{ marginTop: 32 }}>
+            <SubHeading>Metadata Schema</SubHeading>
+            <Para>
+              Every attestation includes a <InlineCode>metadataURI</InlineCode> pointing to a JSON document on IPFS. This document follows the <InlineCode>aegis/audit-metadata@1</InlineCode> schema and records exactly what was checked and what was found.
+            </Para>
+            <Para>
+              The <InlineCode>auditCriteriaHash</InlineCode> stored on-chain is the keccak256 of the sorted criteria IDs, creating a verifiable commitment between the on-chain attestation and the off-chain report. If a dispute is opened, the metadata serves as evidence — challengers can reference specific criteria IDs.
+            </Para>
+            <CodeBlock code={`// aegis/audit-metadata@1 schema
+{
+  "schema": "aegis/audit-metadata@1",
+
+  "skill": {
+    "name": "Uniswap Swap Executor",
+    "description": "Executes token swaps via Uniswap V3 router",
+    "version": "1.2.0",
+    "sourceHash": "sha256:ab3f...c901",
+    "repository": "https://github.com/example/swap-skill",
+    "tags": ["defi", "uniswap", "swap"]
+  },
+
+  "audit": {
+    "level": 2,
+    "timestamp": "2026-03-03T12:00:00Z",
+    "summary": "All L1+L2 criteria pass. Skill handles edge cases well.",
+    "criteria": [
+      {
+        "id": "L1.EXEC",
+        "pass": true,
+        "notes": "Executed 50 swap scenarios, all returned valid tx hashes",
+        "evidenceHash": "sha256:d4e5...f678"
+      },
+      {
+        "id": "L2.EDGE",
+        "pass": true,
+        "notes": "Tested zero-amount, max-uint, expired deadlines"
+      }
+      // ... all criteria for the declared level
+    ]
+  },
+
+  "environment": {
+    "tools": ["aegis-cli@0.2.2", "hardhat@2.22"],
+    "runtime": "node@22.0.0",
+    "platform": "linux-x64"
+  }
+}`} filename="audit-metadata.json" lang="bash" />
+            <Para>
+              The SDK provides helpers for creating, validating, and hashing metadata:
+            </Para>
+            <CodeBlock code={`import {
+  createAuditTemplate,
+  validateAuditMetadata,
+  computeCriteriaHash,
+  getRequiredCriteria,
+  uploadMetadata
+} from '@aegisaudit/sdk';
+
+// Create a template with all required criteria for L2
+const metadata = createAuditTemplate(2, {
+  name: 'Uniswap Swap Executor',
+  description: 'Executes token swaps via Uniswap V3',
+  version: '1.2.0',
+  sourceHash: 'sha256:ab3f...c901',
+});
+
+// Fill in results as you audit each criteria
+metadata.audit.criteria[0].pass = true;
+metadata.audit.criteria[0].notes = 'Executed 50 swap scenarios successfully';
+
+// Validate before submitting
+const { valid, errors } = validateAuditMetadata(metadata);
+
+// Compute the on-chain criteria hash
+const criteriaHash = computeCriteriaHash(getRequiredCriteria(2));
+
+// Upload to IPFS
+const metadataURI = await uploadMetadata(metadata);`} filename="audit-workflow.ts" lang="bash" /></section>
 
           {/* ═══ Contract Reference ═══ */}
           <section id="contract-ref" ref={setRef("contract-ref")} style={{ marginTop: 56 }}>
@@ -658,6 +761,10 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                 ["REGISTRATION_FEE", "0.001 ETH", "Fee to register a skill attestation"],
                 ["MIN_AUDITOR_STAKE", "0.01 ETH", "Minimum ETH to register as an auditor"],
                 ["MIN_DISPUTE_BOND", "0.005 ETH", "Minimum bond to open a dispute"],
+                ["PROTOCOL_FEE_BPS", "500 (5%)", "Fee deducted from staking and bounty operations"],
+                ["UNSTAKE_COOLDOWN", "3 days", "Cooldown period before unstaked ETH can be withdrawn"],
+                ["MIN_BOUNTY", "0.001 ETH", "Minimum bounty amount to incentivize auditors"],
+                ["BOUNTY_EXPIRATION", "30 days", "Time before unclaimed bounties can be reclaimed"],
               ]}
             />
           </section>
@@ -668,7 +775,7 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
             <InfoTable
               headers={["Function", "Access", "Description"]}
               rows={[
-                ["registerSkill(skillHash, metadataURI, proof, inputs, commitment, level)", "payable", "Register a skill with ZK proof. Requires REGISTRATION_FEE"],
+                ["registerSkill(skillHash, metadataURI, proof, inputs, commitment, level, bountyRecipient)", "payable", "Register a skill with ZK proof. Auto-claims matching bounty if bountyRecipient is set"],
                 ["registerAuditor(auditorCommitment)", "payable", "Register as auditor. Requires MIN_AUDITOR_STAKE"],
                 ["addStake(auditorCommitment)", "payable", "Add more stake to an existing auditor"],
                 ["getAttestations(skillHash)", "view", "Get all attestations for a skill hash"],
@@ -676,6 +783,14 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                 ["getAuditorReputation(commitment)", "view", "Returns (score, totalStake, attestationCount)"],
                 ["openDispute(skillHash, index, evidence)", "payable", "Open dispute. Requires MIN_DISPUTE_BOND"],
                 ["resolveDispute(disputeId, auditorFault)", "onlyOwner", "Resolve dispute. Slashes 50% if fault=true"],
+                ["initiateUnstake(commitment, amount)", "external", "Start unstake with 3-day cooldown"],
+                ["completeUnstake(commitment)", "external", "Withdraw ETH after cooldown. Full withdrawal deregisters"],
+                ["cancelUnstake(commitment)", "external", "Cancel a pending unstake request"],
+                ["getUnstakeRequest(commitment)", "view", "Get pending unstake request details"],
+                ["postBounty(skillHash, requiredLevel)", "payable", "Post ETH bounty for a skill audit. Min 0.001 ETH, expires in 30 days"],
+                ["reclaimBounty(skillHash)", "external", "Reclaim expired unclaimed bounty (publisher only)"],
+                ["getBounty(skillHash)", "view", "Get bounty details (publisher, amount, level, expiry, claimed)"],
+                ["withdrawProtocolBalance(to)", "onlyOwner", "Withdraw accumulated protocol fees"],
                 ["transferOwnership(newOwner)", "onlyOwner", "Transfer admin role (for future DAO migration)"],
               ]}
             />
@@ -700,6 +815,21 @@ struct Dispute {
     uint256 bond;
     bool resolved;
     bool auditorFault;
+}
+
+// Unstake request struct
+struct UnstakeRequest {
+    uint256 amount;
+    uint256 unlockTimestamp;
+}
+
+// Bounty struct
+struct Bounty {
+    address publisher;
+    uint256 amount;
+    uint8 requiredLevel;
+    uint256 expiresAt;
+    bool claimed;
 }`} filename="IAegisRegistry.sol" lang="solidity" />
           </section>
 
@@ -714,6 +844,9 @@ struct Dispute {
                 ["StakeAdded", "auditorCommitment (indexed), amount, totalStake", "Auditor adds to their stake"],
                 ["DisputeOpened", "disputeId (indexed), skillHash (indexed)", "Dispute opened against attestation"],
                 ["DisputeResolved", "disputeId (indexed), auditorSlashed", "Dispute resolved by governance"],
+                ["BountyPosted", "skillHash (indexed), amount, requiredLevel, expiresAt", "Bounty posted for a skill"],
+                ["BountyClaimed", "skillHash (indexed), recipient (indexed), auditorPayout, protocolFee", "Bounty claimed via registerSkill"],
+                ["BountyReclaimed", "skillHash (indexed), publisher (indexed), amount", "Expired bounty reclaimed by publisher"],
               ]}
             />
           </section>
@@ -734,6 +867,13 @@ struct Dispute {
                 ["AttestationNotFound()", "Index out of bounds", "Check getAttestations() length first"],
                 ["DisputeAlreadyResolved()", "Dispute already resolved", "No action needed"],
                 ["Unauthorized()", "Caller is not owner", "Only protocol admin can resolve disputes"],
+                ["InsufficientBounty()", "Bounty below 0.001 ETH", "Send at least 0.001 ETH with postBounty"],
+                ["BountyAlreadyExists()", "Active bounty exists for skill", "Wait for existing bounty to be claimed or reclaimed"],
+                ["BountyNotFound()", "No bounty for skill hash", "Check getBounty() first"],
+                ["BountyAlreadyClaimed()", "Bounty was already claimed", "Bounty has been paid out to an auditor"],
+                ["BountyNotExpired()", "Bounty hasn't expired yet", "Wait 30 days or until bounty is claimed"],
+                ["NotBountyPublisher()", "Not the original publisher", "Only the publisher can reclaim"],
+                ["BountyTransferFailed()", "ETH transfer failed", "Check recipient address"],
               ]}
             />
           </section>
@@ -894,10 +1034,36 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
               headers={["Method", "ETH Required", "Description"]}
               rows={[
                 ["registerSkill(params)", "0.001 ETH", "Submit a skill attestation with ZK proof"],
-                ["registerAuditor(commitment, stake)", "0.01+ ETH", "Register as anonymous auditor"],
-                ["addStake(commitment, amount)", "any", "Add stake to existing auditor registration"],
+                ["registerAuditor(commitment, stake)", "0.01+ ETH", "Register as anonymous auditor (5% protocol fee)"],
+                ["addStake(commitment, amount)", "any", "Add stake to existing registration (5% protocol fee)"],
                 ["openDispute(skillHash, index, evidence, bond)", "0.005+ ETH", "Challenge a fraudulent attestation"],
                 ["resolveDispute(disputeId, auditorFault)", "0", "Resolve dispute (owner only)"],
+                ["initiateUnstake(commitment, amount)", "0", "Start 3-day unstake cooldown"],
+                ["completeUnstake(commitment)", "0", "Withdraw ETH after cooldown"],
+                ["cancelUnstake(commitment)", "0", "Cancel pending unstake"],
+                ["postBounty(skillHash, level, amount)", "0.001+ ETH", "Post bounty to incentivize auditors (5% fee on claim)"],
+                ["reclaimBounty(skillHash)", "0", "Reclaim expired bounty (publisher only, full refund)"],
+                ["registerAgent(agentURI)", "0", "Register agent in ERC-8004 IdentityRegistry (mints NFT)"],
+                ["requestErc8004Validation(params)", "0", "Step 1: Agent owner requests ERC-8004 validation"],
+                ["respondToErc8004Validation(params)", "0", "Step 2: AEGIS validator submits validation response"],
+                ["linkSkillToAgent(agentId, skillHash, level)", "0", "Link skill to ERC-8004 agent metadata"],
+                ["getErc8004ValidationSummary(agentId)", "0 (read)", "Get ERC-8004 validation summary for an agent"],
+                ["getErc8004ReputationSummary(agentId)", "0 (read)", "Get ERC-8004 reputation summary for an agent"],
+              ]}
+            />
+
+            <div style={{ marginTop: 24 }}><SubHeading>Audit Metadata Helpers</SubHeading></div>
+            <Para>
+              The SDK provides utilities for working with the <InlineCode>aegis/audit-metadata@1</InlineCode> schema:
+            </Para>
+            <InfoTable
+              headers={["Method", "Returns", "Description"]}
+              rows={[
+                ["createAuditTemplate(level, skillInfo)", "AuditMetadata", "Generate a template with all required criteria for a level"],
+                ["validateAuditMetadata(metadata)", "ValidationResult", "Validate metadata against the schema and level requirements"],
+                ["computeCriteriaHash(criteriaIds)", "string", "Compute the on-chain auditCriteriaHash from criteria IDs"],
+                ["getRequiredCriteria(level)", "CriteriaId[]", "List all required criteria IDs for a level"],
+                ["fetchAuditMetadata(cid)", "AuditMetadata", "Fetch structured audit metadata from IPFS"],
               ]}
             />
           </section>
@@ -968,7 +1134,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
           <section id="mcp-tools" ref={setRef("mcp-tools")} style={{ marginTop: 32 }}>
             <SubHeading>Available Tools</SubHeading>
             <Para>
-              The MCP server exposes 13 tools — 10 read-only and 3 write operations. Write tools require <InlineCode>AEGIS_PRIVATE_KEY</InlineCode> to be set. If no wallet is configured, calling a write tool returns setup instructions automatically.
+              The MCP server exposes 28 tools — 16 read-only and 12 write operations. Write tools require <InlineCode>AEGIS_PRIVATE_KEY</InlineCode> to be set. If no wallet is configured, calling a write tool returns setup instructions automatically.
             </Para>
             <InfoTable
               headers={["Tool", "Parameters", "Description"]}
@@ -983,14 +1149,158 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
                 ["get-metadata-uri", "skillHash", "Get the IPFS metadata URI for a skill"],
                 ["list-disputes", "skillHash?, fromBlock?, toBlock?", "List opened disputes, optionally filtered by skill"],
                 ["list-resolved-disputes", "fromBlock?, toBlock?", "List resolved disputes with slash results"],
-                ["register-auditor", "auditorCommitment, stakeEth", "Register as anonymous auditor by staking ETH (min 0.01)"],
-                ["add-stake", "auditorCommitment, amountEth", "Add more ETH stake to existing auditor registration"],
+                ["get-unstake-request", "auditorCommitment", "Get pending unstake request details"],
+                ["register-auditor", "auditorCommitment, stakeEth", "Register as anonymous auditor (5% protocol fee, min 0.01 net)"],
+                ["add-stake", "auditorCommitment, amountEth", "Add more ETH stake (5% protocol fee)"],
                 ["open-dispute", "skillHash, attestationIndex, evidence, bondEth", "Challenge a fraudulent attestation (min 0.005 ETH bond)"],
+                ["initiate-unstake", "auditorCommitment, amountEth", "Start 3-day unstake cooldown"],
+                ["complete-unstake", "auditorCommitment", "Withdraw ETH after cooldown period"],
+                ["cancel-unstake", "auditorCommitment", "Cancel pending unstake request"],
+                ["get-bounty", "skillHash", "Get bounty details for a skill (amount, level, expiry, claimed)"],
+                ["post-bounty", "skillHash, requiredLevel, amountEth", "Post ETH bounty for a skill audit (min 0.001 ETH)"],
+                ["reclaim-bounty", "skillHash", "Reclaim expired unclaimed bounty (publisher only)"],
+                ["create-agent-registration", "name, description, skills?, services?", "Generate ERC-8004 agent registration JSON"],
+                ["get-erc8004-validation", "agentId", "Get ERC-8004 validation summary (AEGIS audits)"],
+                ["register-agent", "agentURI", "Register agent in ERC-8004 IdentityRegistry"],
+                ["request-erc8004-validation", "agentId, skillHash, auditLevel, metadataURI, validatorAddress", "Step 1: Agent owner requests ERC-8004 validation"],
+                ["respond-to-erc8004-validation", "requestHash, agentId, skillHash, auditLevel, metadataURI", "Step 2: AEGIS validator submits validation response"],
+                ["link-skill-to-agent", "agentId, skillHash, auditLevel", "Link AEGIS skill to ERC-8004 agent identity"],
+                ["query-trust-profile", "agentId, knownSkillHashes?", "Aggregated trust profile (AEGIS + ERC-8004, 0-100 score)"],
+                ["query-skill-trust", "skillHash", "Trust data for a single skill (attestations, disputes, level)"],
               ]}
             />
 
             <Callout color={BLUE} label="Try It">
               After adding the MCP server to your AI client, try asking: <em>"Use the AEGIS tools to list all registered skills and verify the first one"</em> — the agent will call <InlineCode>list-all-skills</InlineCode>, then <InlineCode>verify-attestation</InlineCode> automatically.
+            </Callout>
+          </section>
+
+          {/* ═══ ERC-8004 Integration ═══ */}
+          <section id="erc8004" ref={setRef("erc8004")} style={{ marginTop: 56 }}>
+            <SectionHeading>ERC-8004 Integration</SectionHeading>
+            <Para>
+              AEGIS integrates with <strong style={{ color: TEXT }}>ERC-8004 (Trustless Agents)</strong> — the Ethereum standard for AI agent identity, reputation, and validation backed by MetaMask, Ethereum Foundation, Google, and Coinbase. AEGIS acts as a <strong style={{ color: ACCENT }}>specialized validation provider</strong>: agents register identity via ERC-8004, and AEGIS provides ZK-verified audit attestations that feed into their ValidationRegistry.
+            </Para>
+
+            <InfoTable
+              headers={["AEGIS Level", "ERC-8004 Score", "Tag"]}
+              rows={[
+                ["L1 Functional", "33 / 100", "aegis-audit"],
+                ["L2 Robust", "66 / 100", "aegis-audit"],
+                ["L3 Security", "100 / 100", "aegis-audit"],
+              ]}
+            />
+
+            <InfoTable
+              headers={["Registry", "Base Sepolia", "Base Mainnet"]}
+              rows={[
+                ["IdentityRegistry", "0x8004A818...BD9e", "0x8004A169...a432"],
+                ["ReputationRegistry", "0x8004B663...8713", "0x8004BAa1...9b63"],
+                ["ValidationRegistry", "0x8004Cb1B...4272", "Not yet deployed"],
+              ]}
+            />
+          </section>
+
+          <section id="erc8004-bridging" ref={setRef("erc8004-bridging")} style={{ marginTop: 32 }}>
+            <SubHeading>Bridging Flow</SubHeading>
+            <Para>
+              Bridging uses a <strong style={{ color: ACCENT }}>two-wallet model</strong> that matches ERC-8004's trust architecture: the agent owner requests validation, then a separate AEGIS validator responds. No self-certification.
+            </Para>
+            <CodeBlock code={`import { AegisClient } from '@aegisaudit/sdk';
+
+// ── Agent Owner (wallet A) ──
+const ownerClient = new AegisClient({ chainId: 84532 });
+ownerClient.setWallet(agentOwnerWallet);
+
+// 1. Register agent in ERC-8004 IdentityRegistry
+const { txHash } = await ownerClient.registerAgent('ipfs://QmAgentMetadata...');
+
+// 2. After AEGIS audit, request validation (names the validator)
+const { requestHash } = await ownerClient.requestErc8004Validation({
+  agentId: 1n,
+  skillHash: '0xabc...',
+  auditLevel: 2,            // L2 Robust → score 66
+  metadataURI: 'ipfs://QmAuditResult...',
+  validatorAddress: '0xAEGIS_VALIDATOR...',
+});
+
+// ── AEGIS Validator (wallet B) ──
+const validatorClient = new AegisClient({ chainId: 84532 });
+validatorClient.setWallet(aegisValidatorWallet);
+
+// 3. Validator responds with the AEGIS score
+await validatorClient.respondToErc8004Validation({
+  requestHash,
+  agentId: 1n,
+  skillHash: '0xabc...',
+  auditLevel: 2,
+  metadataURI: 'ipfs://QmAuditResult...',
+  includeReputation: true,  // also submit reputation feedback
+});
+
+// 4. Any ERC-8004 consumer can now query AEGIS validations
+const summary = await ownerClient.getErc8004ValidationSummary(1n);
+// { count: 1n, averageResponse: 66 }`} filename="bridge.ts" lang="typescript" />
+          </section>
+
+          <section id="x402-trust-api" ref={setRef("x402-trust-api")} style={{ marginTop: 32 }}>
+            <SubHeading>x402 Trust API</SubHeading>
+            <Para>
+              The AEGIS Trust API uses <strong style={{ color: TEXT }}>x402</strong> (Coinbase's HTTP 402 protocol) to serve aggregated trust intelligence for USDC micropayments on Base. On-chain attestation data is public, but querying it requires multiple RPC calls across two contract systems. The Trust API aggregates AEGIS Registry + ERC-8004 data into a single <InlineCode>TrustProfile</InlineCode> response.
+            </Para>
+
+            <Para>
+              Two modes: <strong style={{ color: TEXT }}>Direct mode</strong> queries on-chain for free (multiple RPC calls via the SDK). <strong style={{ color: TEXT }}>API mode</strong> hits an x402-gated endpoint — pay USDC, get one response.
+            </Para>
+
+            <InfoTable headers={["Endpoint", "Method", "Description"]} rows={[
+              ["/v1/trust/:agentId", "GET", "Full agent trust profile with composite 0-100 score"],
+              ["/v1/trust/skill/:skillHash", "GET", "Single skill trust data with attestation details"],
+              ["/v1/trust/batch", "POST", "Batch trust profiles for up to 10 agents"],
+            ]} />
+
+            <CodeBlock code={`// Host a Trust API — serve trust data for USDC
+import express from 'express';
+import { createTrustApiMiddleware } from '@aegisaudit/sdk';
+
+const app = express();
+app.use(express.json());
+
+const trustRouter = await createTrustApiMiddleware({
+  paymentAddress: '0xYourAddress...',
+  chainId: 84532,
+  pricing: {
+    profileQuery: '0.10',  // 10 cents per profile
+    skillQuery: '0.05',    // 5 cents per skill
+    batchQuery: '0.50',    // 50 cents per batch
+  },
+});
+
+app.use(trustRouter);
+app.listen(3001);`} filename="trust-server.ts" lang="typescript" />
+
+            <CodeBlock code={`// Consume the Trust API — auto-pay with x402
+import { createTrustApiClient } from '@aegisaudit/sdk';
+
+const trustApi = await createTrustApiClient(
+  walletClient,
+  'https://trust.aegisprotocol.tech'
+);
+
+// Pay 10c USDC, get aggregated trust profile
+const profile = await trustApi.getProfile(42n);
+console.log(profile.overall.trustScore); // 85
+console.log(profile.overall.level);      // 'trusted'
+
+// Batch query multiple agents
+const profiles = await trustApi.batchProfiles([1n, 2n, 3n]);`} filename="trust-client.ts" lang="typescript" />
+
+            <Callout color={ACCENT} label="Direct Mode (Free)">
+              Don't need x402? Use direct mode via the SDK — it queries on-chain for free: <InlineCode>client.getTrustProfile(agentId)</InlineCode> and <InlineCode>client.getSkillTrustScore(skillHash)</InlineCode>. Makes multiple RPC calls but requires no USDC payment.
+            </Callout>
+
+            <Callout color={PURPLE} label="Optional Dependencies">
+              x402 support requires optional peer dependencies: <InlineCode>npm install @x402/fetch</InlineCode> (consumer) and <InlineCode>@x402/express</InlineCode> (server). The core trust aggregation logic works without them.
             </Callout>
           </section>
 

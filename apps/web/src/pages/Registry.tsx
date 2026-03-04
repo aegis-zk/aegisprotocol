@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 
 const ACCENT = "#FF3366";
@@ -428,9 +429,8 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
 
 // ── Main Page ──────────────────────────────────────────────
 
-export function Registry({ onBack, onRegistry, onDevelopers, onAuditors, onDocs }: {
-  onBack?: () => void; onRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void;
-}) {
+export function Registry() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -522,10 +522,10 @@ export function Registry({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
             width: 28, height: 28, border: `2px solid ${ACCENT}`, borderRadius: 4,
             transform: "rotate(45deg)", display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer",
-          }} onClick={onBack}>
+          }} onClick={() => navigate("/")}>
             <div style={{ width: 8, height: 8, background: ACCENT, borderRadius: 1 }} />
           </div>
-          <span style={{ fontFamily: FONT_HEAD, fontSize: 18, fontWeight: 700, color: TEXT, letterSpacing: "-0.02em", cursor: "pointer" }} onClick={onBack}>
+          <span style={{ fontFamily: FONT_HEAD, fontSize: 18, fontWeight: 700, color: TEXT, letterSpacing: "-0.02em", cursor: "pointer" }} onClick={() => navigate("/")}>
             AEGIS
           </span>
           <span style={{
@@ -536,10 +536,10 @@ export function Registry({ onBack, onRegistry, onDevelopers, onAuditors, onDocs 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
           {[
-            { label: "Registry", onClick: onRegistry },
-            { label: "Developers", onClick: onDevelopers },
-            { label: "Auditors", onClick: onAuditors },
-            { label: "Docs", onClick: onDocs },
+            { label: "Registry", onClick: () => navigate("/registry") },
+            { label: "Developers", onClick: () => navigate("/developers") },
+            { label: "Auditors", onClick: () => navigate("/auditors") },
+            { label: "Docs", onClick: () => navigate("/docs") },
           ].map(item => (
             <a key={item.label} href="#" style={{
               color: item.label === "Registry" ? TEXT : TEXT_DIM,

@@ -35,6 +35,21 @@ contract AegisRegistry is IAegisRegistry {
     /// @notice Skill registration fee
     uint256 public constant REGISTRATION_FEE = 0.001 ether;
 
+    /// @notice Cooldown period before unstaked ETH can be withdrawn
+    uint256 public constant UNSTAKE_COOLDOWN = 3 days;
+
+    /// @notice Protocol fee taken from staking operations (5% = 500 basis points)
+    uint256 public constant PROTOCOL_FEE_BPS = 500;
+
+    /// @notice Minimum bounty amount
+    uint256 public constant MIN_BOUNTY = 0.001 ether;
+
+    /// @notice Bounty expiration period (30 days)
+    uint256 public constant BOUNTY_EXPIRATION = 30 days;
+
+    /// @notice Accumulated protocol revenue available for owner withdrawal
+    uint256 public protocolBalance;
+
     /// @notice skillHash → attestations
     mapping(bytes32 => Attestation[]) private _attestations;
 
@@ -49,6 +64,15 @@ contract AegisRegistry is IAegisRegistry {
 
     /// @notice skillHash → metadataURI
     mapping(bytes32 => string) public metadataURIs;
+
+    /// @notice auditorCommitment → pending unstake request
+    mapping(bytes32 => UnstakeRequest) private _unstakeRequests;
+
+    /// @notice auditorCommitment → number of active (unresolved) disputes
+    mapping(bytes32 => uint256) private _activeDisputeCount;
+
+    /// @notice skillHash → bounty
+    mapping(bytes32 => Bounty) private _bounties;
 
     // ──────────────────────────────────────────────
     //  Constructor
@@ -79,11 +103,14 @@ contract AegisRegistry is IAegisRegistry {
         bytes calldata attestationProof,
         bytes32[] calldata publicInputs,
         bytes32 auditorCommitment,
-        uint8 auditLevel
+        uint8 auditLevel,
+        address bountyRecipient
     ) external payable {
         if (msg.value < REGISTRATION_FEE) revert AegisErrors.InsufficientFee();
         if (auditLevel < 1 || auditLevel > 3) revert AegisErrors.InvalidAuditLevel();
         if (!_auditors[auditorCommitment].registered) revert AegisErrors.AuditorNotRegistered();
+
+        protocolBalance += msg.value;
 
         // Verify the ZK proof on-chain
         bool valid = verifier.verify(attestationProof, publicInputs);
@@ -111,6 +138,23 @@ contract AegisRegistry is IAegisRegistry {
             metadataURIs[skillHash] = metadataURI;
         }
 
+        // Bounty payout: if a bounty exists, level matches, and recipient is provided
+        Bounty storage bounty = _bounties[skillHash];
+        if (bounty.amount > 0 && !bounty.claimed && bountyRecipient != address(0)) {
+            if (auditLevel >= bounty.requiredLevel) {
+                bounty.claimed = true;
+
+                uint256 protocolCut = (bounty.amount * PROTOCOL_FEE_BPS) / 10_000;
+                uint256 auditorPayout = bounty.amount - protocolCut;
+                protocolBalance += protocolCut;
+
+                (bool sent,) = bountyRecipient.call{value: auditorPayout}("");
+                if (!sent) revert AegisErrors.BountyTransferFailed();
+
+                emit BountyClaimed(skillHash, bountyRecipient, auditorPayout, protocolCut);
+            }
+        }
+
         emit SkillRegistered(skillHash, auditLevel, auditorCommitment);
     }
 
@@ -120,17 +164,22 @@ contract AegisRegistry is IAegisRegistry {
 
     /// @inheritdoc IAegisRegistry
     function registerAuditor(bytes32 auditorCommitment) external payable {
-        if (msg.value < MIN_AUDITOR_STAKE) revert AegisErrors.InsufficientStake();
         if (_auditors[auditorCommitment].registered) revert AegisErrors.AuditorAlreadyRegistered();
 
+        uint256 fee = (msg.value * PROTOCOL_FEE_BPS) / 10_000;
+        uint256 stakeAmount = msg.value - fee;
+        if (stakeAmount < MIN_AUDITOR_STAKE) revert AegisErrors.InsufficientStake();
+
+        protocolBalance += fee;
+
         _auditors[auditorCommitment] = AuditorInfo({
-            totalStake: msg.value,
+            totalStake: stakeAmount,
             reputationScore: 0,
             attestationCount: 0,
             registered: true
         });
 
-        emit AuditorRegistered(auditorCommitment, msg.value);
+        emit AuditorRegistered(auditorCommitment, stakeAmount);
     }
 
     /// @inheritdoc IAegisRegistry
@@ -138,9 +187,13 @@ contract AegisRegistry is IAegisRegistry {
         if (!_auditors[auditorCommitment].registered) revert AegisErrors.AuditorNotRegistered();
         if (msg.value == 0) revert AegisErrors.InsufficientStake();
 
-        _auditors[auditorCommitment].totalStake += msg.value;
+        uint256 fee = (msg.value * PROTOCOL_FEE_BPS) / 10_000;
+        uint256 stakeAmount = msg.value - fee;
 
-        emit StakeAdded(auditorCommitment, msg.value, _auditors[auditorCommitment].totalStake);
+        protocolBalance += fee;
+        _auditors[auditorCommitment].totalStake += stakeAmount;
+
+        emit StakeAdded(auditorCommitment, stakeAmount, _auditors[auditorCommitment].totalStake);
     }
 
     // ──────────────────────────────────────────────
@@ -200,6 +253,10 @@ contract AegisRegistry is IAegisRegistry {
             auditorFault: false
         });
 
+        // Track active disputes per auditor (for unstake blocking)
+        bytes32 auditorCommitment = _attestations[skillHash][attestationIndex].auditorCommitment;
+        _activeDisputeCount[auditorCommitment]++;
+
         emit DisputeOpened(disputeId, skillHash);
     }
 
@@ -210,6 +267,12 @@ contract AegisRegistry is IAegisRegistry {
 
         dispute.resolved = true;
         dispute.auditorFault = auditorFault;
+
+        // Decrement active dispute count for the auditor
+        bytes32 disputeAuditor = _attestations[dispute.skillHash][dispute.attestationIndex].auditorCommitment;
+        if (_activeDisputeCount[disputeAuditor] > 0) {
+            _activeDisputeCount[disputeAuditor]--;
+        }
 
         if (auditorFault) {
             // Slash the auditor's stake
@@ -230,15 +293,142 @@ contract AegisRegistry is IAegisRegistry {
                 require(sent, "Transfer failed");
             }
         } else {
-            // Auditor not at fault — dispute bond is forfeited (stays in contract)
+            // Auditor not at fault — dispute bond is forfeited to protocol treasury
+            protocolBalance += dispute.bond;
         }
 
         emit DisputeResolved(disputeId, auditorFault);
     }
 
     // ──────────────────────────────────────────────
+    //  Unstaking Actions
+    // ──────────────────────────────────────────────
+
+    /// @inheritdoc IAegisRegistry
+    function initiateUnstake(bytes32 auditorCommitment, uint256 amount) external {
+        AuditorInfo storage auditor = _auditors[auditorCommitment];
+        if (!auditor.registered) revert AegisErrors.AuditorNotRegistered();
+        if (amount == 0 || amount > auditor.totalStake) revert AegisErrors.InvalidUnstakeAmount();
+        if (_activeDisputeCount[auditorCommitment] > 0) revert AegisErrors.ActiveDisputesExist();
+        if (_unstakeRequests[auditorCommitment].amount > 0) revert AegisErrors.UnstakeAlreadyPending();
+
+        // Partial unstake must leave at least MIN_AUDITOR_STAKE, unless it's a full withdrawal
+        uint256 remaining = auditor.totalStake - amount;
+        if (remaining > 0 && remaining < MIN_AUDITOR_STAKE) revert AegisErrors.InvalidUnstakeAmount();
+
+        uint256 unlockTimestamp = block.timestamp + UNSTAKE_COOLDOWN;
+        _unstakeRequests[auditorCommitment] = UnstakeRequest({
+            amount: amount,
+            unlockTimestamp: unlockTimestamp
+        });
+
+        emit UnstakeInitiated(auditorCommitment, amount, unlockTimestamp);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function completeUnstake(bytes32 auditorCommitment) external {
+        UnstakeRequest storage request = _unstakeRequests[auditorCommitment];
+        if (request.amount == 0) revert AegisErrors.NoActiveUnstakeRequest();
+        if (block.timestamp < request.unlockTimestamp) revert AegisErrors.UnstakeCooldownNotMet();
+        if (_activeDisputeCount[auditorCommitment] > 0) revert AegisErrors.ActiveDisputesExist();
+
+        AuditorInfo storage auditor = _auditors[auditorCommitment];
+        uint256 amount = request.amount;
+
+        // Clear the request before transfer (reentrancy protection)
+        delete _unstakeRequests[auditorCommitment];
+
+        // Update stake
+        auditor.totalStake -= amount;
+
+        // Full withdrawal deregisters the auditor
+        if (auditor.totalStake == 0) {
+            auditor.registered = false;
+        }
+
+        // Transfer ETH
+        (bool sent,) = msg.sender.call{value: amount}("");
+        if (!sent) revert AegisErrors.UnstakeTransferFailed();
+
+        emit UnstakeCompleted(auditorCommitment, amount);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function cancelUnstake(bytes32 auditorCommitment) external {
+        UnstakeRequest storage request = _unstakeRequests[auditorCommitment];
+        if (request.amount == 0) revert AegisErrors.NoActiveUnstakeRequest();
+
+        uint256 amount = request.amount;
+        delete _unstakeRequests[auditorCommitment];
+
+        emit UnstakeCancelled(auditorCommitment, amount);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function getUnstakeRequest(bytes32 auditorCommitment) external view returns (UnstakeRequest memory) {
+        return _unstakeRequests[auditorCommitment];
+    }
+
+    // ──────────────────────────────────────────────
+    //  Bounty Actions
+    // ──────────────────────────────────────────────
+
+    /// @inheritdoc IAegisRegistry
+    function postBounty(bytes32 skillHash, uint8 requiredLevel) external payable {
+        if (msg.value < MIN_BOUNTY) revert AegisErrors.InsufficientBounty();
+        if (requiredLevel < 1 || requiredLevel > 3) revert AegisErrors.InvalidAuditLevel();
+        if (_bounties[skillHash].amount > 0 && !_bounties[skillHash].claimed) revert AegisErrors.BountyAlreadyExists();
+
+        uint256 expiresAt = block.timestamp + BOUNTY_EXPIRATION;
+
+        _bounties[skillHash] = Bounty({
+            publisher: msg.sender,
+            amount: msg.value,
+            requiredLevel: requiredLevel,
+            expiresAt: expiresAt,
+            claimed: false
+        });
+
+        emit BountyPosted(skillHash, msg.value, requiredLevel, expiresAt);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function reclaimBounty(bytes32 skillHash) external {
+        Bounty storage bounty = _bounties[skillHash];
+        if (bounty.amount == 0) revert AegisErrors.BountyNotFound();
+        if (bounty.claimed) revert AegisErrors.BountyAlreadyClaimed();
+        if (block.timestamp < bounty.expiresAt) revert AegisErrors.BountyNotExpired();
+        if (msg.sender != bounty.publisher) revert AegisErrors.NotBountyPublisher();
+
+        uint256 amount = bounty.amount;
+        address publisher = bounty.publisher;
+
+        // Clear bounty before transfer (reentrancy protection)
+        delete _bounties[skillHash];
+
+        (bool sent,) = publisher.call{value: amount}("");
+        if (!sent) revert AegisErrors.BountyTransferFailed();
+
+        emit BountyReclaimed(skillHash, publisher, amount);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function getBounty(bytes32 skillHash) external view returns (Bounty memory) {
+        return _bounties[skillHash];
+    }
+
+    // ──────────────────────────────────────────────
     //  Admin
     // ──────────────────────────────────────────────
+
+    /// @notice Withdraw accumulated protocol revenue (fees, forfeited bonds)
+    function withdrawProtocolBalance(address to) external onlyOwner {
+        uint256 amount = protocolBalance;
+        if (amount == 0) revert AegisErrors.InsufficientFee();
+        protocolBalance = 0;
+        (bool sent,) = to.call{value: amount}("");
+        require(sent, "Transfer failed");
+    }
 
     /// @notice Transfer ownership (for future DAO migration)
     function transferOwnership(address newOwner) external onlyOwner {

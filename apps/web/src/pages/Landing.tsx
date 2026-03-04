@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 
@@ -67,7 +68,8 @@ function Diamond({ size = 40, color = ACCENT, delay = 0 }: { size?: number; colo
   );
 }
 
-function NavBar({ onEnterApp, onExploreRegistry, onDevelopers, onAuditors, onDocs }: { onEnterApp?: () => void; onExploreRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void }) {
+function NavBar() {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 40);
@@ -76,10 +78,10 @@ function NavBar({ onEnterApp, onExploreRegistry, onDevelopers, onAuditors, onDoc
   }, []);
 
   const navItems = [
-    { label: "Registry", onClick: onExploreRegistry },
-    { label: "Developers", onClick: onDevelopers },
-    { label: "Auditors", onClick: onAuditors },
-    { label: "Docs", onClick: onDocs },
+    { label: "Registry", path: "/registry" },
+    { label: "Developers", path: "/developers" },
+    { label: "Auditors", path: "/auditors" },
+    { label: "Docs", path: "/docs" },
   ];
 
   return (
@@ -91,7 +93,7 @@ function NavBar({ onEnterApp, onExploreRegistry, onDevelopers, onAuditors, onDoc
       borderBottom: scrolled ? `1px solid ${BORDER}` : "1px solid transparent",
       transition: "all 0.3s ease",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/")}>
         <div style={{
           width: 28, height: 28, border: `2px solid ${ACCENT}`, borderRadius: 4,
           transform: "rotate(45deg)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -104,13 +106,13 @@ function NavBar({ onEnterApp, onExploreRegistry, onDevelopers, onAuditors, onDoc
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
         {navItems.map(item => (
-          <a key={item.label} href="#" style={{
+          <a key={item.label} href={`#${item.path}`} style={{
             color: TEXT_DIM, textDecoration: "none", fontSize: 13, fontFamily: FONT_BODY,
-            fontWeight: 400, transition: "color 0.2s", cursor: item.onClick ? "pointer" : "default",
+            fontWeight: 400, transition: "color 0.2s", cursor: "pointer",
           }}
             onMouseEnter={e => (e.target as HTMLElement).style.color = TEXT}
             onMouseLeave={e => (e.target as HTMLElement).style.color = TEXT_DIM}
-            onClick={e => { e.preventDefault(); item.onClick?.(); }}
+            onClick={e => { e.preventDefault(); navigate(item.path); }}
           >{item.label}</a>
         ))}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: -8 }}>
@@ -267,7 +269,8 @@ function QuickStartWindow() {
   );
 }
 
-function Hero({ onEnterApp, onExploreRegistry }: { onEnterApp?: () => void; onExploreRegistry?: () => void }) {
+function Hero() {
+  const navigate = useNavigate();
   return (
     <section style={{
       minHeight: "100vh", display: "flex", flexDirection: "column",
@@ -318,7 +321,7 @@ function Hero({ onEnterApp, onExploreRegistry }: { onEnterApp?: () => void; onEx
           background: ACCENT, color: BG, border: "none", borderRadius: 8,
           padding: "14px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer",
           fontFamily: FONT_BODY,
-        }} onClick={onExploreRegistry}>Explore Registry</button>
+        }} onClick={() => navigate("/registry")}>Explore Registry</button>
         <button style={{
           background: "transparent", color: TEXT, border: `1px solid ${BORDER}`,
           borderRadius: 8, padding: "14px 32px", fontSize: 14, fontWeight: 700,
@@ -326,6 +329,7 @@ function Hero({ onEnterApp, onExploreRegistry }: { onEnterApp?: () => void; onEx
         }}
           onMouseEnter={e => (e.target as HTMLElement).style.borderColor = ACCENT}
           onMouseLeave={e => (e.target as HTMLElement).style.borderColor = BORDER}
+          onClick={() => navigate("/docs")}
         >Read Docs &rarr;</button>
       </div>
       <div style={{
@@ -845,7 +849,8 @@ function LiveFeed() {
   );
 }
 
-function CTA({ onEnterApp }: { onEnterApp?: () => void }) {
+function CTA() {
+  const navigate = useNavigate();
   return (
     <section style={{
       padding: "120px 40px", position: "relative", zIndex: 1,
@@ -875,23 +880,53 @@ function CTA({ onEnterApp }: { onEnterApp?: () => void }) {
           background: ACCENT, color: BG, border: "none", borderRadius: 8,
           padding: "16px 36px", fontSize: 14, fontWeight: 700, cursor: "pointer",
           fontFamily: FONT_BODY,
-        }} onClick={onEnterApp}>Start Building &rarr;</button>
+        }} onClick={() => navigate("/app")}>Start Building &rarr;</button>
         <button style={{
           background: "transparent", color: TEXT, border: `1px solid ${BORDER}`,
           borderRadius: 8, padding: "16px 36px", fontSize: 14, fontWeight: 700,
           cursor: "pointer", fontFamily: FONT_BODY,
-        }}>View on GitHub</button>
+        }} onClick={() => window.open("https://github.com/aegisaudit/aegis", "_blank")}>View on GitHub</button>
       </div>
     </section>
   );
 }
 
 function Footer() {
+  const navigate = useNavigate();
+
+  const linkStyle = {
+    display: "block", fontFamily: FONT_BODY,
+    fontSize: 12, color: TEXT_DIM, textDecoration: "none",
+    padding: "4px 0", transition: "color 0.15s", cursor: "pointer",
+  } as const;
+
   const cols = [
-    { title: "Protocol", items: ["Registry", "Attestations", "Auditors", "Disputes", "Governance"] },
-    { title: "Developers", items: ["Documentation", "SDK Reference", "CLI Tool", "GitHub", "Examples"] },
-    { title: "Community", items: ["Discord", "Forum", "X / Twitter", "Blog", "Newsletter"] },
+    {
+      title: "Protocol",
+      items: [
+        { label: "Registry", onClick: () => navigate("/registry") },
+        { label: "Auditors", onClick: () => navigate("/auditors") },
+        { label: "Documentation", onClick: () => navigate("/docs") },
+        { label: "Launch App", onClick: () => navigate("/app") },
+      ],
+    },
+    {
+      title: "Developers",
+      items: [
+        { label: "SDK Reference", onClick: () => navigate("/developers") },
+        { label: "GitHub", href: "https://github.com/aegisaudit/aegis" },
+        { label: "npm Package", href: "https://www.npmjs.com/package/@aegisaudit/sdk" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { label: "Base Explorer", href: "https://basescan.org/address/0xBED52D8CEe2690900e21e5ffcb988DFF728D7E1D" },
+        { label: "ERC-8004", href: "https://eips.ethereum.org/EIPS/eip-8004" },
+      ],
+    },
   ];
+
   return (
     <footer style={{
       padding: "60px 40px 40px", borderTop: `1px solid ${BORDER}`,
@@ -902,7 +937,7 @@ function Footer() {
         display: "grid", gridTemplateColumns: "1.5fr repeat(3, 1fr)", gap: 60,
       }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, cursor: "pointer" }} onClick={() => navigate("/")}>
             <div style={{
               width: 24, height: 24, border: `2px solid ${ACCENT}`, borderRadius: 3,
               transform: "rotate(45deg)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -925,14 +960,18 @@ function Footer() {
               fontWeight: 700, color: TEXT, marginBottom: 16,
             }}>{col.title}</div>
             {col.items.map((item, j) => (
-              <a key={j} href="#" style={{
-                display: "block", fontFamily: FONT_BODY,
-                fontSize: 12, color: TEXT_DIM, textDecoration: "none",
-                padding: "4px 0", transition: "color 0.15s",
-              }}
-                onMouseEnter={e => (e.target as HTMLElement).style.color = TEXT}
-                onMouseLeave={e => (e.target as HTMLElement).style.color = TEXT_DIM}
-              >{item}</a>
+              "href" in item ? (
+                <a key={j} href={item.href} target="_blank" rel="noopener noreferrer" style={linkStyle}
+                  onMouseEnter={e => (e.target as HTMLElement).style.color = TEXT}
+                  onMouseLeave={e => (e.target as HTMLElement).style.color = TEXT_DIM}
+                >{item.label}</a>
+              ) : (
+                <a key={j} href="#" style={linkStyle}
+                  onClick={e => { e.preventDefault(); item.onClick(); }}
+                  onMouseEnter={e => (e.target as HTMLElement).style.color = TEXT}
+                  onMouseLeave={e => (e.target as HTMLElement).style.color = TEXT_DIM}
+                >{item.label}</a>
+              )
             ))}
           </div>
         ))}
@@ -953,7 +992,7 @@ function Footer() {
   );
 }
 
-export function Landing({ onEnterApp, onExploreRegistry, onDevelopers, onAuditors, onDocs }: { onEnterApp?: () => void; onExploreRegistry?: () => void; onDevelopers?: () => void; onAuditors?: () => void; onDocs?: () => void }) {
+export function Landing() {
   return (
     <>
       <style>{`
@@ -982,14 +1021,14 @@ export function Landing({ onEnterApp, onExploreRegistry, onDevelopers, onAuditor
         ::-webkit-scrollbar-thumb { background: ${BORDER}; border-radius: 3px; }
       `}</style>
       <GeometricBG />
-      <NavBar onEnterApp={onEnterApp} onExploreRegistry={onExploreRegistry} onDevelopers={onDevelopers} onAuditors={onAuditors} onDocs={onDocs} />
-      <Hero onEnterApp={onEnterApp} onExploreRegistry={onExploreRegistry} />
+      <NavBar />
+      <Hero />
       <Features />
       <GlobeSection />
       <HowItWorks />
       <CodeBlock />
       <LiveFeed />
-      <CTA onEnterApp={onEnterApp} />
+      <CTA />
       <Footer />
     </>
   );

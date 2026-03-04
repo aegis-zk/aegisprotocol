@@ -16,12 +16,15 @@ import type {
   AegisConfig,
   Attestation,
   AuditorReputation,
+  UnstakeRequest,
+  BountyInfo,
   Hex,
   Address,
   SkillRegisteredEvent,
   AuditorRegisteredEvent,
   DisputeOpenedEvent,
   DisputeResolvedEvent,
+  BountyPostedEvent,
 } from './types';
 import { REGISTRATION_FEE, DEPLOYMENT_BLOCKS, MAX_LOG_RANGE } from './constants';
 
@@ -352,9 +355,11 @@ export async function registerSkill(
     publicInputs: Hex[];
     auditorCommitment: Hex;
     auditLevel: number;
+    bountyRecipient?: Address;
     fee?: bigint;
   },
 ): Promise<Hex> {
+  const zeroAddress: Address = '0x0000000000000000000000000000000000000000';
   return walletClient.writeContract({
     address: registryAddress,
     abi,
@@ -366,6 +371,7 @@ export async function registerSkill(
       params.publicInputs,
       params.auditorCommitment,
       params.auditLevel,
+      params.bountyRecipient ?? zeroAddress,
     ],
     value: params.fee ?? REGISTRATION_FEE,
   });
@@ -399,5 +405,155 @@ export async function resolveDispute(
     abi,
     functionName: 'resolveDispute',
     args: [disputeId, auditorFault],
+  });
+}
+
+// ──────────────────────────────────────────────
+//  Unstaking Operations
+// ──────────────────────────────────────────────
+
+export async function getUnstakeRequest(
+  client: PublicClient,
+  registryAddress: Address,
+  auditorCommitment: Hex,
+): Promise<UnstakeRequest> {
+  const result = (await client.readContract({
+    address: registryAddress,
+    abi,
+    functionName: 'getUnstakeRequest',
+    args: [auditorCommitment],
+  })) as { amount: bigint; unlockTimestamp: bigint };
+
+  return { amount: result.amount, unlockTimestamp: result.unlockTimestamp };
+}
+
+export async function initiateUnstake(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+  auditorCommitment: Hex,
+  amount: bigint,
+): Promise<Hex> {
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'initiateUnstake',
+    args: [auditorCommitment, amount],
+  });
+}
+
+export async function completeUnstake(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+  auditorCommitment: Hex,
+): Promise<Hex> {
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'completeUnstake',
+    args: [auditorCommitment],
+  });
+}
+
+export async function cancelUnstake(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+  auditorCommitment: Hex,
+): Promise<Hex> {
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'cancelUnstake',
+    args: [auditorCommitment],
+  });
+}
+
+// ──────────────────────────────────────────────
+//  Bounty Operations
+// ──────────────────────────────────────────────
+
+const bountyPostedEvent = parseAbiItem(
+  'event BountyPosted(bytes32 indexed skillHash, uint256 amount, uint8 requiredLevel, uint256 expiresAt)',
+);
+
+export async function getBounty(
+  client: PublicClient,
+  registryAddress: Address,
+  skillHash: Hex,
+): Promise<BountyInfo> {
+  const result = (await client.readContract({
+    address: registryAddress,
+    abi,
+    functionName: 'getBounty',
+    args: [skillHash],
+  })) as { publisher: Address; amount: bigint; requiredLevel: number; expiresAt: bigint; claimed: boolean };
+
+  return {
+    publisher: result.publisher,
+    amount: result.amount,
+    requiredLevel: result.requiredLevel,
+    expiresAt: result.expiresAt,
+    claimed: result.claimed,
+  };
+}
+
+/**
+ * List all posted bounties by scanning BountyPosted events.
+ * Optionally filter by skillHash.
+ */
+export async function listBounties(
+  client: PublicClient,
+  registryAddress: Address,
+  options?: { skillHash?: Hex; fromBlock?: bigint; toBlock?: bigint },
+): Promise<BountyPostedEvent[]> {
+  const currentBlock = await client.getBlockNumber();
+  const from = resolveFromBlock(client, options?.fromBlock);
+  const to = options?.toBlock ?? currentBlock;
+
+  return getLogsChunked(
+    client,
+    {
+      address: registryAddress,
+      event: bountyPostedEvent,
+      args: options?.skillHash ? { skillHash: options.skillHash } : undefined,
+      fromBlock: from,
+      toBlock: to,
+    },
+    (log) => ({
+      skillHash: log.args.skillHash! as Hex,
+      amount: log.args.amount!,
+      requiredLevel: Number(log.args.requiredLevel!),
+      expiresAt: log.args.expiresAt!,
+      blockNumber: log.blockNumber,
+      transactionHash: log.transactionHash as Hex,
+    }),
+  );
+}
+
+export async function postBounty(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+  skillHash: Hex,
+  requiredLevel: number,
+  amount: bigint,
+): Promise<Hex> {
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'postBounty',
+    args: [skillHash, requiredLevel],
+    value: amount,
+  });
+}
+
+export async function reclaimBounty(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+  skillHash: Hex,
+): Promise<Hex> {
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'reclaimBounty',
+    args: [skillHash],
   });
 }

@@ -16,6 +16,27 @@ import { registerListResolvedDisputes } from './list-resolved-disputes.js';
 import { registerRegisterAuditor } from './register-auditor.js';
 import { registerAddStake } from './add-stake.js';
 import { registerOpenDispute } from './open-dispute.js';
+import { registerInitiateUnstake } from './initiate-unstake.js';
+import { registerCompleteUnstake } from './complete-unstake.js';
+import { registerCancelUnstake } from './cancel-unstake.js';
+import { registerGetUnstakeRequest } from './get-unstake-request.js';
+
+// Bounty tools
+import { registerGetBounty } from './get-bounty.js';
+import { registerPostBounty } from './post-bounty.js';
+import { registerReclaimBounty } from './reclaim-bounty.js';
+
+// ERC-8004 Integration tools
+import { registerRegisterAgent } from './register-agent.js';
+import { registerRequestErc8004Validation } from './request-erc8004-validation.js';
+import { registerRespondToErc8004Validation } from './respond-to-erc8004-validation.js';
+import { registerGetErc8004Validation } from './get-erc8004-validation.js';
+import { registerLinkSkillToAgent } from './link-skill-to-agent.js';
+import { registerCreateAgentRegistration } from './create-agent-registration.js';
+
+// Trust Profile tools
+import { registerQueryTrustProfile } from './query-trust-profile.js';
+import { registerQuerySkillTrust } from './query-skill-trust.js';
 
 /**
  * Register all AEGIS MCP tools on the given server instance.
@@ -35,8 +56,29 @@ export function registerAllTools(server: McpServer): void {
   registerListDisputes(server);
   registerListResolvedDisputes(server);
 
+  // Read: unstaking & bounties
+  registerGetUnstakeRequest(server);
+  registerGetBounty(server);
+
   // Write operations (require AEGIS_PRIVATE_KEY)
   registerRegisterAuditor(server);
   registerAddStake(server);
   registerOpenDispute(server);
+  registerInitiateUnstake(server);
+  registerCompleteUnstake(server);
+  registerCancelUnstake(server);
+  registerPostBounty(server);
+  registerReclaimBounty(server);
+
+  // ERC-8004 Integration (require AEGIS_PRIVATE_KEY for write ops)
+  registerCreateAgentRegistration(server);
+  registerGetErc8004Validation(server);
+  registerRegisterAgent(server);
+  registerRequestErc8004Validation(server);
+  registerRespondToErc8004Validation(server);
+  registerLinkSkillToAgent(server);
+
+  // Trust Profile queries (direct mode, no x402)
+  registerQueryTrustProfile(server);
+  registerQuerySkillTrust(server);
 }
