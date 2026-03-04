@@ -464,7 +464,7 @@ const METHODS: MethodDef[] = [
     tsExample: `import { AegisClient } from '@aegisaudit/sdk';
 
 // Registry address auto-resolved for Base Sepolia
-const client = new AegisClient({ chainId: 84532 });
+const client = new AegisClient({ chainId: 8453 });
 
 const skillHash = '0x183c9388...';
 const isValid = await client.verify(skillHash, 0);
@@ -474,7 +474,7 @@ if (isValid) {
 }`,
     pyExample: `from aegis_sdk import AegisClient
 
-client = AegisClient(chain_id=84532)
+client = AegisClient(chain_id=8453)
 
 skill_hash = "0x183c9388..."
 is_valid = await client.verify(skill_hash, 0)
@@ -638,10 +638,10 @@ skill_disputes = await client.list_disputes(
     ],
     tsExample: `import { AegisClient, generateAttestationViaCLI } from '@aegisaudit/sdk';
 import { createWalletClient, http } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 
 const wallet = createWalletClient({
-  chain: baseSepolia,
+  chain: base,
   transport: http(),
 });
 client.setWallet(wallet);
@@ -957,7 +957,7 @@ app.use(express.json());
 
 const router = await createTrustApiMiddleware({
   paymentAddress: '0xYour...',
-  chainId: 84532,
+  chainId: 8453,
   pricing: {
     profileQuery: '0.10',
     skillQuery: '0.05',
@@ -1235,7 +1235,7 @@ export function Developers() {
                 ? `import { AegisClient } from '@aegisaudit/sdk';
 
 // Initialize client — registry auto-resolved for Base Sepolia
-const client = new AegisClient({ chainId: 84532 });
+const client = new AegisClient({ chainId: 8453 });
 
 // Discover all registered skills
 const skills = await client.listAllSkills();
@@ -1251,7 +1251,7 @@ console.log('Valid:', isValid); // true`
                 : `from aegis_sdk import AegisClient
 
 # Initialize — registry auto-resolved for Base Sepolia
-client = AegisClient(chain_id=84532)
+client = AegisClient(chain_id=8453)
 
 # Discover all registered skills
 skills = await client.list_all_skills()
@@ -1679,11 +1679,11 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             <CodeWindow
               code={lang === "ts"
                 ? `import { createPublicClient, http } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import abi from '@aegisaudit/sdk/abi/AegisRegistry.json';
 
 const client = createPublicClient({
-  chain: baseSepolia,
+  chain: base,
   transport: http(),
 });
 
@@ -1701,7 +1701,7 @@ const unwatch = client.watchContractEvent({
 });`
                 : `from web3 import Web3
 
-w3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
+w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
 contract = w3.eth.contract(address="0x...", abi=abi)
 
 # Watch for new skill registrations

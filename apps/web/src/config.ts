@@ -4,6 +4,8 @@ import type { Address } from 'viem';
  * Contract addresses per chain. Update after deployment.
  */
 export const REGISTRY_ADDRESS: Record<number, Address> = {
+  // Base Mainnet
+  8453: '0xBED52D8CEe2690900e21e5ffcb988DFF728D7E1D' as Address,
   // Base Sepolia
   84532: '0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba' as Address,
   // Anvil local (override via env)

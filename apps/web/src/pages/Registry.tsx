@@ -416,7 +416,7 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
             <DetailCell label="Verification Count" value={att.verifications.toLocaleString()} />
           </div>
           <div style={{ display: "flex", gap: 10, paddingTop: 16, borderTop: `1px solid ${BORDER}` }}>
-            <MiniButton label="View on BaseScan" variant="neutral" onClick={() => window.open(`https://sepolia.basescan.org/tx/${att.txHash}`, "_blank")} />
+            <MiniButton label="View on BaseScan" variant="neutral" onClick={() => window.open(`https://basescan.org/tx/${att.txHash}`, "_blank")} />
             <MiniButton label="Verify Proof" variant="accent" />
             <MiniButton label="Copy Hash" variant="neutral" onClick={() => navigator.clipboard.writeText(att.skillHash)} />
             {att.status === "active" && <MiniButton label="Submit Dispute" variant="danger" />}

@@ -529,7 +529,7 @@ export function Docs() {
             <CodeBlock code={`import { AegisClient } from '@aegisaudit/sdk';
 
 // Registry address auto-resolved for known chains
-const client = new AegisClient({ chainId: 84532 });
+const client = new AegisClient({ chainId: 8453 });
 
 // Discovery — scan on-chain events
 const skills = await client.listAllSkills();
@@ -982,7 +982,7 @@ fn main(
             />
             <CodeBlock code={`import { AegisClient } from '@aegisaudit/sdk';
 
-const client = new AegisClient({ chainId: 84532 });
+const client = new AegisClient({ chainId: 8453 });
 
 // Browse all registered skills
 const skills = await client.listAllSkills();
@@ -1109,7 +1109,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
       "command": "npx",
       "args": ["-y", "@aegisaudit/mcp-server"],
       "env": {
-        "AEGIS_CHAIN_ID": "84532"
+        "AEGIS_CHAIN_ID": "8453"
       }
     }
   }
@@ -1119,7 +1119,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
             <InfoTable
               headers={["Variable", "Default", "Description"]}
               rows={[
-                ["AEGIS_CHAIN_ID", "84532", "Target chain — 84532 (Base Sepolia) or 8453 (Base Mainnet)"],
+                ["AEGIS_CHAIN_ID", "8453", "Target chain — 8453 (Base Mainnet) or 84532 (Base Sepolia)"],
                 ["AEGIS_RPC_URL", "Auto", "Custom RPC endpoint (defaults to public Base RPC)"],
                 ["AEGIS_REGISTRY", "Auto", "Registry contract address (auto-resolved for known chains)"],
                 ["AEGIS_PRIVATE_KEY", "—", "Wallet private key for write operations (register, stake, dispute). Optional — read tools work without it."],
@@ -1209,7 +1209,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
             <CodeBlock code={`import { AegisClient } from '@aegisaudit/sdk';
 
 // ── Agent Owner (wallet A) ──
-const ownerClient = new AegisClient({ chainId: 84532 });
+const ownerClient = new AegisClient({ chainId: 8453 });
 ownerClient.setWallet(agentOwnerWallet);
 
 // 1. Register agent in ERC-8004 IdentityRegistry
@@ -1225,7 +1225,7 @@ const { requestHash } = await ownerClient.requestErc8004Validation({
 });
 
 // ── AEGIS Validator (wallet B) ──
-const validatorClient = new AegisClient({ chainId: 84532 });
+const validatorClient = new AegisClient({ chainId: 8453 });
 validatorClient.setWallet(aegisValidatorWallet);
 
 // 3. Validator responds with the AEGIS score
@@ -1268,7 +1268,7 @@ app.use(express.json());
 
 const trustRouter = await createTrustApiMiddleware({
   paymentAddress: '0xYourAddress...',
-  chainId: 84532,
+  chainId: 8453,
   pricing: {
     profileQuery: '0.10',  // 10 cents per profile
     skillQuery: '0.05',    // 5 cents per skill

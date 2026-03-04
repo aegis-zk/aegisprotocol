@@ -155,7 +155,7 @@ function QuickStartWindow() {
     { prefix: "", cmd: "", comment: "# Or use the SDK directly in your agent", spaceBefore: true },
     { prefix: "$", cmd: "npm install @aegisaudit/sdk", comment: null },
     { prefix: ">", cmd: 'import { AegisClient } from "@aegisaudit/sdk";', comment: null },
-    { prefix: ">", cmd: "const aegis = new AegisClient({ chainId: 84532 });", comment: null },
+    { prefix: ">", cmd: "const aegis = new AegisClient({ chainId: 8453 });", comment: null },
     { prefix: ">", cmd: "const skills = await aegis.listAllSkills();", comment: null },
   ];
   return (
@@ -693,7 +693,7 @@ function CodeBlock() {
   const code = [
     "import { AegisClient } from '@aegisaudit/sdk';",
     "",
-    "const aegis = new AegisClient({ chainId: 84532 });",
+    "const aegis = new AegisClient({ chainId: 8453 });",
     "",
     "// Discover all attested skills on the registry",
     "const skills = await aegis.listAllSkills();",
