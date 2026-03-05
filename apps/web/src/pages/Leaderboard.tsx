@@ -101,7 +101,7 @@ export function Leaderboard() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: FONT }}>
+    <div style={{ minHeight: "100vh", background: BG, color: TEXT }}>
       {/* Nav */}
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,

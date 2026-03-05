@@ -43,6 +43,18 @@ export interface ProtocolEventEntry {
   data: string;
 }
 
+export interface AttestationLevelCounts {
+  l1: number;
+  l2: number;
+  l3: number;
+}
+
+export interface SkillNameEntry {
+  id: string;
+  skillName: string;
+  category: string;
+}
+
 export interface AuditorEntry {
   id: string;
   currentStake: string;
@@ -78,6 +90,20 @@ const ACTIVITY_QUERY = `query ActivityFeed($first: Int!) {
     blockNumber
     timestamp
     data
+  }
+}`;
+
+const ATTESTATION_LEVELS_QUERY = `{
+  l1: attestations(first: 1000, where: { auditLevel: 1, revoked: false }) { id }
+  l2: attestations(first: 1000, where: { auditLevel: 2, revoked: false }) { id }
+  l3: attestations(first: 1000, where: { auditLevel: 3, revoked: false }) { id }
+}`;
+
+const SKILL_NAMES_QUERY = `{
+  skills(first: 100, orderBy: timestamp, orderDirection: desc) {
+    id
+    skillName
+    category
   }
 }`;
 
@@ -184,4 +210,66 @@ export function useAuditorLeaderboard(refreshMs = 30_000) {
   }, [fetch_, refreshMs]);
 
   return { auditors, loading };
+}
+
+export function useAttestationLevels(refreshMs = 30_000) {
+  const [counts, setCounts] = useState<AttestationLevelCounts>({ l1: 0, l2: 0, l3: 0 });
+  const [loading, setLoading] = useState(true);
+
+  const fetch_ = useCallback(async () => {
+    try {
+      const data = await subgraphQuery<{
+        l1: { id: string }[];
+        l2: { id: string }[];
+        l3: { id: string }[];
+      }>(ATTESTATION_LEVELS_QUERY);
+      setCounts({
+        l1: data.l1.length,
+        l2: data.l2.length,
+        l3: data.l3.length,
+      });
+    } catch (err) {
+      console.error("[subgraph] Failed to fetch attestation levels:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetch_();
+    const id = setInterval(fetch_, refreshMs);
+    return () => clearInterval(id);
+  }, [fetch_, refreshMs]);
+
+  return { counts, loading };
+}
+
+export function useSkillNames(refreshMs = 30_000) {
+  const [skills, setSkills] = useState<Map<string, SkillNameEntry>>(new Map());
+  const [loading, setLoading] = useState(true);
+
+  const fetch_ = useCallback(async () => {
+    try {
+      const data = await subgraphQuery<{
+        skills: SkillNameEntry[];
+      }>(SKILL_NAMES_QUERY);
+      const map = new Map<string, SkillNameEntry>();
+      for (const s of data.skills) {
+        map.set(s.id.toLowerCase(), s);
+      }
+      setSkills(map);
+    } catch (err) {
+      console.error("[subgraph] Failed to fetch skill names:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetch_();
+    const id = setInterval(fetch_, refreshMs);
+    return () => clearInterval(id);
+  }, [fetch_, refreshMs]);
+
+  return { skills, loading };
 }
