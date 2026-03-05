@@ -1,0 +1,33 @@
+{
+  "name": "@aegisaudit/indexer",
+  "version": "0.1.0",
+  "description": "Lightweight event indexer and REST API for the AEGIS Protocol registry",
+  "type": "module",
+  "bin": {
+    "aegis-indexer": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aegisaudit/sdk": "workspace:*",
+    "@hono/node-server": "^1.13.8",
+    "hono": "^4.7.0",
+    "sql.js": "^1.12.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist"
+  ]
+}
