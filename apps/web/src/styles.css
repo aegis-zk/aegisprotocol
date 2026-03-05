@@ -7,6 +7,13 @@
   padding: 0;
 }
 
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
+}
+
 :root {
   --bg: #0a0a0f;
   --bg-card: #12121a;
