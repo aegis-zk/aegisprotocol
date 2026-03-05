@@ -2,6 +2,7 @@ import type { Log, PublicClient } from 'viem';
 import type { Database } from 'sql.js';
 import * as q from '../db/queries.js';
 import { chainConfig } from '../config.js';
+import { parseMetadataURI } from '../metadata.js';
 
 /**
  * Attestation index tracker.
@@ -53,16 +54,17 @@ export async function handleEvent(log: DecodedLog, client: PublicClient): Promis
   });
 
   switch (log.eventName) {
-    case 'SkillListed':
-      q.insertSkill({
-        skillHash: log.args.skillHash as string,
-        publisher: log.args.publisher as string,
-        metadataUri: log.args.metadataURI as string,
-        blockNumber,
-        txHash,
-        logIndex,
-      });
+    case 'SkillListed': {
+      const skillHash = log.args.skillHash as string;
+      const metadataUri = log.args.metadataURI as string;
+      q.insertSkill({ skillHash, publisher: log.args.publisher as string, metadataUri, blockNumber, txHash, logIndex });
+
+      // Extract name + category from metadata (async, best-effort)
+      parseMetadataURI(metadataUri).then((meta) => {
+        q.updateSkillMetadata({ skillHash, skillName: meta.name, category: meta.category });
+      }).catch(() => { /* fallback values already in DB */ });
       break;
+    }
 
     case 'SkillRegistered': {
       const skillHash = log.args.skillHash as string;

@@ -1,0 +1,62 @@
+specVersion: 1.3.0
+description: AEGIS Protocol — On-chain ZK skill attestations on Base
+repository: https://github.com/aegisaudit/aegis
+
+schema:
+  file: ./schema.graphql
+
+indexerHints:
+  prune: auto
+
+dataSources:
+  - kind: ethereum/contract
+    name: AegisRegistry
+    network: base
+    source:
+      address: "0xa0FF1563Ab7d5d514146F2713125098954Af1F61"
+      abi: AegisRegistry
+      startBlock: 42942701
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Skill
+        - Attestation
+        - Auditor
+        - Dispute
+        - Bounty
+        - UnstakeRequest
+        - ProtocolEvent
+        - ProtocolStats
+      abis:
+        - name: AegisRegistry
+          file: ./abis/AegisRegistry.json
+      eventHandlers:
+        - event: SkillListed(indexed bytes32,indexed address,string)
+          handler: handleSkillListed
+        - event: SkillRegistered(indexed bytes32,uint8,bytes32)
+          handler: handleSkillRegistered
+        - event: AuditorRegistered(indexed bytes32,uint256)
+          handler: handleAuditorRegistered
+        - event: StakeAdded(indexed bytes32,uint256,uint256)
+          handler: handleStakeAdded
+        - event: DisputeOpened(indexed uint256,indexed bytes32)
+          handler: handleDisputeOpened
+        - event: DisputeResolved(indexed uint256,bool)
+          handler: handleDisputeResolved
+        - event: AttestationRevoked(indexed bytes32,uint256,indexed bytes32)
+          handler: handleAttestationRevoked
+        - event: BountyPosted(indexed bytes32,uint256,uint8,uint256)
+          handler: handleBountyPosted
+        - event: BountyClaimed(indexed bytes32,indexed address,uint256,uint256)
+          handler: handleBountyClaimed
+        - event: BountyReclaimed(indexed bytes32,indexed address,uint256)
+          handler: handleBountyReclaimed
+        - event: UnstakeInitiated(indexed bytes32,uint256,uint256)
+          handler: handleUnstakeInitiated
+        - event: UnstakeCompleted(indexed bytes32,uint256)
+          handler: handleUnstakeCompleted
+        - event: UnstakeCancelled(indexed bytes32,uint256)
+          handler: handleUnstakeCancelled
+      file: ./src/mapping.ts

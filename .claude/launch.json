@@ -7,6 +7,12 @@
       "runtimeArgs": ["/c", "npx vite --host --port 5173 --strictPort"],
       "port": 5173,
       "cwd": "apps/web"
+    },
+    {
+      "name": "indexer",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set PORT=4201&& node packages/indexer/dist/index.js"],
+      "port": 4201
     }
   ]
 }

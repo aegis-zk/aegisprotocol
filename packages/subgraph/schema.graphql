@@ -1,0 +1,144 @@
+# ─── Skill ────────────────────────────────────────────────
+# Created from SkillListed events.
+
+type Skill @entity {
+  "skillHash (bytes32)"
+  id: Bytes!
+  publisher: Bytes!
+  metadataURI: String!
+  skillName: String!
+  category: String!
+  listed: Boolean!
+  attestationCount: Int!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  logIndex: BigInt!
+  timestamp: BigInt!
+
+  attestations: [Attestation!]! @derivedFrom(field: "skill")
+  disputes: [Dispute!]! @derivedFrom(field: "skill")
+  bounty: [Bounty!]! @derivedFrom(field: "skill")
+}
+
+# ─── Attestation ──────────────────────────────────────────
+# Created from SkillRegistered events.
+
+type Attestation @entity {
+  "skillHash-attestationIndex"
+  id: String!
+  skill: Skill!
+  attestationIndex: Int!
+  auditor: Auditor!
+  auditLevel: Int!
+  revoked: Boolean!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  logIndex: BigInt!
+  timestamp: BigInt!
+}
+
+# ─── Auditor ─────────────────────────────────────────────
+# Created from AuditorRegistered events.
+
+type Auditor @entity {
+  "auditorCommitment (bytes32)"
+  id: Bytes!
+  initialStake: BigInt!
+  currentStake: BigInt!
+  attestationCount: Int!
+  disputesInvolved: Int!
+  disputesLost: Int!
+  reputationScore: BigInt!
+  registered: Boolean!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  logIndex: BigInt!
+  timestamp: BigInt!
+
+  attestations: [Attestation!]! @derivedFrom(field: "auditor")
+}
+
+# ─── Dispute ─────────────────────────────────────────────
+# Created from DisputeOpened, updated by DisputeResolved.
+
+type Dispute @entity {
+  "disputeId"
+  id: String!
+  disputeId: BigInt!
+  skill: Skill!
+  attestationIndex: Int!
+  challenger: Bytes!
+  bond: BigInt!
+  evidence: Bytes!
+  resolved: Boolean!
+  auditorFault: Boolean!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  logIndex: BigInt!
+  openedAt: BigInt!
+  resolvedAt: BigInt
+}
+
+# ─── Bounty ──────────────────────────────────────────────
+# Created from BountyPosted, updated by BountyClaimed/BountyReclaimed.
+
+type Bounty @entity {
+  "skillHash (one active bounty per skill)"
+  id: Bytes!
+  skill: Skill!
+  amount: BigInt!
+  requiredLevel: Int!
+  expiresAt: BigInt!
+  claimed: Boolean!
+  reclaimed: Boolean!
+  claimRecipient: Bytes
+  auditorPayout: BigInt
+  protocolFee: BigInt
+  blockNumber: BigInt!
+  txHash: Bytes!
+  logIndex: BigInt!
+  timestamp: BigInt!
+}
+
+# ─── UnstakeRequest ──────────────────────────────────────
+# Created from UnstakeInitiated.
+
+type UnstakeRequest @entity {
+  "auditorCommitment"
+  id: Bytes!
+  auditor: Auditor!
+  amount: BigInt!
+  unlockTimestamp: BigInt!
+  status: String!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  timestamp: BigInt!
+}
+
+# ─── ProtocolEvent (immutable event log) ─────────────────
+
+type ProtocolEvent @entity(immutable: true) {
+  "txHash-logIndex"
+  id: String!
+  eventName: String!
+  blockNumber: BigInt!
+  txHash: Bytes!
+  logIndex: BigInt!
+  timestamp: BigInt!
+  data: String!
+}
+
+# ─── ProtocolStats (singleton) ───────────────────────────
+
+type ProtocolStats @entity {
+  "Always 'singleton'"
+  id: String!
+  totalSkills: Int!
+  totalAttestations: Int!
+  totalAuditors: Int!
+  totalDisputes: Int!
+  openDisputes: Int!
+  totalBounties: Int!
+  openBounties: Int!
+  unauditedSkills: Int!
+}

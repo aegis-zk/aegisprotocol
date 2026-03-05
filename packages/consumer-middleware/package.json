@@ -1,0 +1,84 @@
+{
+  "name": "@aegisaudit/consumer-middleware",
+  "version": "0.1.0",
+  "description": "Pre-execution trust gate for AI agent tool calls — verify AEGIS skill attestations before running tools",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./langchain": {
+      "types": "./dist/adapters/langchain.d.ts",
+      "import": "./dist/adapters/langchain.js",
+      "require": "./dist/adapters/langchain.cjs"
+    },
+    "./crewai": {
+      "types": "./dist/adapters/crewai.d.ts",
+      "import": "./dist/adapters/crewai.js",
+      "require": "./dist/adapters/crewai.cjs"
+    },
+    "./mcp": {
+      "types": "./dist/adapters/mcp.d.ts",
+      "import": "./dist/adapters/mcp.js",
+      "require": "./dist/adapters/mcp.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "aegis",
+    "trust",
+    "middleware",
+    "ai-agent",
+    "langchain",
+    "crewai",
+    "mcp",
+    "skill-verification",
+    "attestation"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aegisaudit/aegis.git",
+    "directory": "packages/consumer-middleware"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@aegisaudit/sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "@langchain/core": ">=0.3.0",
+    "@modelcontextprotocol/sdk": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    },
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

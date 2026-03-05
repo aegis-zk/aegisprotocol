@@ -5,8 +5,10 @@ import { Landing } from './pages/Landing';
 import { Registry } from './pages/Registry';
 import { Developers } from './pages/Developers';
 import { Auditors } from './pages/Auditors';
+import { Dashboard } from './pages/Dashboard';
 import { Docs } from './pages/Docs';
 import { Home } from './pages/Home';
+import { Leaderboard } from './pages/Leaderboard';
 import { RegisterAuditor } from './pages/RegisterAuditor';
 import { RegisterSkill } from './pages/RegisterSkill';
 import { Verify } from './pages/Verify';
@@ -71,6 +73,8 @@ export function App() {
         <Route path="/registry" element={<Registry />} />
         <Route path="/developers" element={<Developers />} />
         <Route path="/auditors" element={<Auditors />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/app" element={<DApp />} />
       </Routes>

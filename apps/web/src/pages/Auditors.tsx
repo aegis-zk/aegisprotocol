@@ -653,8 +653,10 @@ function AuditorNavBar() {
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
         {[
           { label: "Registry", onClick: () => navigate("/registry") },
-          { label: "Developers", onClick: () => navigate("/developers") },
+          { label: "Dashboard", onClick: () => navigate("/dashboard") },
           { label: "Auditors", onClick: () => navigate("/auditors") },
+          { label: "Leaderboard", onClick: () => navigate("/leaderboard") },
+          { label: "Developers", onClick: () => navigate("/developers") },
           { label: "Docs", onClick: () => navigate("/docs") },
         ].map(item => (
           <a key={item.label} href="#" style={{

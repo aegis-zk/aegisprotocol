@@ -1,0 +1,1206 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_verifier",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "BOUNTY_EXPIRATION",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "LISTING_FEE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MIN_AUDITOR_STAKE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MIN_BOUNTY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MIN_DISPUTE_BOND",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "PROTOCOL_FEE_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "REGISTRATION_FEE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "UNSTAKE_COOLDOWN",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "addStake",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "cancelUnstake",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "completeUnstake",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getActiveDisputeCount",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "count",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAttestations",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct IAegisRegistry.Attestation[]",
+        "components": [
+          {
+            "name": "skillHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "auditCriteriaHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "zkProof",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "auditorCommitment",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "stakeAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "auditLevel",
+            "type": "uint8",
+            "internalType": "uint8"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAuditorReputation",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "score",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalStake",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "attestationCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getBounty",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IAegisRegistry.Bounty",
+        "components": [
+          {
+            "name": "publisher",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "amount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "requiredLevel",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "expiresAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "claimed",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getDispute",
+    "inputs": [
+      {
+        "name": "disputeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "attestationIndex",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "evidence",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "challenger",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "bond",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "resolved",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "auditorFault",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getDisputeCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "count",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSkillListing",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IAegisRegistry.SkillListing",
+        "components": [
+          {
+            "name": "publisher",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "metadataURI",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "listed",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getUnstakeRequest",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IAegisRegistry.UnstakeRequest",
+        "components": [
+          {
+            "name": "amount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "unlockTimestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initiateUnstake",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isAttestationRevoked",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "attestationIndex",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "revoked",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "listSkill",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "metadataURIs",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "openDispute",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "attestationIndex",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "evidence",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "postBounty",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "requiredLevel",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "protocolBalance",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "reclaimBounty",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "registerAuditor",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "registerSkill",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "attestationProof",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "publicInputs",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      },
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "auditLevel",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "bountyRecipient",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "resolveDispute",
+    "inputs": [
+      {
+        "name": "disputeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "auditorFault",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "revokeAttestation",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "attestationIndex",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "verifier",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IVerifier"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "verifyAttestation",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "attestationIndex",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "valid",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawProtocolBalance",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "AttestationRevoked",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "attestationIndex",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AuditorRegistered",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "stake",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BountyClaimed",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "auditorPayout",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "protocolFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BountyPosted",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "requiredLevel",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "expiresAt",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BountyReclaimed",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "publisher",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DisputeOpened",
+    "inputs": [
+      {
+        "name": "disputeId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DisputeResolved",
+    "inputs": [
+      {
+        "name": "disputeId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "auditorSlashed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SkillListed",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "publisher",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SkillRegistered",
+    "inputs": [
+      {
+        "name": "skillHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "auditLevel",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "StakeAdded",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalStake",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UnstakeCancelled",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UnstakeCompleted",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UnstakeInitiated",
+    "inputs": [
+      {
+        "name": "auditorCommitment",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "unlockTimestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "ActiveDisputesExist",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AlreadyRevoked",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AttestationNotFound",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AuditorAlreadyRegistered",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AuditorNotRegistered",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BountyAlreadyClaimed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BountyAlreadyExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BountyNotExpired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BountyNotFound",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BountyTransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DisputeAlreadyResolved",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DisputeNotFound",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EmptyMetadata",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientBounty",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientDisputeBond",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientFee",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientListingFee",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientStake",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAuditLevel",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidProof",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidSkillHash",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidUnstakeAmount",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoActiveUnstakeRequest",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotBountyPublisher",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SkillAlreadyListed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Unauthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnstakeAlreadyPending",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnstakeCooldownNotMet",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnstakeTransferFailed",
+    "inputs": []
+  }
+]

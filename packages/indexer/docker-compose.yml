@@ -1,0 +1,20 @@
+services:
+  indexer:
+    build:
+      context: ../../
+      dockerfile: packages/indexer/Dockerfile
+    container_name: aegis-indexer
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4200}:4200"
+    volumes:
+      - indexer-data:/data
+    environment:
+      - PORT=4200
+      - CHAIN_ID=${CHAIN_ID:-8453}
+      - RPC_URL=${RPC_URL:-https://mainnet.base.org}
+      - DB_PATH=/data/aegis-indexer.db
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS:-5000}
+
+volumes:
+  indexer-data:

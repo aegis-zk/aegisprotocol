@@ -45,6 +45,18 @@ export function insertSkill(params: {
   );
 }
 
+export function updateSkillMetadata(params: {
+  skillHash: string;
+  skillName: string;
+  category: string;
+}): void {
+  run(`UPDATE skills SET skill_name = ?, category = ? WHERE skill_hash = ?`, [
+    params.skillName,
+    params.category,
+    params.skillHash,
+  ]);
+}
+
 export function insertAttestation(params: {
   skillHash: string;
   attestationIndex: number;
@@ -217,11 +229,20 @@ export interface SkillRow {
   skill_hash: string;
   publisher: string;
   metadata_uri: string;
+  skill_name: string;
+  category: string;
   block_number: string;
   tx_hash: string;
   listed_at: string;
   attestation_count: number;
   has_bounty: number;
+}
+
+/** Skills that still have the default metadata (need backfill). */
+export function getSkillsNeedingMetadata(): { skill_hash: string; metadata_uri: string }[] {
+  return queryAll<{ skill_hash: string; metadata_uri: string }>(
+    `SELECT skill_hash, metadata_uri FROM skills WHERE skill_name = 'Unknown Skill' AND category = 'Uncategorized'`,
+  );
 }
 
 /** All skills, newest first, with attestation count. */
@@ -251,6 +272,27 @@ export function getUnauditedSkills(limit = 50, offset = 0): SkillRow[] {
      LIMIT ? OFFSET ?`,
     [limit, offset],
   );
+}
+
+/** Skills grouped by category. Returns { category: string, skills: SkillRow[] }[]. */
+export function getSkillsByCategory(): { category: string; skills: SkillRow[] }[] {
+  const rows = queryAll<SkillRow>(
+    `SELECT s.*,
+            (SELECT COUNT(*) FROM attestations a WHERE a.skill_hash = s.skill_hash AND a.revoked = 0) AS attestation_count,
+            (SELECT COUNT(*) FROM bounties b WHERE b.skill_hash = s.skill_hash AND b.claimed = 0 AND b.reclaimed = 0) AS has_bounty
+     FROM skills s
+     ORDER BY s.category ASC, s.block_number DESC`,
+  );
+
+  const grouped = new Map<string, SkillRow[]>();
+  for (const row of rows) {
+    const cat = row.category ?? 'Uncategorized';
+    const list = grouped.get(cat) ?? [];
+    list.push(row);
+    grouped.set(cat, list);
+  }
+
+  return Array.from(grouped.entries()).map(([category, skills]) => ({ category, skills }));
 }
 
 /** Single skill by hash. */

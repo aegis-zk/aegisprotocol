@@ -3,6 +3,7 @@ import { app } from './server.js';
 import { config, chainConfig } from './config.js';
 import { initDb, closeDb } from './db/index.js';
 import { initSync } from './sync/index.js';
+import { backfillMetadata } from './metadata.js';
 
 async function main(): Promise<void> {
   console.log('═══════════════════════════════════════════');
@@ -20,6 +21,9 @@ async function main(): Promise<void> {
 
   // Start syncing events from chain
   const stopSync = await initSync();
+
+  // Backfill metadata for any skills missing name/category
+  backfillMetadata().catch((err) => console.warn('[metadata] Backfill failed:', err));
 
   // Start HTTP server
   const server = serve({

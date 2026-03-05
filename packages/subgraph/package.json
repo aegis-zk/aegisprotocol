@@ -1,0 +1,22 @@
+{
+  "name": "@aegisaudit/subgraph",
+  "version": "0.1.0",
+  "description": "The Graph subgraph for AEGIS Protocol on Base",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph codegen && graph build",
+    "deploy:studio": "graph deploy aegis-protocol --studio",
+    "create:studio": "graph create aegis-protocol --node https://api.studio.thegraph.com/deploy/",
+    "test": "graph test",
+    "clean": "rm -rf build generated",
+    "extract-abi": "node -e \"const d=JSON.parse(require('fs').readFileSync('../contracts/out/AegisRegistry.sol/AegisRegistry.json','utf8')); require('fs').writeFileSync('./abis/AegisRegistry.json', JSON.stringify(d.abi, null, 2));\""
+  },
+  "dependencies": {
+    "@graphprotocol/graph-ts": "^0.35.1"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.93.2",
+    "matchstick-as": "^0.6.0"
+  }
+}

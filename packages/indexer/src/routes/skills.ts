@@ -11,6 +11,12 @@ skillsRouter.get('/', (c) => {
   return c.json({ data: skills, count: skills.length });
 });
 
+/** GET /skills/by-category — All skills grouped by category. */
+skillsRouter.get('/by-category', (c) => {
+  const grouped = q.getSkillsByCategory();
+  return c.json({ data: grouped, categories: grouped.length });
+});
+
 /** GET /skills/unaudited — Skills with no valid attestations. */
 skillsRouter.get('/unaudited', (c) => {
   const limit = Number(c.req.query('limit') ?? 50);

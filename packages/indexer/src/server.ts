@@ -22,6 +22,7 @@ app.get('/', (c) =>
     version: '0.1.0',
     endpoints: [
       'GET /skills',
+      'GET /skills/by-category',
       'GET /skills/unaudited',
       'GET /skills/:hash',
       'GET /auditors/leaderboard',

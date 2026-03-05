@@ -8,6 +8,19 @@
  * - composite primary keys where natural keys exist
  */
 
+/**
+ * Migration: add skill_name + category columns to existing skills table.
+ * Safe to run multiple times — uses IF NOT EXISTS pattern via pragma check.
+ */
+export const MIGRATION_SQL = `
+-- Add skill_name column if missing
+ALTER TABLE skills ADD COLUMN skill_name TEXT NOT NULL DEFAULT 'Unknown Skill';
+-- Add category column if missing
+ALTER TABLE skills ADD COLUMN category TEXT NOT NULL DEFAULT 'Uncategorized';
+-- Index for category filtering
+CREATE INDEX IF NOT EXISTS idx_skills_category ON skills (category);
+`;
+
 export const SCHEMA_SQL = `
 -- ── Sync state ───────────────────────────────────────────
 -- Singleton KV store tracking indexer progress.
@@ -25,6 +38,8 @@ CREATE TABLE IF NOT EXISTS skills (
   skill_hash    TEXT PRIMARY KEY,
   publisher     TEXT NOT NULL,
   metadata_uri  TEXT NOT NULL,
+  skill_name    TEXT NOT NULL DEFAULT 'Unknown Skill',
+  category      TEXT NOT NULL DEFAULT 'Uncategorized',
   block_number  TEXT NOT NULL,
   tx_hash       TEXT NOT NULL,
   log_index     INTEGER NOT NULL,

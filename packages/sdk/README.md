@@ -50,7 +50,7 @@ AEGIS is a **trust verification layer**, not a skill execution runtime. It answe
 - Host skill code or definitions
 - Provide APIs for the skills themselves
 
-### Integration Pattern
+### Integration Pattern (Manual)
 
 If you're building an agent that wants to run a third-party skill safely:
 
@@ -85,6 +85,39 @@ if (!proofValid) {
 //    Get the skill code from the skill publisher (not from AEGIS)
 //    e.g., fetch from the publisher's API, npm package, or IPFS
 ```
+
+### Integration Pattern (Middleware — Recommended)
+
+For production agents, use `@aegisaudit/consumer-middleware` to **automatically** gate every tool call. It intercepts tool execution, checks AEGIS trust, and blocks untrusted tools — no manual verification code needed.
+
+```bash
+npm install @aegisaudit/consumer-middleware
+```
+
+```typescript
+import { TrustGate } from '@aegisaudit/consumer-middleware';
+import { createAegisTrustHandler } from '@aegisaudit/consumer-middleware/langchain';
+
+const gate = new TrustGate({
+  policy: {
+    minAuditLevel: 2,      // Require L2+ audits
+    blockOnDispute: true,   // Block disputed skills
+    mode: 'enforce',        // Hard block on failure
+  },
+  skills: [
+    { toolName: 'web_search', skillHash: '0x...' },
+  ],
+});
+
+// LangChain: attach as a callback
+const agent = new AgentExecutor({
+  callbacks: [createAegisTrustHandler(gate)],
+});
+
+// Also supports CrewAI, MCP, and custom agent loops.
+```
+
+See the [consumer middleware documentation](https://www.npmjs.com/package/@aegisaudit/consumer-middleware) for full setup guides for every framework.
 
 ### Audit Levels
 

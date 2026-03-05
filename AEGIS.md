@@ -27,6 +27,8 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | Deployer wallet (testnet) | `0x51C8Df6ce7b35EF9b13d5fC040CF81AC74c984e3` |
 | Skills listed | 15 (re-listed on v3 contract) |
 | Indexer | `@aegisaudit/indexer@0.1.0` (local, port 4200) |
+| Subgraph (Studio) | https://thegraph.com/studio/subgraph/aegis-protocol |
+| Subgraph GraphQL | `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.1.0` |
 
 ## Git Identity
 
@@ -43,6 +45,8 @@ aegis/
 │   ├── sdk/            # @aegisaudit/sdk@0.5.0 — TypeScript client library (tsup, ESM+CJS)
 │   ├── mcp-server/     # @aegisaudit/mcp-server@0.4.0 — MCP tools for AI agents (tsup, ESM)
 │   ├── indexer/        # @aegisaudit/indexer@0.1.0 — Event indexer + REST API (Hono, sql.js)
+│   ├── subgraph/       # @aegisaudit/subgraph@0.1.0 — The Graph subgraph (Base L2, AssemblyScript)
+│   ├── consumer-middleware/ # @aegisaudit/consumer-middleware@0.1.0 — Pre-execution trust gate (tsup, ESM+CJS)
 │   ├── contracts/      # AegisRegistry.sol — Foundry (forge)
 │   ├── circuits/       # Noir ZK circuits (Barretenberg/BB.js)
 │   └── cli/            # @aegis/cli — command-line tool (commander, chalk, ora)
@@ -88,6 +92,8 @@ VERIFIER_ADDRESS=0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7 forge script script/
 | @aegisaudit/sdk | 0.5.0 |
 | @aegisaudit/mcp-server | 0.4.0 |
 | @aegisaudit/indexer | 0.1.0 |
+| @aegisaudit/subgraph | 0.1.0 |
+| @aegisaudit/consumer-middleware | 0.1.0 |
 | @aegis/web | 0.0.1 (private) |
 
 When bumping versions:
@@ -175,6 +181,7 @@ REST API on port 4200, backed by SQLite (sql.js WASM):
 |---|---|
 | `GET /` | Service info + endpoint list |
 | `GET /skills` | All listed skills, newest first |
+| `GET /skills/by-category` | Skills grouped by category |
 | `GET /skills/unaudited` | Skills with no valid attestations |
 | `GET /skills/:hash` | Single skill with attestations + disputes |
 | `GET /auditors/leaderboard` | Auditors ranked by reputation score |
@@ -186,6 +193,75 @@ REST API on port 4200, backed by SQLite (sql.js WASM):
 | `GET /stats/events` | Recent raw event log |
 
 Config via env vars: `PORT`, `CHAIN_ID`, `RPC_URL`, `DB_PATH`, `POLL_INTERVAL_MS`
+
+### Docker Deployment (VPS)
+
+```bash
+cd packages/indexer
+
+# Build and run with docker-compose
+docker compose up -d --build
+
+# Or build standalone
+docker build -t aegis-indexer -f Dockerfile ../../
+docker run -d --name aegis-indexer -p 4200:4200 -v aegis-data:/data aegis-indexer
+```
+
+SQLite DB is persisted in a Docker volume at `/data/aegis-indexer.db`.
+
+## Subgraph (packages/subgraph)
+
+Decentralized indexer on The Graph for Base L2. Primary data source for the protocol.
+
+### Entities
+
+| Entity | ID | Description |
+|---|---|---|
+| Skill | bytes32 skillHash | Listed skills with parsed name + category |
+| Attestation | skillHash-index | Audit attestations per skill |
+| Auditor | bytes32 commitment | Auditor profiles with reputation score |
+| Dispute | disputeId | Opened/resolved disputes |
+| Bounty | bytes32 skillHash | Active bounties per skill |
+| UnstakeRequest | bytes32 commitment | Pending unstake requests |
+| ProtocolEvent | txHash-logIndex | Immutable event log |
+| ProtocolStats | "singleton" | Protocol-wide counters |
+
+### Key GraphQL Queries
+
+```graphql
+# Skills by category
+{ skills(orderBy: category) { skillName category attestationCount } }
+
+# Unaudited skills
+{ skills(where: { attestationCount: 0 }) { id skillName metadataURI } }
+
+# Auditor leaderboard
+{ auditors(orderBy: reputationScore, orderDirection: desc) { id currentStake attestationCount reputationScore } }
+
+# Open disputes
+{ disputes(where: { resolved: false }) { disputeId skill { skillName } challenger bond } }
+
+# Open bounties
+{ bounties(where: { claimed: false, reclaimed: false }, orderBy: amount, orderDirection: desc) { skill { skillName } amount requiredLevel } }
+
+# Protocol stats
+{ protocolStats(id: "singleton") { totalSkills totalAttestations totalAuditors openDisputes } }
+```
+
+### Build & Deploy
+
+```bash
+cd packages/subgraph
+pnpm install && pnpm build     # codegen + compile WASM
+
+# Deploy to The Graph Studio
+graph auth --studio <DEPLOY_KEY>
+pnpm deploy:studio             # prompts for version label
+```
+
+### Metadata Parsing
+
+Data URIs (`data:application/json;base64,...`) are decoded inline in AssemblyScript to extract `skillName` and `category`. IPFS/HTTP URIs fall back to "Unknown Skill" / "Uncategorized" (subgraph runtime cannot make HTTP requests).
 
 ## MCP Server (35 tools)
 
@@ -211,6 +287,50 @@ Config via env vars: `PORT`, `CHAIN_ID`, `RPC_URL`, `DB_PATH`, `POLL_INTERVAL_MS
 **ERC-8004:** `registerAgent()`, `requestErc8004Validation()`, `respondToErc8004Validation()`, `linkSkillToAgent()`, etc.
 
 **Trust:** `getTrustProfile()`, `getSkillTrustScore()`
+
+## Consumer Middleware (packages/consumer-middleware)
+
+Pre-execution trust gate that intercepts AI agent tool calls, queries AEGIS trust data, and enforces configurable policies before allowing execution.
+
+### Core API
+
+```typescript
+import { TrustGate } from '@aegisaudit/consumer-middleware';
+
+const gate = new TrustGate({
+  policy: {
+    minAuditLevel: 2,       // 1=Functional, 2=Robust, 3=Security
+    minAttestations: 1,      // Minimum non-revoked attestations
+    blockOnDispute: true,    // Block skills with unresolved disputes
+    mode: 'enforce',         // 'enforce' | 'warn' | 'log'
+  },
+  skills: [
+    { toolName: 'web_search', skillHash: '0x...' },
+  ],
+});
+
+const result = await gate.check('web_search');
+// result: { allowed, reason, trustData: { highestLevel, attestationCount, hasActiveDisputes } }
+```
+
+### Data Sources
+
+1. **Subgraph (primary)** — GraphQL query to `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.1.0`
+2. **On-chain (fallback)** — `AegisClient.getSkillTrustScore()` via SDK RPC calls
+
+Results cached for 60s by default (configurable via `cacheTtlMs`).
+
+### Framework Adapters
+
+| Adapter | Import Path | Integration Point |
+|---|---|---|
+| LangChain | `@aegisaudit/consumer-middleware/langchain` | `createAegisTrustHandler(gate)` → callback handler |
+| CrewAI | `@aegisaudit/consumer-middleware/crewai` | `createAegisTrustHook(gate)` → before-tool-call hook |
+| MCP | `@aegisaudit/consumer-middleware/mcp` | `aegisMcpMiddleware(gate, handler)` → tool call wrapper |
+
+### Error Handling
+
+`AegisTrustError` extends `Error` with a `result: TrustGateResult` property containing `toolName`, `skillHash`, `reason`, and `trustData`.
 
 ## Website Pages
 
@@ -260,8 +380,11 @@ This is the protocol layer everything else depends on.
   - [x] Hono REST API — 10 endpoints
   - [x] All 10 contract events handled
   - [x] Build verified, smoke tested end-to-end (15 skills indexed)
-  - [ ] Deploy indexer to persistent hosting (Railway / Fly.io / VPS)
-  - [ ] Add `/skills/by-category` endpoint (group by metadata category field)
+  - [x] Dockerfile + docker-compose for VPS deployment
+  - [x] Add `/skills/by-category` endpoint (group by metadata category field)
+  - [x] Metadata parsing + caching (skill_name, category extracted from data/IPFS URIs)
+  - [x] Auto-migration for existing databases (adds new columns)
+  - [ ] Deploy indexer to VPS (run `docker compose up -d` on server)
 
 - [ ] **A2 — MCP server expansion** `Medium`
   Add consumer-facing tools (`aegis_check_skill`, `aegis_browse_unaudited`, `aegis_browse_bounties`) backed by the indexer
@@ -290,14 +413,19 @@ This is the protocol layer everything else depends on.
 
 These are the open-source templates anyone can fork. Each is its own repo with its own npm package.
 
-- [ ] **B1 — `aegis-consumer-middleware`** `Highest impact`
+- [x] **B1 — `aegis-consumer-middleware`** `Highest impact`
   The one-liner integration for any agent framework
   - Dependency: Just needs MCP server (done)
-  - [ ] `npm install aegis-consumer-middleware`
-  - [ ] Pre-execution trust check — query AEGIS before running any MCP tool
-  - [ ] Configurable trust thresholds ("only run L2+ skills from auditors with 10+ attestations")
-  - [ ] Framework integrations: LangChain, CrewAI, OpenClaw native
-  - [ ] Fallback to direct event scanning if indexer unavailable
+  - [x] `npm install @aegisaudit/consumer-middleware`
+  - [x] Pre-execution trust check — query AEGIS subgraph before running any tool
+  - [x] Configurable trust thresholds (minAuditLevel, minAttestations, blockOnDispute, mode)
+  - [x] Framework integrations: LangChain, CrewAI, MCP adapters
+  - [x] Fallback to on-chain SDK if subgraph unavailable
+  - [x] TrustGate core with caching, policy evaluation, runtime updates
+  - [x] AegisTrustError for enforce mode blocking
+  - [x] Unit tests (16 passing)
+  - [x] Comprehensive README with end-to-end examples
+  - [ ] Publish `@aegisaudit/consumer-middleware@0.1.0` to npm
 
 - [ ] **B2 — `aegis-scout-agent`** npm/GitHub monitor + auto-lister
   - Dependency: Needs indexer (A1) to avoid duplicate listings
@@ -348,8 +476,8 @@ These are the open-source templates anyone can fork. Each is its own repo with i
 ### Recommended Sequence
 
 ```
-Week 1-2:  A1 (Indexer) ✅ + B1 (Consumer middleware)
-           ↳ Indexer done; consumer middleware is highest-impact, lowest-dep
+Week 1-2:  A1 (Indexer) ✅ + B1 (Consumer middleware) ✅
+           ↳ Both complete; subgraph deployed to The Graph Studio
 
 Week 3-4:  A2 (MCP expansion) + B2 (Scout agent) + C1 (Dashboard)
            ↳ Now agents can actually browse + list; dashboard shows activity

@@ -136,11 +136,45 @@ Write operations (registering as an auditor, staking, opening disputes) require 
 
 The server will guide you through setup if no wallet is configured — just ask your AI agent to check your `wallet-status`.
 
+## Trust-Gating Agent Tool Calls
+
+If your agent uses tools that correspond to AEGIS-registered skills, use `@aegisaudit/consumer-middleware` to automatically verify trust before execution:
+
+```bash
+npm install @aegisaudit/consumer-middleware
+```
+
+```typescript
+import { TrustGate } from '@aegisaudit/consumer-middleware';
+import { aegisMcpMiddleware } from '@aegisaudit/consumer-middleware/mcp';
+
+// Configure trust policy
+const gate = new TrustGate({
+  policy: {
+    minAuditLevel: 2,      // Require L2+ audited skills
+    blockOnDispute: true,   // Block skills with open disputes
+    mode: 'enforce',        // Hard block on failure
+  },
+  skills: [
+    { toolName: 'query-database', skillHash: '0x...' },
+    { toolName: 'send-email',     skillHash: '0x...' },
+  ],
+});
+
+// Wrap your MCP tool handler
+server.setRequestHandler(CallToolRequestSchema,
+  aegisMcpMiddleware(gate, originalHandler)
+);
+```
+
+The middleware queries the AEGIS subgraph (with on-chain fallback) and blocks tools that don't meet your policy. See the [consumer middleware docs](https://www.npmjs.com/package/@aegisaudit/consumer-middleware) for LangChain, CrewAI, and custom agent loop examples.
+
 ## Links
 
 - [AEGIS Protocol](https://aegisprotocol.tech)
 - [GitHub](https://github.com/aegisaudit/aegis)
 - [SDK](https://www.npmjs.com/package/@aegisaudit/sdk)
+- [Consumer Middleware](https://www.npmjs.com/package/@aegisaudit/consumer-middleware)
 
 ## License
 
