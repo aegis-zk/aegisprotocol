@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { NavConnectWallet } from "../components/NavConnectWallet";
+import { useRecentEvents } from "../hooks/useOnChainData";
 
 const ACCENT = "#FF3366";
 const ACCENT2 = "#FF6B9D";
@@ -771,16 +772,9 @@ function CodeBlock() {
 }
 
 function LiveFeed() {
-  const events = [
-    { type: "ATTESTED" as const, skill: "web-scraper-v3", level: 2, auditor: "0x7a2...f91", time: "12s ago" },
-    { type: "VERIFIED" as const, skill: "sql-executor-safe", level: 3, auditor: "0x3e1...b44", time: "34s ago" },
-    { type: "STAKED" as const, skill: "\u2014", level: 0, auditor: "0xc92...d08", time: "1m ago", amount: "0.25 ETH" },
-    { type: "ATTESTED" as const, skill: "email-sender-v2", level: 1, auditor: "0x1f8...a23", time: "2m ago" },
-    { type: "DISPUTE" as const, skill: "file-access-v1", level: 2, auditor: "0x9b3...e67", time: "5m ago" },
-    { type: "ATTESTED" as const, skill: "api-caller-v4", level: 3, auditor: "0x5d4...c12", time: "8m ago" },
-  ];
+  const { events, loading } = useRecentEvents(8);
   const typeColors: Record<string, string> = {
-    ATTESTED: ACCENT, VERIFIED: ACCENT2, STAKED: "#A78BFA", DISPUTE: "#F87171",
+    LISTED: "#A78BFA", ATTESTED: ACCENT, STAKED: "#60A5FA", DISPUTE: "#F87171",
   };
   return (
     <section style={{
@@ -805,7 +799,9 @@ function LiveFeed() {
               width: 8, height: 8, borderRadius: "50%", background: ACCENT,
               animation: "pulse 2s infinite",
             }} />
-            <span style={{ fontFamily: FONT_BODY, fontSize: 12, color: TEXT_DIM }}>Live</span>
+            <span style={{ fontFamily: FONT_BODY, fontSize: 12, color: TEXT_DIM }}>
+              {loading ? "Syncing\u2026" : `${events.length} events`}
+            </span>
           </div>
         </div>
         <div style={{
@@ -819,30 +815,46 @@ function LiveFeed() {
           }}>
             <span>Event</span><span>Skill</span><span>Level</span><span>Auditor</span><span>Time</span>
           </div>
-          {events.map((e, i) => (
-            <div key={i} style={{
-              display: "grid", gridTemplateColumns: "100px 1fr 80px 140px 80px",
-              padding: "14px 24px", borderBottom: i < events.length - 1 ? `1px solid ${BORDER}` : "none",
-              fontFamily: FONT_BODY, fontSize: 13,
-              animation: `fadeInUp 0.5s ease ${i * 0.08}s both`,
-              transition: "background 0.15s",
-            }}
-              onMouseEnter={ev => (ev.currentTarget as HTMLElement).style.background = SURFACE2}
-              onMouseLeave={ev => (ev.currentTarget as HTMLElement).style.background = "transparent"}
-            >
-              <span style={{
-                color: typeColors[e.type], fontWeight: 700, fontSize: 11,
-                background: typeColors[e.type] + "15", padding: "2px 8px",
-                borderRadius: 4, display: "inline-block", width: "fit-content",
-              }}>{e.type}</span>
-              <span style={{ color: TEXT }}>{e.skill}</span>
-              <span style={{ color: e.level > 0 ? TEXT_DIM : "transparent" }}>
-                {"\u25CF".repeat(e.level)}{"\u25CB".repeat(3 - e.level)}
-              </span>
-              <span style={{ color: TEXT_DIM }}>{"amount" in e ? e.amount : e.auditor}</span>
-              <span style={{ color: TEXT_DIM }}>{e.time}</span>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "40px 24px" }}>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 13, color: TEXT_DIM, animation: "pulse 2s infinite" }}>
+                Loading on-chain events&hellip;
+              </div>
             </div>
-          ))}
+          ) : events.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 24px" }}>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 13, color: TEXT_DIM }}>
+                No events found yet
+              </div>
+            </div>
+          ) : (
+            events.map((e, i) => (
+              <div key={`${e.type}-${e.txHash}-${i}`} style={{
+                display: "grid", gridTemplateColumns: "100px 1fr 80px 140px 80px",
+                padding: "14px 24px", borderBottom: i < events.length - 1 ? `1px solid ${BORDER}` : "none",
+                fontFamily: FONT_BODY, fontSize: 13,
+                animation: `fadeInUp 0.5s ease ${i * 0.08}s both`,
+                transition: "background 0.15s",
+                cursor: "pointer",
+              }}
+                onClick={() => window.open(`https://basescan.org/tx/${e.txHash}`, "_blank")}
+                onMouseEnter={ev => (ev.currentTarget as HTMLElement).style.background = SURFACE2}
+                onMouseLeave={ev => (ev.currentTarget as HTMLElement).style.background = "transparent"}
+              >
+                <span style={{
+                  color: typeColors[e.type] || TEXT_DIM, fontWeight: 700, fontSize: 11,
+                  background: (typeColors[e.type] || TEXT_DIM) + "15", padding: "2px 8px",
+                  borderRadius: 4, display: "inline-block", width: "fit-content",
+                }}>{e.type}</span>
+                <span style={{ color: TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.skill}</span>
+                <span style={{ color: e.level > 0 ? TEXT_DIM : "transparent" }}>
+                  {"\u25CF".repeat(e.level)}{"\u25CB".repeat(Math.max(0, 3 - e.level))}
+                </span>
+                <span style={{ color: TEXT_DIM }}>{e.amount || e.auditor}</span>
+                <span style={{ color: TEXT_DIM }}>{e.time}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>

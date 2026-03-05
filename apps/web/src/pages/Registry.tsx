@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
+import { useRegistrySkills, type SkillEntry } from "../hooks/useOnChainData";
 
 const ACCENT = "#FF3366";
 const ACCENT2 = "#FF6B9D";
@@ -17,205 +18,8 @@ const TEXT_MUTED = "#52525B";
 const FONT_HEAD = "'Orbitron', sans-serif";
 const FONT = "'Space Mono', monospace";
 
-// ── On-Chain Data (Base Mainnet) ──────────────────────────
-const AUDITOR_COMMITMENT = "0x1b90cf3b44d7b16293e1aca7f37148ec665c1592d33682571b3af18d62d6abb7";
-const DEPLOYER = "0x51C8Df6ce7b35EF9b13d5fC040CF81AC74c984e3";
-
-interface Attestation {
-  id: string;
-  skillHash: string;
-  name: string;
-  category: string;
-  publisher: string;
-  auditor: string;
-  level: 0 | 1 | 2 | 3;
-  stake: number;
-  status: "active" | "disputed" | "expired" | "revoked";
-  auditStatus: "unaudited" | "in_review" | "attested";
-  timestamp: number;
-  verifications: number;
-  txHash: string;
-  blockNumber: number;
-}
-
-const REGISTRY_DATA: Attestation[] = [
-  {
-    id: "0x183c9388",
-    skillHash: "0x183c93880fbc25f2a600bc24b5956f5ca90c9b51671c8c5c49081b6fcedf53ce",
-    name: "Flow Protocol Skill",
-    category: "DeFi",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 2,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 347,
-    txHash: "0x1964e3d0776d57ebde1654e8e782fbf1fef3c555e12896a54985e5d2c8e59ac2",
-    blockNumber: 38222658,
-  },
-  {
-    id: "0x22cf12a7",
-    skillHash: "0x22cf12a7303eee61d0a3e0e9432d7f4e118ed3ffe8313df07505f696b6fd5aaf",
-    name: "SerpAPI Web Search",
-    category: "Web Search",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 1,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 214,
-    txHash: "0xb0df058956bf1786a4addb8817f5c313a02ce3c522415dac474d36984f87f58d",
-    blockNumber: 38222660,
-  },
-  {
-    id: "0x2d9c465d",
-    skillHash: "0x2d9c465d634e55e61ed920d972e074a32819969245345800dd5b2541aca92c72",
-    name: "Code Interpreter",
-    category: "Code Execution",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 2,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 531,
-    txHash: "0xc6dcb8cf3503e7f681d3896c4661502cf336f3ac6393506d9f47b945daf3187d",
-    blockNumber: 38222662,
-  },
-  {
-    id: "0x2a62ee1c",
-    skillHash: "0x2a62ee1cf0fea22d27ad47d6c2bbbc0fcba62ad2ae5ffc7ca3ff9d164035856f",
-    name: "Filesystem MCP Server",
-    category: "File Management",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 1,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 189,
-    txHash: "0xd75a77ec9c5b83b7902bc3980183bebe8269056ae8e2873e5fb6f003d4fee4de",
-    blockNumber: 38222664,
-  },
-  {
-    id: "0x0c41b2ee",
-    skillHash: "0x0c41b2ee370331eb6635d7e9bebaea6adf77a10fce227a1a14c9de2b8b558ef4",
-    name: "GitHub MCP Server",
-    category: "Version Control",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 2,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 423,
-    txHash: "0x75556ec28ed8a44310cabde97a2ea3d59c51f5feaf99a5c0ffce09eaae0dc66d",
-    blockNumber: 38222666,
-  },
-  {
-    id: "0x27714155",
-    skillHash: "0x27714155da8e17a20496cac03840018f2872e53599336b7b8fc1b4f1090451db",
-    name: "Playwright Browser Automation",
-    category: "Browser Automation",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 1,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 156,
-    txHash: "0x240611d5b766d4f87353019d59e193d047d361c9a5595e13edc739d585d50d4c",
-    blockNumber: 38222668,
-  },
-  {
-    id: "0x09c9e534",
-    skillHash: "0x09c9e5349b7923cfac161feb7bf64603328f7e2550761730c569f93d740a1f57",
-    name: "RAG Document Search",
-    category: "Data Retrieval",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 2,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 278,
-    txHash: "0xf05878ca008716517e72d7d0ffc2f73fc4f2eedc6c0b548da5b7bfcbe99a14b2",
-    blockNumber: 38222671,
-  },
-  {
-    id: "0x277ff342",
-    skillHash: "0x277ff342e8f9a870f7e071806a5b7c7be6dd9a87a46dba4cdb9e78df564653d4",
-    name: "SQL Database Toolkit",
-    category: "Database Access",
-    publisher: DEPLOYER,
-    auditor: AUDITOR_COMMITMENT,
-    level: 3,
-    stake: 0.02,
-    status: "active",
-    auditStatus: "attested",
-    timestamp: Date.now() - 5 * 86400000,
-    verifications: 612,
-    txHash: "0xcca87e7892b25b74b10ee184f0b981ba476c8901be0afa1ce51f53b7e66fa8ab",
-    blockNumber: 38222673,
-  },
-  {
-    id: "0x44ab12ef",
-    skillHash: "0x44ab12efdc8735a0f21c9b3e5678abcd1234ef5678ab90cd1234567890abcdef",
-    name: "Stripe Payment Gateway",
-    category: "Payments",
-    publisher: "0x3Ac587e2F9156C40BBa4F9d4269B79E5FBa06382",
-    auditor: "",
-    level: 0,
-    stake: 0,
-    status: "active",
-    auditStatus: "unaudited",
-    timestamp: Date.now() - 1 * 86400000,
-    verifications: 0,
-    txHash: "0xaa11bb22cc33dd44ee55ff66001122334455667788990011223344556677889900",
-    blockNumber: 42940680,
-  },
-  {
-    id: "0x55cd34ab",
-    skillHash: "0x55cd34ab19e8f7a6b5c4d3e2f1098765432abcdef0123456789abcdef01234567",
-    name: "Notion Integration MCP",
-    category: "Productivity",
-    publisher: "0x7Bf291c3E4D5F6A7B8C9D0E1F2345678901AbCdE",
-    auditor: "",
-    level: 0,
-    stake: 0,
-    status: "active",
-    auditStatus: "unaudited",
-    timestamp: Date.now() - 2 * 86400000,
-    verifications: 0,
-    txHash: "0xbb22cc33dd44ee55ff66001122334455667788990011223344556677889900aa11",
-    blockNumber: 42940682,
-  },
-  {
-    id: "0x66ef56cd",
-    skillHash: "0x66ef56cd23a1b2c3d4e5f6789012345abcdef67890abcdef1234567890abcdef",
-    name: "Discord Bot Framework",
-    category: "Communication",
-    publisher: "0x9De4F5A6B7C8D9E0F1234567890AbCdEf12345678",
-    auditor: "",
-    level: 0,
-    stake: 0,
-    status: "active",
-    auditStatus: "unaudited",
-    timestamp: Date.now() - 3 * 86400000,
-    verifications: 0,
-    txHash: "0xcc33dd44ee55ff66001122334455667788990011223344556677889900aa11bb22",
-    blockNumber: 42940685,
-  },
-];
+// Type alias for backward compat with existing components
+type Attestation = SkillEntry;
 
 const PER_PAGE = 10;
 
@@ -303,8 +107,8 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span style={{
       fontFamily: FONT, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
-      color: s.color, background: s.bg, padding: "3px 8px", borderRadius: 4,
-      textTransform: "uppercase",
+      color: s.color, background: s.bg, padding: "2px 6px", borderRadius: 4,
+      textTransform: "uppercase", whiteSpace: "nowrap",
     }}>{status}</span>
   );
 }
@@ -319,8 +123,8 @@ function AuditStatusBadge({ status }: { status: "unaudited" | "in_review" | "att
   return (
     <span style={{
       fontFamily: FONT, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
-      color: s.color, background: s.bg, padding: "3px 8px", borderRadius: 4,
-      textTransform: "uppercase",
+      color: s.color, background: s.bg, padding: "2px 6px", borderRadius: 4,
+      textTransform: "uppercase", whiteSpace: "nowrap",
     }}>{s.label}</span>
   );
 }
@@ -448,7 +252,7 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
       <div
         onClick={onToggle}
         style={{
-          display: "grid", gridTemplateColumns: GRID,
+          display: "grid", gridTemplateColumns: GRID, columnGap: 12,
           padding: "14px 20px", borderBottom: expanded ? "none" : `1px solid ${BORDER}`,
           alignItems: "center", cursor: "pointer",
           background: expanded ? SURFACE2 : "transparent",
@@ -522,6 +326,7 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
 
 export function Registry() {
   const navigate = useNavigate();
+  const { skills, loading, error, blockNumber } = useRegistrySkills();
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -553,7 +358,7 @@ export function Registry() {
   }
 
   const filtered = useMemo(() => {
-    let data = [...REGISTRY_DATA];
+    let data = [...skills];
     if (search) {
       const q = search.toLowerCase();
       data = data.filter(a =>
@@ -576,7 +381,7 @@ export function Registry() {
       return ((av as number) - (bv as number)) * dir;
     });
     return data;
-  }, [search, levelFilter, statusFilter, auditFilter, sortKey, sortDir]);
+  }, [skills, search, levelFilter, statusFilter, auditFilter, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, totalPages);
@@ -585,10 +390,10 @@ export function Registry() {
   const levelCounts = { 1: 0, 2: 0, 3: 0 };
   const statusCounts: Record<string, number> = { active: 0, disputed: 0, expired: 0, revoked: 0 };
   const auditCounts: Record<string, number> = { unaudited: 0, in_review: 0, attested: 0 };
-  REGISTRY_DATA.forEach(a => { levelCounts[a.level as 1 | 2 | 3]++; statusCounts[a.status]++; auditCounts[a.auditStatus]++; });
+  skills.forEach(a => { levelCounts[a.level as 1 | 2 | 3]++; statusCounts[a.status]++; auditCounts[a.auditStatus]++; });
 
-  const totalStake = REGISTRY_DATA.reduce((s, a) => s + a.stake, 0);
-  const totalVerifications = REGISTRY_DATA.reduce((s, a) => s + a.verifications, 0);
+  const totalStake = skills.reduce((s, a) => s + a.stake, 0);
+  const totalVerifications = skills.reduce((s, a) => s + a.verifications, 0);
 
   return (
     <>
@@ -692,7 +497,9 @@ export function Registry() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ADE80", animation: "pulse 2s infinite" }} />
-              <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Synced to block #38,222,673</span>
+              <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>
+                {loading ? "Syncing\u2026" : `Synced to block #${Number(blockNumber).toLocaleString()}`}
+              </span>
             </div>
           </div>
 
@@ -732,7 +539,7 @@ export function Registry() {
 
           {/* Stats Row */}
           <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-            <StatCard label="Total Skills" value={String(REGISTRY_DATA.length)} sub={`${auditCounts.attested} attested`} />
+            <StatCard label="Total Skills" value={String(skills.length)} sub={`${auditCounts.attested} attested`} />
             <StatCard label="Total Staked" value={`${totalStake.toFixed(2)}`} sub="ETH bonded" accent />
             <StatCard label="Verifications" value={totalVerifications.toLocaleString()} sub="all-time queries" />
             <StatCard label="Active Disputes" value={String(statusCounts.disputed)} sub="under review" />
@@ -741,7 +548,7 @@ export function Registry() {
           {/* Filter Bar */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Level</span>
-            <FilterChip label="All" count={REGISTRY_DATA.length} active={levelFilter === null} onClick={() => { setLevelFilter(null); setPage(1); }} />
+            <FilterChip label="All" count={skills.length} active={levelFilter === null} onClick={() => { setLevelFilter(null); setPage(1); }} />
             <FilterChip label="L1 Basic" count={levelCounts[1]} active={levelFilter === 1} onClick={() => toggleLevel(1)} />
             <FilterChip label="L2 Standard" count={levelCounts[2]} active={levelFilter === 2} onClick={() => toggleLevel(2)} />
             <FilterChip label="L3 Comprehensive" count={levelCounts[3]} active={levelFilter === 3} onClick={() => toggleLevel(3)} />
@@ -769,7 +576,7 @@ export function Registry() {
         }}>
           {/* Table Header */}
           <div style={{
-            display: "grid", gridTemplateColumns: GRID,
+            display: "grid", gridTemplateColumns: GRID, columnGap: 12,
             padding: "12px 20px", background: SURFACE,
             borderBottom: `1px solid ${BORDER}`,
             fontFamily: FONT, fontSize: 10, color: TEXT_MUTED,
@@ -787,9 +594,21 @@ export function Registry() {
           </div>
 
           {/* Rows */}
-          {pageData.length === 0 ? (
+          {loading ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <div style={{ fontFamily: FONT, fontSize: 14, color: TEXT_DIM, marginBottom: 6 }}>No attestations found</div>
+              <div style={{ fontFamily: FONT, fontSize: 14, color: TEXT_DIM, marginBottom: 6, animation: "pulse 2s infinite" }}>
+                Loading on-chain data&hellip;
+              </div>
+              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Scanning SkillListed &amp; SkillRegistered events from Base</div>
+            </div>
+          ) : error ? (
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <div style={{ fontFamily: FONT, fontSize: 14, color: "#F87171", marginBottom: 6 }}>Failed to load registry</div>
+              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>{error}</div>
+            </div>
+          ) : pageData.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <div style={{ fontFamily: FONT, fontSize: 14, color: TEXT_DIM, marginBottom: 6 }}>No skills found</div>
               <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Try adjusting your search or filters</div>
             </div>
           ) : (
