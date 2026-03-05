@@ -93,13 +93,13 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
       flex: 1, background: SURFACE, border: `1px solid ${BORDER}`,
       borderRadius: 10, padding: "20px 24px",
     }}>
-      <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: TEXT_DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
         {label}
       </div>
       <div style={{ fontFamily: FONT_HEAD, fontSize: 26, fontWeight: 700, color: accent ? ACCENT : TEXT, letterSpacing: "-0.02em" }}>
         {value}
       </div>
-      <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, marginTop: 4 }}>{sub}</div>
+      <div style={{ fontSize: 11, color: TEXT_MUTED, marginTop: 4 }}>{sub}</div>
     </div>
   );
 }
@@ -110,7 +110,7 @@ function TierBadge({ tier, size = "sm" }: { tier: string; size?: "sm" | "lg" }) 
   const isSm = size === "sm";
   return (
     <span style={{
-      fontFamily: FONT, fontSize: isSm ? 10 : 11, fontWeight: 700,
+      fontSize: isSm ? 10 : 11, fontWeight: 700,
       color, background: `${color}18`, border: `1px solid ${color}30`,
       padding: isSm ? "2px 8px" : "4px 12px", borderRadius: 4,
       textTransform: "uppercase", letterSpacing: "0.04em",
@@ -132,7 +132,7 @@ function StatusBadge({ status }: { status: string }) {
   const s = map[status] || map.active;
   return (
     <span style={{
-      fontFamily: FONT, fontSize: 10, fontWeight: 700,
+      fontSize: 10, fontWeight: 700,
       color: s.color, background: s.bg, padding: "3px 8px", borderRadius: 4,
       textTransform: "uppercase", letterSpacing: "0.04em",
     }}>{status}</span>
@@ -169,7 +169,7 @@ function ReputationBar({ score, max = 80 }: { score: number; max?: number }) {
           transition: "width 0.4s ease",
         }} />
       </div>
-      <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, minWidth: 24, textAlign: "right" }}>
+      <span style={{ fontSize: 11, color: TEXT_DIM, minWidth: 24, textAlign: "right" }}>
         {score}
       </span>
     </div>
@@ -183,7 +183,7 @@ function FilterChip({ label, count, active, onClick }: { label: string; count?: 
       background: active ? `${ACCENT}18` : "transparent",
       border: `1px solid ${active ? `${ACCENT}40` : BORDER}`,
       color: active ? ACCENT : TEXT_DIM,
-      fontFamily: FONT, fontSize: 12, fontWeight: 400,
+      fontSize: 12, fontWeight: 400,
       padding: "5px 10px", borderRadius: 6, cursor: "pointer",
       display: "inline-flex", alignItems: "center", gap: 6,
       transition: "all 0.12s ease",
@@ -193,7 +193,7 @@ function FilterChip({ label, count, active, onClick }: { label: string; count?: 
         <span style={{
           background: active ? `${ACCENT}30` : SURFACE3,
           color: active ? ACCENT : TEXT_MUTED,
-          fontSize: 10, fontFamily: FONT, fontWeight: 700,
+          fontSize: 10, fontWeight: 700,
           padding: "1px 6px", borderRadius: 10, minWidth: 18, textAlign: "center",
         }}>{count}</span>
       )}
@@ -231,7 +231,7 @@ function PageBtn({ label, active, disabled, onClick }: { label: string; active?:
     <button onClick={onClick} disabled={disabled} style={{
       width: 32, height: 32, borderRadius: 6,
       display: "inline-flex", alignItems: "center", justifyContent: "center",
-      fontFamily: FONT, fontSize: 12, fontWeight: active ? 700 : 400,
+      fontSize: 12, fontWeight: active ? 700 : 400,
       background: active ? `${ACCENT}20` : "transparent",
       border: active ? `1px solid ${ACCENT}40` : "1px solid transparent",
       color: active ? ACCENT : disabled ? TEXT_MUTED : TEXT_DIM,
@@ -261,12 +261,12 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
       display: "flex", justifyContent: "space-between", alignItems: "center",
       padding: "16px 20px", borderTop: `1px solid ${BORDER}`,
     }}>
-      <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Page {page} of {totalPages}</span>
+      <span style={{ fontSize: 12, color: TEXT_MUTED }}>Page {page} of {totalPages}</span>
       <div style={{ display: "flex", gap: 4 }}>
         <PageBtn label="\u2190" disabled={page <= 1} onClick={() => onPage(page - 1)} />
         {pages.map((p, i) =>
           p === "..." ? (
-            <span key={`e${i}`} style={{ width: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TEXT_MUTED, fontFamily: FONT, fontSize: 12 }}>&hellip;</span>
+            <span key={`e${i}`} style={{ width: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TEXT_MUTED, fontSize: 12 }}>&hellip;</span>
           ) : (
             <PageBtn key={p} label={String(p)} active={p === page} onClick={() => onPage(p as number)} />
           )
@@ -427,7 +427,7 @@ function Step({ number, title, description, icon }: { number: number; title: str
     >
       <div style={{
         position: "absolute", top: -12, left: 20,
-        fontFamily: FONT, fontSize: 10, fontWeight: 700,
+        fontSize: 10, fontWeight: 700,
         color: BG, background: ACCENT, padding: "2px 10px", borderRadius: 4,
       }}>
         STEP {number}
@@ -438,7 +438,7 @@ function Step({ number, title, description, icon }: { number: number; title: str
         color: TEXT, margin: "0 0 8px", letterSpacing: "-0.01em",
       }}>{title}</h3>
       <p style={{
-        fontFamily: FONT, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6, margin: 0,
+        fontSize: 12, color: TEXT_DIM, lineHeight: 1.6, margin: 0,
       }}>{description}</p>
     </div>
   );
@@ -506,16 +506,16 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
         {/* Commitment */}
         <div>
           <div style={{ fontFamily: FONT, fontSize: 13, fontWeight: 700, color: TEXT }}>{auditor.commitment}</div>
-          <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, marginTop: 2 }}>
+          <div style={{ fontSize: 10, color: TEXT_MUTED, marginTop: 2 }}>
             {auditor.registeredDaysAgo}d ago
           </div>
         </div>
         {/* Tier */}
         <TierBadge tier={auditor.tier} />
         {/* Stake */}
-        <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT }}>{auditor.stake.toFixed(3)} ETH</div>
+        <div style={{ fontSize: 12, color: TEXT }}>{auditor.stake.toFixed(3)} ETH</div>
         {/* Attestations */}
-        <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT }}>{auditor.attestations}</div>
+        <div style={{ fontSize: 12, color: TEXT }}>{auditor.attestations}</div>
         {/* Reputation */}
         <ReputationBar score={auditor.reputation} />
         {/* Status */}
@@ -524,7 +524,7 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
         <LevelBar levels={auditor.levels} total={auditor.attestations} />
         {/* Expand */}
         <div style={{
-          fontFamily: FONT, fontSize: 14, color: TEXT_MUTED, textAlign: "center",
+          fontSize: 14, color: TEXT_MUTED, textAlign: "center",
           transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 0.15s ease",
         }}>{"\u25BE"}</div>
@@ -538,26 +538,26 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
         }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Full Commitment</div>
+              <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Full Commitment</div>
               <div style={{ fontFamily: FONT, fontSize: 12, color: ACCENT, wordBreak: "break-all" }}>{auditor.commitment}</div>
             </div>
             <div>
-              <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Total Stake</div>
-              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT }}>{auditor.stake.toFixed(3)} ETH</div>
+              <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Total Stake</div>
+              <div style={{ fontSize: 12, color: TEXT }}>{auditor.stake.toFixed(3)} ETH</div>
             </div>
             <div>
-              <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Disputes</div>
-              <div style={{ fontFamily: FONT, fontSize: 12, color: auditor.disputes > 0 ? RED : TEXT }}>{auditor.disputes}</div>
+              <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Disputes</div>
+              <div style={{ fontSize: 12, color: auditor.disputes > 0 ? RED : TEXT }}>{auditor.disputes}</div>
             </div>
             <div>
-              <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Registered</div>
-              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT }}>{dateStr}</div>
+              <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Registered</div>
+              <div style={{ fontSize: 12, color: TEXT }}>{dateStr}</div>
             </div>
           </div>
 
           {/* Attestation breakdown */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+            <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
               Attestation Breakdown
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -573,7 +573,7 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
                   <div style={{ fontFamily: FONT_HEAD, fontSize: 18, fontWeight: 700, color: l.color }}>
                     {l.count}
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, marginTop: 2 }}>
+                  <div style={{ fontSize: 10, color: TEXT_MUTED, marginTop: 2 }}>
                     {l.label}
                   </div>
                 </div>
@@ -583,13 +583,13 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
 
           {/* Recent skills */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+            <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
               Recent Audited Skills
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {auditor.recentSkills.map((skill, i) => (
                 <span key={i} style={{
-                  fontFamily: FONT, fontSize: 11, color: TEXT_DIM,
+                  fontSize: 11, color: TEXT_DIM,
                   background: SURFACE3, padding: "4px 10px", borderRadius: 4,
                   border: `1px solid ${BORDER}`,
                 }}>{skill}</span>
@@ -605,7 +605,7 @@ function AuditorRow({ auditor, expanded, onToggle, index }: {
               ...(auditor.status === "active" ? [{ label: "Submit Dispute", bg: `${RED}15`, color: RED, border: `${RED}30` }] : []),
             ].map(btn => (
               <button key={btn.label} style={{
-                fontFamily: FONT, fontSize: 11, fontWeight: 400,
+                fontSize: 11, fontWeight: 400,
                 background: btn.bg, color: btn.color, border: `1px solid ${btn.border}`,
                 padding: "6px 14px", borderRadius: 6, cursor: "pointer",
                 transition: "opacity 0.12s",
@@ -643,7 +643,7 @@ function AuditorNavBar() {
           AEGIS
         </span>
         <span style={{
-          fontFamily: FONT, fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
+          fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
           border: `1px solid ${ACCENT}30`, borderRadius: 4, padding: "2px 8px",
           fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
         }}>
@@ -664,7 +664,7 @@ function AuditorNavBar() {
             textDecoration: item.label === "Auditors" ? "underline" : "none",
             textUnderlineOffset: 6,
             textDecorationColor: item.label === "Auditors" ? ACCENT : "transparent",
-            fontSize: 13, fontFamily: FONT,
+            fontSize: 13,
             fontWeight: item.label === "Auditors" ? 600 : 400,
             transition: "color 0.2s",
             cursor: item.label === "Auditors" ? "default" : "pointer",
@@ -837,7 +837,7 @@ export function Auditors() {
             }}>Network</span>
           </h1>
           <p style={{
-            fontFamily: FONT, fontSize: 14, color: TEXT_DIM,
+            fontSize: 14, color: TEXT_DIM,
             maxWidth: 600, lineHeight: 1.7, margin: "0 0 32px",
           }}>
             Anonymous auditors stake ETH behind their attestations. Reputation is tracked by commitment, not identity.
@@ -859,7 +859,7 @@ export function Auditors() {
           borderBottom: `1px solid ${BORDER}`,
         }}>
           <div style={{
-            fontFamily: FONT, fontSize: 12, color: ACCENT,
+            fontSize: 12, color: ACCENT,
             textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
           }}>How Auditing Works</div>
           <h2 style={{
@@ -876,7 +876,7 @@ export function Auditors() {
           borderBottom: `1px solid ${BORDER}`,
         }}>
           <div style={{
-            fontFamily: FONT, fontSize: 12, color: BLUE,
+            fontSize: 12, color: BLUE,
             textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
           }}>Evaluation Framework</div>
           <h2 style={{
@@ -884,7 +884,7 @@ export function Auditors() {
             color: TEXT, letterSpacing: "-0.01em", margin: "0 0 8px",
           }}>Structured audit criteria</h2>
           <p style={{
-            fontFamily: FONT, fontSize: 13, color: TEXT_DIM, lineHeight: 1.6,
+            fontSize: 13, color: TEXT_DIM, lineHeight: 1.6,
             margin: "0 0 28px", maxWidth: 640,
           }}>
             Each audit level defines specific checks the auditor must perform and document.
@@ -948,7 +948,7 @@ export function Auditors() {
                       fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 800, color: tier.color,
                     }}>{tier.level}</span>
                     <span style={{
-                      fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                      fontSize: 10, fontWeight: 700,
                       color: tier.color, background: `${tier.color}18`,
                       border: `1px solid ${tier.color}30`,
                       padding: "2px 8px", borderRadius: 4,
@@ -957,7 +957,7 @@ export function Auditors() {
                   <div style={{ fontFamily: FONT_HEAD, fontSize: 14, fontWeight: 700, color: TEXT }}>
                     {tier.name}
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: TEXT_DIM, marginTop: 4 }}>
                     {i === 0 ? "4 checks" : i === 1 ? "L1 + 5 checks (9 total)" : "L1 + L2 + 5 checks (14 total)"}
                   </div>
                 </div>
@@ -970,11 +970,11 @@ export function Auditors() {
                       borderBottom: `1px solid ${BORDER}40`,
                     }}>
                       <code style={{
-                        fontFamily: FONT, fontSize: 10, color: tier.color,
+                        fontSize: 10, color: tier.color,
                         background: `${tier.color}12`, padding: "2px 6px",
                         borderRadius: 3, whiteSpace: "nowrap",
                       }}>{check.id}</code>
-                      <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM }}>
+                      <span style={{ fontSize: 12, color: TEXT_DIM }}>
                         {check.label}
                       </span>
                     </div>
@@ -992,11 +992,11 @@ export function Auditors() {
           }}>
             <span style={{ fontSize: 18 }}>&#x1f517;</span>
             <div>
-              <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2 }}>
                 On-chain criteria hash
               </div>
-              <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, lineHeight: 1.5 }}>
-                Each attestation stores <code style={{ fontFamily: FONT, color: ACCENT, fontSize: 11 }}>keccak256(sorted criteria IDs)</code> on-chain,
+              <div style={{ fontSize: 11, color: TEXT_DIM, lineHeight: 1.5 }}>
+                Each attestation stores <code style={{ color: ACCENT, fontSize: 11 }}>keccak256(sorted criteria IDs)</code> on-chain,
                 linking the attestation to its IPFS metadata. Disputes reference specific criteria IDs.
               </div>
             </div>
@@ -1009,7 +1009,7 @@ export function Auditors() {
           borderBottom: `1px solid ${BORDER}`,
         }}>
           <div style={{
-            fontFamily: FONT, fontSize: 12, color: GREEN,
+            fontSize: 12, color: GREEN,
             textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
           }}>Trust Pipeline</div>
           <h2 style={{
@@ -1017,7 +1017,7 @@ export function Auditors() {
             color: TEXT, letterSpacing: "-0.01em", margin: "0 0 8px",
           }}>From audit to trust score</h2>
           <p style={{
-            fontFamily: FONT, fontSize: 13, color: TEXT_DIM, lineHeight: 1.6,
+            fontSize: 13, color: TEXT_DIM, lineHeight: 1.6,
             margin: "0 0 28px", maxWidth: 640,
           }}>
             Your audit attestations flow through the ERC-8004 ecosystem to produce
@@ -1066,14 +1066,14 @@ export function Auditors() {
                 }}>
                   <div style={{ fontSize: 24, marginBottom: 12 }}>{step.icon}</div>
                   <div style={{
-                    fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                    fontSize: 10, fontWeight: 700,
                     color: step.color, textTransform: "uppercase",
                     letterSpacing: "0.06em", marginBottom: 6,
                   }}>{step.label}</div>
-                  <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 6 }}>
                     {step.sub}
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 11, color: TEXT_DIM, lineHeight: 1.5 }}>
                     {step.detail}
                   </div>
                   {i < 3 && (
@@ -1105,11 +1105,11 @@ export function Auditors() {
                 borderRight: i < 3 ? `1px solid ${BORDER}` : "none",
               }}>
                 <div style={{
-                  fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                  fontSize: 10, fontWeight: 700,
                   color: t.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4,
                 }}>{t.level}</div>
                 <div style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>{t.range}</div>
-                <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, marginTop: 4 }}>{t.req}</div>
+                <div style={{ fontSize: 11, color: TEXT_DIM, marginTop: 4 }}>{t.req}</div>
               </div>
             ))}
           </div>
@@ -1121,7 +1121,7 @@ export function Auditors() {
           borderBottom: `1px solid ${BORDER}`,
         }}>
           <div style={{
-            fontFamily: FONT, fontSize: 12, color: ACCENT2,
+            fontSize: 12, color: ACCENT2,
             textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
           }}>Tier System</div>
           <h2 style={{
@@ -1138,22 +1138,22 @@ export function Auditors() {
               }}>
                 <TierBadge tier={t.tier} size="lg" />
                 <div style={{ marginTop: 16 }}>
-                  <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                  <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
                     Reputation
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: TEXT }}>{t.rep}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{t.rep}</div>
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                  <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
                     Min Stake
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: TEXT }}>{t.stake}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{t.stake}</div>
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                  <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
                     Perks
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM, lineHeight: 1.5 }}>{t.perks}</div>
+                  <div style={{ fontSize: 12, color: TEXT_DIM, lineHeight: 1.5 }}>{t.perks}</div>
                 </div>
               </div>
             ))}
@@ -1166,7 +1166,7 @@ export function Auditors() {
           borderBottom: `1px solid ${BORDER}`,
         }}>
           <div style={{
-            fontFamily: FONT, fontSize: 12, color: RED,
+            fontSize: 12, color: RED,
             textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
           }}>Accountability</div>
           <h2 style={{
@@ -1205,13 +1205,13 @@ export function Auditors() {
                 padding: "24px", background: SURFACE, border: `1px solid ${BORDER}`,
                 borderRadius: 12,
               }}>
-                <div style={{ fontFamily: FONT, fontSize: 11, color: card.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                <div style={{ fontSize: 11, color: card.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
                   {card.title}
                 </div>
                 <div style={{ fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
                   {card.value}
                 </div>
-                <p style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontSize: 12, color: TEXT_DIM, lineHeight: 1.6, margin: 0 }}>
                   {card.description}
                 </p>
               </div>
@@ -1226,7 +1226,7 @@ export function Auditors() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
             <div>
               <div style={{
-                fontFamily: FONT, fontSize: 12, color: ACCENT,
+                fontSize: 12, color: ACCENT,
                 textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
               }}>Leaderboard</div>
               <h2 style={{
@@ -1236,7 +1236,7 @@ export function Auditors() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: GREEN, animation: "pulse 2s infinite" }} />
-              <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Live &middot; Base L2</span>
+              <span style={{ fontSize: 12, color: TEXT_MUTED }}>Live &middot; Base L2</span>
             </div>
           </div>
 
@@ -1261,7 +1261,7 @@ export function Auditors() {
                 placeholder="Search by commitment, tier, or skill name..."
                 style={{
                   flex: 1, background: "transparent", border: "none", outline: "none",
-                  fontFamily: FONT, fontSize: 14, color: TEXT, padding: "14px 12px",
+                  fontSize: 14, color: TEXT, padding: "14px 12px",
                 }}
               />
             </div>
@@ -1269,7 +1269,7 @@ export function Auditors() {
 
           {/* Filters */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-            <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Tier</span>
+            <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Tier</span>
             <FilterChip label="All" count={AUDITOR_DATA.length} active={tierFilter === null} onClick={() => { setTierFilter(null); setPage(1); }} />
             {["Bronze", "Silver", "Gold", "Diamond"].map(t => (
               <FilterChip key={t} label={t} count={tierCounts[t]} active={tierFilter === t} onClick={() => { setTierFilter(prev => prev === t ? null : t); setPage(1); }} />
@@ -1277,7 +1277,7 @@ export function Auditors() {
 
             <div style={{ width: 1, height: 20, background: BORDER, margin: "0 8px" }} />
 
-            <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Status</span>
+            <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Status</span>
             <FilterChip label="All" active={statusFilter === null} onClick={() => { setStatusFilter(null); setPage(1); }} />
             <FilterChip label="Active" active={statusFilter === "active"} onClick={() => { setStatusFilter(prev => prev === "active" ? null : "active"); setPage(1); }} />
             <FilterChip label="Suspended" active={statusFilter === "suspended"} onClick={() => { setStatusFilter(prev => prev === "suspended" ? null : "suspended"); setPage(1); }} />
@@ -1295,7 +1295,7 @@ export function Auditors() {
             display: "grid", gridTemplateColumns: GRID,
             padding: "12px 20px", background: SURFACE,
             borderBottom: `1px solid ${BORDER}`,
-            fontFamily: FONT, fontSize: 10, color: TEXT_MUTED,
+            fontSize: 10, color: TEXT_MUTED,
             textTransform: "uppercase", letterSpacing: "0.06em",
           }}>
             <SortHeader label="Commitment" sortKey="commitment" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
@@ -1311,8 +1311,8 @@ export function Auditors() {
           {/* Rows */}
           {pageData.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <div style={{ fontFamily: FONT, fontSize: 14, color: TEXT_DIM, marginBottom: 6 }}>No auditors found</div>
-              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Try adjusting your search or filters</div>
+              <div style={{ fontSize: 14, color: TEXT_DIM, marginBottom: 6 }}>No auditors found</div>
+              <div style={{ fontSize: 12, color: TEXT_MUTED }}>Try adjusting your search or filters</div>
             </div>
           ) : (
             pageData.map((auditor, i) => (
@@ -1337,7 +1337,7 @@ export function Auditors() {
           maxWidth: 1200, margin: "12px auto 0", display: "flex",
           justifyContent: "space-between", padding: "0 4px",
         }}>
-          <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
+          <span style={{ fontSize: 11, color: TEXT_MUTED }}>
             Showing {Math.min((currentPage - 1) * PER_PAGE + 1, filtered.length)}-{Math.min(currentPage * PER_PAGE, filtered.length)} of {filtered.length} auditors
           </span>
           <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
@@ -1364,7 +1364,7 @@ export function Auditors() {
             Become an auditor
           </h2>
           <p style={{
-            fontFamily: FONT, fontSize: 14, color: TEXT_DIM,
+            fontSize: 14, color: TEXT_DIM,
             maxWidth: 480, margin: "0 auto 28px", lineHeight: 1.7,
           }}>
             Stake ETH, audit skills anonymously, and earn reputation on-chain. No KYC. No identity. Just cryptographic proof of expertise.
@@ -1373,7 +1373,7 @@ export function Auditors() {
             <button style={{
               background: ACCENT, color: BG, border: "none", borderRadius: 8,
               padding: "14px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer",
-              fontFamily: FONT, transition: "opacity 0.2s",
+              transition: "opacity 0.2s",
             }}
               onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
               onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
@@ -1381,7 +1381,7 @@ export function Auditors() {
             <button style={{
               background: "transparent", color: TEXT, border: `1px solid ${BORDER}`,
               borderRadius: 8, padding: "14px 32px", fontSize: 14, fontWeight: 700,
-              cursor: "pointer", fontFamily: FONT, transition: "border-color 0.2s",
+              cursor: "pointer", transition: "border-color 0.2s",
             }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = ACCENT)}
               onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}
@@ -1403,11 +1403,11 @@ export function Auditors() {
               <div style={{ width: 5, height: 5, background: ACCENT, borderRadius: 1 }} />
             </div>
             <span style={{ fontFamily: FONT_HEAD, fontSize: 13, fontWeight: 700, color: TEXT }}>AEGIS</span>
-            <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, marginLeft: 8 }}>
+            <span style={{ fontSize: 11, color: TEXT_MUTED, marginLeft: 8 }}>
               &copy; 2026 AEGIS PROTOCOL
             </span>
           </div>
-          <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
+          <span style={{ fontSize: 11, color: TEXT_MUTED }}>
             DEPLOYED ON BASE L2
           </span>
         </footer>

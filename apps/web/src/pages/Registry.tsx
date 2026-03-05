@@ -31,7 +31,7 @@ function FilterChip({ label, count, active, onClick }: { label: string; count?: 
       background: active ? ACCENT + "18" : "transparent",
       border: `1px solid ${active ? ACCENT + "40" : BORDER}`,
       color: active ? ACCENT : TEXT_DIM,
-      fontFamily: FONT, fontSize: 12, fontWeight: 400,
+      fontSize: 12, fontWeight: 400,
       padding: "5px 10px", borderRadius: 6, cursor: "pointer",
       display: "inline-flex", alignItems: "center", gap: 6,
       transition: "all 0.12s ease",
@@ -41,7 +41,7 @@ function FilterChip({ label, count, active, onClick }: { label: string; count?: 
         <span style={{
           background: active ? ACCENT + "30" : SURFACE3,
           color: active ? ACCENT : TEXT_MUTED,
-          fontSize: 10, fontFamily: FONT, fontWeight: 700,
+          fontSize: 10, fontWeight: 700,
           padding: "1px 6px", borderRadius: 10, minWidth: 18, textAlign: "center",
         }}>{count}</span>
       )}
@@ -55,13 +55,13 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
       flex: 1, background: SURFACE, border: `1px solid ${BORDER}`,
       borderRadius: 10, padding: "20px 24px",
     }}>
-      <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: TEXT_DIM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
         {label}
       </div>
       <div style={{ fontFamily: FONT_HEAD, fontSize: 26, fontWeight: 700, color: accent ? ACCENT : TEXT, letterSpacing: "-0.02em" }}>
         {value}
       </div>
-      <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, marginTop: 4 }}>{sub}</div>
+      <div style={{ fontSize: 11, color: TEXT_MUTED, marginTop: 4 }}>{sub}</div>
     </div>
   );
 }
@@ -77,7 +77,7 @@ function LevelDots({ level }: { level: 0 | 1 | 2 | 3 }) {
             border: `1px solid ${BORDER}`,
           }} />
         ))}
-        <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, marginLeft: 4 }}>{"\u2014"}</span>
+        <span style={{ fontSize: 11, color: TEXT_MUTED, marginLeft: 4 }}>{"\u2014"}</span>
       </div>
     );
   }
@@ -91,7 +91,7 @@ function LevelDots({ level }: { level: 0 | 1 | 2 | 3 }) {
           border: n <= level ? "none" : `1px solid ${BORDER}`,
         }} />
       ))}
-      <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM, marginLeft: 4 }}>L{level}</span>
+      <span style={{ fontSize: 11, color: TEXT_DIM, marginLeft: 4 }}>L{level}</span>
     </div>
   );
 }
@@ -106,7 +106,7 @@ function StatusBadge({ status }: { status: string }) {
   const s = map[status] || map.expired;
   return (
     <span style={{
-      fontFamily: FONT, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+      fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
       color: s.color, background: s.bg, padding: "2px 6px", borderRadius: 4,
       textTransform: "uppercase", whiteSpace: "nowrap",
     }}>{status}</span>
@@ -122,7 +122,7 @@ function AuditStatusBadge({ status }: { status: "unaudited" | "in_review" | "att
   const s = map[status];
   return (
     <span style={{
-      fontFamily: FONT, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+      fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
       color: s.color, background: s.bg, padding: "2px 6px", borderRadius: 4,
       textTransform: "uppercase", whiteSpace: "nowrap",
     }}>{s.label}</span>
@@ -138,7 +138,7 @@ function MiniButton({ label, variant = "neutral", onClick }: { label: string; va
   const s = styles[variant];
   return (
     <button onClick={onClick} style={{
-      fontFamily: FONT, fontSize: 11, fontWeight: 400,
+      fontSize: 11, fontWeight: 400,
       background: s.bg, color: s.color, border: `1px solid ${s.border}`,
       padding: "6px 14px", borderRadius: 6, cursor: "pointer",
       transition: "opacity 0.12s",
@@ -152,10 +152,10 @@ function MiniButton({ label, variant = "neutral", onClick }: { label: string; va
 function DetailCell({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
-      <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+      <div style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontFamily: FONT, fontSize: 12, color: accent ? ACCENT : TEXT, wordBreak: "break-all" }}>
+      <div style={{ fontSize: 12, color: accent ? ACCENT : TEXT, wordBreak: "break-all" }}>
         {value}
       </div>
     </div>
@@ -193,7 +193,7 @@ function PageBtn({ label, active, disabled, onClick }: { label: string; active?:
       style={{
         width: 32, height: 32, borderRadius: 6,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        fontFamily: FONT, fontSize: 12, fontWeight: active ? 700 : 400,
+        fontSize: 12, fontWeight: active ? 700 : 400,
         background: active ? ACCENT + "20" : "transparent",
         border: active ? `1px solid ${ACCENT}40` : `1px solid transparent`,
         color: active ? ACCENT : disabled ? TEXT_MUTED : TEXT_DIM,
@@ -223,12 +223,12 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
       display: "flex", justifyContent: "space-between", alignItems: "center",
       padding: "16px 20px", borderTop: `1px solid ${BORDER}`,
     }}>
-      <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Page {page} of {totalPages}</span>
+      <span style={{ fontSize: 12, color: TEXT_MUTED }}>Page {page} of {totalPages}</span>
       <div style={{ display: "flex", gap: 4 }}>
         <PageBtn label="\u2190" disabled={page <= 1} onClick={() => onPage(page - 1)} />
         {pages.map((p, i) =>
           p === "..." ? (
-            <span key={`e${i}`} style={{ width: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TEXT_MUTED, fontFamily: FONT, fontSize: 12 }}>&hellip;</span>
+            <span key={`e${i}`} style={{ width: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TEXT_MUTED, fontSize: 12 }}>&hellip;</span>
           ) : (
             <PageBtn key={p} label={String(p)} active={p === page} onClick={() => onPage(p as number)} />
           )
@@ -263,7 +263,7 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
       >
         {/* Skill */}
         <div>
-          <div style={{ fontFamily: FONT, fontSize: 13, fontWeight: 700, color: TEXT }}>{att.name}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{att.name}</div>
           <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED, marginTop: 2 }}>
             {att.skillHash.slice(0, 14)}&hellip;{att.skillHash.slice(-6)}
           </div>
@@ -279,14 +279,14 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
           {att.auditor ? `${att.auditor.slice(0, 6)}...${att.auditor.slice(-4)}` : "\u2014"}
         </div>
         {/* Stake */}
-        <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 400, color: TEXT }}>{att.stake > 0 ? `${att.stake} ETH` : "\u2014"}</div>
+        <div style={{ fontSize: 12, fontWeight: 400, color: TEXT }}>{att.stake > 0 ? `${att.stake} ETH` : "\u2014"}</div>
         {/* Status */}
         <StatusBadge status={att.status} />
         {/* Date */}
-        <div style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>{dateStr}</div>
+        <div style={{ fontSize: 11, color: TEXT_MUTED }}>{dateStr}</div>
         {/* Expand */}
         <div style={{
-          fontFamily: FONT, fontSize: 14, color: TEXT_MUTED, textAlign: "center",
+          fontSize: 14, color: TEXT_MUTED, textAlign: "center",
           transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 0.15s ease",
         }}>{"\u25BE"}</div>
@@ -433,7 +433,7 @@ export function Registry() {
             AEGIS
           </span>
           <span style={{
-            fontFamily: FONT, fontSize: 11, color: TEXT_DIM,
+            fontSize: 11, color: TEXT_DIM,
             background: SURFACE2, padding: "2px 8px", borderRadius: 4,
             marginLeft: 4,
           }}>REGISTRY</span>
@@ -448,7 +448,7 @@ export function Registry() {
           ].map(item => (
             <a key={item.label} href="#" style={{
               color: item.label === "Registry" ? TEXT : TEXT_DIM,
-              textDecoration: "none", fontSize: 13, fontFamily: FONT,
+              textDecoration: "none", fontSize: 13,
               fontWeight: item.label === "Registry" ? 700 : 400,
               borderBottom: item.label === "Registry" ? `2px solid ${ACCENT}` : "2px solid transparent",
               paddingBottom: 2, transition: "color 0.15s",
@@ -482,7 +482,7 @@ export function Registry() {
         {/* Header Section */}
         <div style={{ padding: "32px 48px 24px", borderBottom: `1px solid ${BORDER}`, maxWidth: 1200, margin: "0 auto" }}>
           {/* Breadcrumb */}
-          <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: TEXT_MUTED, marginBottom: 16 }}>
             AEGIS <span style={{ margin: "0 6px" }}>/</span> Registry
           </div>
 
@@ -492,13 +492,13 @@ export function Registry() {
               <h1 style={{ fontFamily: FONT_HEAD, fontSize: 32, fontWeight: 800, color: TEXT, letterSpacing: "-0.02em", margin: 0 }}>
                 Skill Registry
               </h1>
-              <p style={{ fontFamily: FONT, fontSize: 14, color: TEXT_DIM, marginTop: 6 }}>
+              <p style={{ fontSize: 14, color: TEXT_DIM, marginTop: 6 }}>
                 Browse and verify on-chain skill attestations
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ADE80", animation: "pulse 2s infinite" }} />
-              <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>
+              <span style={{ fontSize: 12, color: TEXT_MUTED }}>
                 {loading ? "Syncing\u2026" : `Synced to block #${Number(blockNumber).toLocaleString()}`}
               </span>
             </div>
@@ -527,11 +527,11 @@ export function Registry() {
                 placeholder="Search by skill name, category, hash, or auditor..."
                 style={{
                   flex: 1, background: "transparent", border: "none", outline: "none",
-                  fontFamily: FONT, fontSize: 14, color: TEXT, padding: "14px 12px",
+                  fontSize: 14, color: TEXT, padding: "14px 12px",
                 }}
               />
               <span style={{
-                fontFamily: FONT, fontSize: 10, color: TEXT_MUTED,
+                fontSize: 10, color: TEXT_MUTED,
                 background: SURFACE3, border: `1px solid ${BORDER}`,
                 padding: "2px 6px", borderRadius: 4, whiteSpace: "nowrap",
               }}>{"\u2318"}K</span>
@@ -548,7 +548,7 @@ export function Registry() {
 
           {/* Filter Bar */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Level</span>
+            <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Level</span>
             <FilterChip label="All" count={skills.length} active={levelFilter === null} onClick={() => { setLevelFilter(null); setPage(1); }} />
             <FilterChip label="L1 Basic" count={levelCounts[1]} active={levelFilter === 1} onClick={() => toggleLevel(1)} />
             <FilterChip label="L2 Standard" count={levelCounts[2]} active={levelFilter === 2} onClick={() => toggleLevel(2)} />
@@ -556,14 +556,14 @@ export function Registry() {
 
             <div style={{ width: 1, height: 20, background: BORDER, margin: "0 8px" }} />
 
-            <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Status</span>
+            <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Status</span>
             <FilterChip label="All" active={statusFilter === null} onClick={() => { setStatusFilter(null); setPage(1); }} />
             <FilterChip label="Active" active={statusFilter === "active"} onClick={() => toggleStatus("active")} />
             <FilterChip label="Disputed" active={statusFilter === "disputed"} onClick={() => toggleStatus("disputed")} />
 
             <div style={{ width: 1, height: 20, background: BORDER, margin: "0 8px" }} />
 
-            <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Audit</span>
+            <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Audit</span>
             <FilterChip label="All" active={auditFilter === null} onClick={() => { setAuditFilter(null); setPage(1); }} />
             <FilterChip label="Unaudited" count={auditCounts.unaudited} active={auditFilter === "unaudited"} onClick={() => toggleAudit("unaudited")} />
             <FilterChip label="Attested" count={auditCounts.attested} active={auditFilter === "attested"} onClick={() => toggleAudit("attested")} />
@@ -580,7 +580,7 @@ export function Registry() {
             display: "grid", gridTemplateColumns: GRID, columnGap: 12,
             padding: "12px 20px", background: SURFACE,
             borderBottom: `1px solid ${BORDER}`,
-            fontFamily: FONT, fontSize: 10, color: TEXT_MUTED,
+            fontSize: 10, color: TEXT_MUTED,
             textTransform: "uppercase", letterSpacing: "0.06em",
           }}>
             <SortHeader label="Skill" sortKey="name" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
@@ -597,20 +597,20 @@ export function Registry() {
           {/* Rows */}
           {loading ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <div style={{ fontFamily: FONT, fontSize: 14, color: TEXT_DIM, marginBottom: 6, animation: "pulse 2s infinite" }}>
+              <div style={{ fontSize: 14, color: TEXT_DIM, marginBottom: 6, animation: "pulse 2s infinite" }}>
                 Loading on-chain data&hellip;
               </div>
-              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Scanning SkillListed &amp; SkillRegistered events from Base</div>
+              <div style={{ fontSize: 12, color: TEXT_MUTED }}>Scanning SkillListed &amp; SkillRegistered events from Base</div>
             </div>
           ) : error ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <div style={{ fontFamily: FONT, fontSize: 14, color: "#F87171", marginBottom: 6 }}>Failed to load registry</div>
-              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>{error}</div>
+              <div style={{ fontSize: 14, color: "#F87171", marginBottom: 6 }}>Failed to load registry</div>
+              <div style={{ fontSize: 12, color: TEXT_MUTED }}>{error}</div>
             </div>
           ) : pageData.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <div style={{ fontFamily: FONT, fontSize: 14, color: TEXT_DIM, marginBottom: 6 }}>No skills found</div>
-              <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED }}>Try adjusting your search or filters</div>
+              <div style={{ fontSize: 14, color: TEXT_DIM, marginBottom: 6 }}>No skills found</div>
+              <div style={{ fontSize: 12, color: TEXT_MUTED }}>Try adjusting your search or filters</div>
             </div>
           ) : (
             pageData.map((att, i) => (
@@ -635,7 +635,7 @@ export function Registry() {
           maxWidth: 1200, margin: "12px auto 60px", display: "flex",
           justifyContent: "space-between", padding: "0 4px",
         }}>
-          <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
+          <span style={{ fontSize: 11, color: TEXT_MUTED }}>
             Showing {Math.min((currentPage - 1) * PER_PAGE + 1, filtered.length)}-{Math.min(currentPage * PER_PAGE, filtered.length)} of {filtered.length} attestations
           </span>
           <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>

@@ -192,7 +192,6 @@ function LangTabs({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void })
           borderRadius: 6,
           padding: "6px 16px",
           fontSize: 12,
-          fontFamily: FONT,
           color: active ? ACCENT : TEXT_DIM,
           cursor: "pointer",
           fontWeight: active ? 700 : 400,
@@ -285,7 +284,6 @@ function SidenavItem({ label, active, indent, onClick }: {
         border: "none",
         borderLeft: active ? `2px solid ${ACCENT}` : "2px solid transparent",
         padding: `6px 16px 6px ${indent ? 28 : 16}px`,
-        fontFamily: FONT,
         fontSize: indent ? 12 : 12.5,
         fontWeight: active ? 600 : 400,
         color: active ? ACCENT : TEXT_DIM,
@@ -320,7 +318,6 @@ function ConfigTable({ headers, rows }: { headers: string[]; rows: string[][] })
         padding: "10px 16px",
         background: SURFACE,
         borderBottom: `1px solid ${BORDER}`,
-        fontFamily: FONT,
         fontSize: 10,
         color: TEXT_MUTED,
         textTransform: "uppercase",
@@ -334,7 +331,6 @@ function ConfigTable({ headers, rows }: { headers: string[]; rows: string[][] })
           gridTemplateColumns: `repeat(${headers.length}, 1fr)`,
           padding: "10px 16px",
           borderBottom: ri < rows.length - 1 ? `1px solid ${BORDER}` : "none",
-          fontFamily: FONT,
           fontSize: 12,
         }}>
           {row.map((cell, ci) => (
@@ -380,13 +376,13 @@ function MethodCard({ method, lang, expanded, onToggle }: {
         }}
       >
         <div style={{ flex: 1 }}>
-          <span style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: SYN_FN }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: SYN_FN }}>
             {method.name}
           </span>
-          <span style={{ fontFamily: FONT, fontSize: 12, color: TEXT_MUTED, marginLeft: 8 }}>
+          <span style={{ fontSize: 12, color: TEXT_MUTED, marginLeft: 8 }}>
             {method.signature}
           </span>
-          <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM, marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: TEXT_DIM, marginTop: 4 }}>
             {method.description}
           </div>
         </div>
@@ -406,7 +402,7 @@ function MethodCard({ method, lang, expanded, onToggle }: {
           {method.params.length > 0 && (
             <>
               <h4 style={{
-                fontFamily: FONT, fontSize: 11, color: TEXT_MUTED,
+                fontSize: 11, color: TEXT_MUTED,
                 textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8,
               }}>
                 Parameters
@@ -426,12 +422,12 @@ function MethodCard({ method, lang, expanded, onToggle }: {
           {/* Return type */}
           <div style={{ marginBottom: 12 }}>
             <span style={{
-              fontFamily: FONT, fontSize: 11, color: TEXT_MUTED,
+              fontSize: 11, color: TEXT_MUTED,
               textTransform: "uppercase", letterSpacing: "0.06em",
             }}>
               Returns:{" "}
             </span>
-            <span style={{ fontFamily: FONT, fontSize: 12, color: SYN_TYPE }}>
+            <span style={{ fontSize: 12, color: SYN_TYPE }}>
               {method.returnType}
             </span>
           </div>
@@ -1061,7 +1057,7 @@ function DevNavBar() {
           AEGIS
         </span>
         <span style={{
-          fontFamily: FONT, fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
+          fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
           border: `1px solid ${ACCENT}30`, borderRadius: 4, padding: "2px 8px",
           fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
         }}>
@@ -1081,7 +1077,7 @@ function DevNavBar() {
             textDecoration: item.label === "Developers" ? "underline" : "none",
             textUnderlineOffset: 6,
             textDecorationColor: item.label === "Developers" ? ACCENT : "transparent",
-            fontSize: 13, fontFamily: FONT,
+            fontSize: 13,
             fontWeight: item.label === "Developers" ? 600 : 400,
             transition: "color 0.2s",
             cursor: item.label === "Developers" ? "default" : "pointer",
@@ -1188,7 +1184,7 @@ export function Developers() {
           zIndex: 50,
         }}>
           <div style={{
-            fontFamily: FONT, fontSize: 10, color: TEXT_MUTED,
+            fontSize: 10, color: TEXT_MUTED,
             textTransform: "uppercase", letterSpacing: "0.08em",
             padding: "0 16px 12px",
           }}>
@@ -1224,7 +1220,7 @@ export function Developers() {
               AEGIS SDK
             </h1>
             <p style={{
-              fontFamily: FONT, fontSize: 14, color: TEXT_DIM,
+              fontSize: 14, color: TEXT_DIM,
               lineHeight: 1.7, marginBottom: 24, maxWidth: 620,
             }}>
               TypeScript SDK for interacting with the AEGIS Protocol — the on-chain registry for ZK-verified AI agent skill attestations on Base L2. Query attestations, verify proofs, submit skills, and manage auditor identities.
@@ -1279,11 +1275,11 @@ print(f"Valid: {is_valid}")  # True`}
               Installation
             </h2>
 
-            <h4 style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM, marginBottom: 8 }}>
+            <h4 style={{ fontSize: 12, color: TEXT_DIM, marginBottom: 8 }}>
               Prerequisites
             </h4>
             <ul style={{
-              fontFamily: FONT, fontSize: 13, color: TEXT_DIM,
+              fontSize: 13, color: TEXT_DIM,
               lineHeight: 2, paddingLeft: 20, marginBottom: 20,
             }}>
               <li>Node.js &gt;= 18.0</li>
@@ -1317,7 +1313,7 @@ pip install aegis-sdk[proving]`}
             }}>
               Configuration
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               The <code style={{ color: SYN_FN, background: SURFACE2, padding: "1px 4px", borderRadius: 3 }}>AegisConfig</code> object
               configures the client connection to the AEGIS registry.
             </p>
@@ -1331,7 +1327,7 @@ pip install aegis-sdk[proving]`}
               ]}
             />
 
-            <h4 style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM, marginTop: 20, marginBottom: 8 }}>
+            <h4 style={{ fontSize: 12, color: TEXT_DIM, marginTop: 20, marginBottom: 8 }}>
               Protocol Constants
             </h4>
             <ConfigTable
@@ -1352,7 +1348,7 @@ pip install aegis-sdk[proving]`}
             }}>
               Core Methods
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Read-only queries that don't require a wallet connection.
             </p>
 
@@ -1376,7 +1372,7 @@ pip install aegis-sdk[proving]`}
             }}>
               Discovery
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Browse registered skills, auditors, and metadata on-chain. These read-only methods scan contract events and don't require a wallet.
               <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.2.0</span>
             </p>
@@ -1401,7 +1397,7 @@ pip install aegis-sdk[proving]`}
             }}>
               Audit Metadata
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Every attestation includes a metadata URI pointing to a JSON document that records what was audited and what was found.
               The SDK provides helpers for creating, validating, and hashing metadata against the{" "}
               <code style={{ color: SYN_FN, background: SURFACE2, padding: "1px 4px", borderRadius: 3 }}>aegis/audit-metadata@1</code> schema.
@@ -1417,11 +1413,11 @@ pip install aegis-sdk[proving]`}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <code style={{ fontFamily: FONT_CODE, fontSize: 14, fontWeight: 700, color: SYN_FN }}>createAuditTemplate()</code>
                 <span style={{
-                  fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
+                  fontSize: 10, fontWeight: 700, color: BG,
                   background: "#4ADE80", padding: "2px 8px", borderRadius: 3,
                 }}>HELPER</span>
               </div>
-              <p style={{ fontFamily: FONT, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
+              <p style={{ fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
                 Generate a pre-populated metadata template with all required criteria for a given audit level. Fill in results as you perform each check.
               </p>
               <div style={{
@@ -1485,11 +1481,11 @@ metadata_uri = upload_metadata(template)`, lang)}</pre>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <code style={{ fontFamily: FONT_CODE, fontSize: 14, fontWeight: 700, color: SYN_FN }}>validateAuditMetadata()</code>
                 <span style={{
-                  fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
+                  fontSize: 10, fontWeight: 700, color: BG,
                   background: "#4ADE80", padding: "2px 8px", borderRadius: 3,
                 }}>HELPER</span>
               </div>
-              <p style={{ fontFamily: FONT, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
+              <p style={{ fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
                 Validates a metadata document against the AEGIS schema. Checks that the schema version is recognized,
                 all required fields exist, all criteria for the declared audit level are present, and all required criteria pass.
               </p>
@@ -1498,8 +1494,8 @@ metadata_uri = upload_metadata(template)`, lang)}</pre>
                 marginBottom: 16, padding: "14px 18px", background: SURFACE2,
                 borderRadius: 8, border: `1px solid ${BORDER}`,
               }}>
-                <p style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Audit Level Criteria</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT, fontSize: 11.5 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Audit Level Criteria</p>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
                   <thead>
                     <tr>
                       <th style={{ textAlign: "left", padding: "6px 10px", color: TEXT_DIM, borderBottom: `1px solid ${BORDER}` }}>Level</th>
@@ -1570,7 +1566,7 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             }}>
               Submitting Attestations
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Write operations that modify on-chain state. Require a wallet client via{" "}
               <code style={{ color: SYN_FN, background: SURFACE2, padding: "1px 4px", borderRadius: 3 }}>client.setWallet()</code>.
             </p>
@@ -1595,7 +1591,7 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             }}>
               ZK Proving
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Generate UltraHonk ZK proofs for skill attestations. The circuit verifies: source code hash matches skillHash, audit results match criteriaHash, auditor identity is valid via Pedersen commitment, and audit level is in range [1, 3].
             </p>
 
@@ -1619,7 +1615,7 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             }}>
               Disputes
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Challenge fraudulent or incorrect attestations. The dispute bond is returned if the auditor is found at fault, plus 50% of the auditor's slashed stake.
             </p>
 
@@ -1643,7 +1639,7 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             }}>
               Trust API
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Aggregated trust profiles combining AEGIS attestations with ERC-8004 validation and reputation data.
               Direct mode queries on-chain for free; API mode serves via x402 USDC micropayments on Base.
             </p>
@@ -1668,7 +1664,7 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             }}>
               Contract Events
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               AegisRegistry emits the following Solidity events. Subscribe via the SDK or directly with viem.
             </p>
 
@@ -1726,7 +1722,7 @@ for event in event_filter.get_new_entries():
             }}>
               Error Handling
             </h2>
-            <p style={{ fontFamily: FONT, fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               The AegisRegistry contract uses custom Solidity errors from the AegisErrors library. These are decoded automatically by viem.
             </p>
 

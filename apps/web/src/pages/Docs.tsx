@@ -155,7 +155,7 @@ function InfoTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
       <div style={{
         display: "grid", gridTemplateColumns: `repeat(${headers.length}, 1fr)`,
         padding: "10px 16px", background: SURFACE, borderBottom: `1px solid ${BORDER}`,
-        fontFamily: FONT, fontSize: 10, color: TEXT_MUTED,
+        fontSize: 10, color: TEXT_MUTED,
         textTransform: "uppercase", letterSpacing: "0.06em",
       }}>
         {headers.map((h, i) => <span key={i}>{h}</span>)}
@@ -164,7 +164,7 @@ function InfoTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
         <div key={ri} style={{
           display: "grid", gridTemplateColumns: `repeat(${headers.length}, 1fr)`,
           padding: "10px 16px", borderBottom: ri < rows.length - 1 ? `1px solid ${BORDER}` : "none",
-          fontFamily: FONT, fontSize: 12,
+          fontSize: 12,
         }}>
           {row.map((cell, ci) => (
             <span key={ci} style={{
@@ -221,7 +221,7 @@ function SidenavItem({ label, active, indent, onClick }: {
       background: "transparent", border: "none",
       borderLeft: active ? `2px solid ${ACCENT}` : "2px solid transparent",
       padding: `6px 16px 6px ${indent ? 28 : 16}px`,
-      fontFamily: FONT, fontSize: indent ? 12 : 12.5,
+      fontSize: indent ? 12 : 12.5,
       fontWeight: active ? 600 : 400,
       color: active ? ACCENT : TEXT_DIM,
       cursor: "pointer", transition: "all 0.15s ease",
@@ -241,10 +241,10 @@ function Callout({ color, label, children }: { color: string; label: string; chi
       marginTop: 12, marginBottom: 20,
     }}>
       <div style={{
-        fontFamily: FONT, fontSize: 10, fontWeight: 700,
+        fontSize: 10, fontWeight: 700,
         color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6,
       }}>{label}</div>
-      <div style={{ fontFamily: FONT, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.6 }}>
         {children}
       </div>
     </div>
@@ -272,7 +272,7 @@ function DocsNavBar() {
           AEGIS
         </span>
         <span style={{
-          fontFamily: FONT, fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
+          fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
           border: `1px solid ${ACCENT}30`, borderRadius: 4, padding: "2px 8px",
           fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
         }}>Docs</span>
@@ -290,7 +290,7 @@ function DocsNavBar() {
             textDecoration: item.label === "Docs" ? "underline" : "none",
             textUnderlineOffset: 6,
             textDecorationColor: item.label === "Docs" ? ACCENT : "transparent",
-            fontSize: 13, fontFamily: FONT,
+            fontSize: 13,
             fontWeight: item.label === "Docs" ? 600 : 400,
             transition: "color 0.2s",
             cursor: item.label === "Docs" ? "default" : "pointer",
@@ -366,7 +366,7 @@ export function Docs() {
 
   const Para = ({ children }: { children: React.ReactNode }) => (
     <p style={{
-      fontFamily: FONT, fontSize: 13, color: TEXT_DIM,
+      fontSize: 13, color: TEXT_DIM,
       lineHeight: 1.7, marginBottom: 16, maxWidth: 720,
     }}>{children}</p>
   );
@@ -402,7 +402,7 @@ export function Docs() {
           background: BG, overflowY: "auto", zIndex: 50,
         }}>
           <div style={{
-            fontFamily: FONT, fontSize: 10, color: TEXT_MUTED,
+            fontSize: 10, color: TEXT_MUTED,
             textTransform: "uppercase", letterSpacing: "0.08em",
             padding: "0 16px 12px",
           }}>Documentation</div>
@@ -420,7 +420,7 @@ export function Docs() {
           {/* ═══ Protocol Overview ═══ */}
           <section id="overview" ref={setRef("overview")}>
             <div style={{
-              fontFamily: FONT, fontSize: 12, color: ACCENT,
+              fontSize: 12, color: ACCENT,
               textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
             }}>Protocol Documentation</div>
             <h1 style={{
@@ -507,7 +507,7 @@ export function Docs() {
 
           {/* SDK */}
           <section id="arch-sdk" ref={setRef("arch-sdk")} style={{ marginTop: 32 }}>
-            <SubHeading>SDK <span style={{ fontFamily: FONT, fontSize: 11, color: ACCENT, fontWeight: 700 }}>v0.2.0</span></SubHeading>
+            <SubHeading>SDK <span style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>v0.2.0</span></SubHeading>
             <Para>
               The TypeScript SDK (<InlineCode>@aegisaudit/sdk</InlineCode>) provides a high-level client for interacting with the registry. It wraps viem for chain interactions, includes a prover module for ZK proofs, and supports full discovery and event queries. Install via <InlineCode>npm install @aegisaudit/sdk</InlineCode>.
             </Para>
@@ -582,7 +582,7 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <span style={{
-                  fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
+                  fontSize: 10, fontWeight: 700, color: BG,
                   background: TEXT_DIM, padding: "3px 10px", borderRadius: 4,
                 }}>LEVEL 1</span>
                 <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Functional</span>
@@ -598,8 +598,8 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                 ]}
               />
               <div style={{ marginTop: 12, padding: "10px 14px", background: SURFACE2, borderRadius: 8, border: `1px solid ${BORDER}` }}>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT }}>Input/output hashes, execution logs</span>
+                <span style={{ fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
+                <span style={{ fontSize: 11, color: TEXT }}>Input/output hashes, execution logs</span>
               </div>
             </div>
           </section>
@@ -611,7 +611,7 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <span style={{
-                  fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
+                  fontSize: 10, fontWeight: 700, color: BG,
                   background: ACCENT2, padding: "3px 10px", borderRadius: 4,
                 }}>LEVEL 2</span>
                 <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Robust</span>
@@ -628,11 +628,11 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                 ]}
               />
               <div style={{ marginTop: 12, padding: "10px 14px", background: SURFACE2, borderRadius: 8, border: `1px solid ${BORDER}` }}>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT }}>Test suite hash, edge case matrix, resource profiling output</span>
+                <span style={{ fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
+                <span style={{ fontSize: 11, color: TEXT }}>Test suite hash, edge case matrix, resource profiling output</span>
               </div>
               <div style={{ marginTop: 8, padding: "10px 14px", background: `${ACCENT2}08`, borderRadius: 8, border: `1px solid ${ACCENT2}20` }}>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: ACCENT2 }}>+ all L1 criteria required</span>
+                <span style={{ fontSize: 11, color: ACCENT2 }}>+ all L1 criteria required</span>
               </div>
             </div>
           </section>
@@ -644,7 +644,7 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <span style={{
-                  fontFamily: FONT, fontSize: 10, fontWeight: 700, color: BG,
+                  fontSize: 10, fontWeight: 700, color: BG,
                   background: ACCENT, padding: "3px 10px", borderRadius: 4,
                 }}>LEVEL 3</span>
                 <span style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700, color: TEXT }}>Security</span>
@@ -661,11 +661,11 @@ aegis deploy             # Deploy contracts (wraps forge)`} filename="terminal" 
                 ]}
               />
               <div style={{ marginTop: 12, padding: "10px 14px", background: SURFACE2, borderRadius: 8, border: `1px solid ${BORDER}` }}>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT }}>Security tool output hashes, adversarial test results, dependency audit report</span>
+                <span style={{ fontSize: 11, color: TEXT_DIM }}>Evidence: </span>
+                <span style={{ fontSize: 11, color: TEXT }}>Security tool output hashes, adversarial test results, dependency audit report</span>
               </div>
               <div style={{ marginTop: 8, padding: "10px 14px", background: `${ACCENT}08`, borderRadius: 8, border: `1px solid ${ACCENT}20` }}>
-                <span style={{ fontFamily: FONT, fontSize: 11, color: ACCENT }}>+ all L1 + L2 criteria required</span>
+                <span style={{ fontSize: 11, color: ACCENT }}>+ all L1 + L2 criteria required</span>
               </div>
             </div>
           </section>
@@ -937,14 +937,14 @@ fn main(
                   textAlign: "center",
                 }}>
                   <div style={{
-                    fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                    fontSize: 10, fontWeight: 700,
                     color: BG, background: ACCENT, display: "inline-block",
                     padding: "1px 8px", borderRadius: 3, marginBottom: 8,
                   }}>{s.step}</div>
-                  <div style={{ fontFamily: FONT, fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 4 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 4 }}>
                     {s.label}
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 10, color: TEXT_MUTED }}>
+                  <div style={{ fontSize: 10, color: TEXT_MUTED }}>
                     {s.detail}
                   </div>
                 </div>
@@ -1375,11 +1375,11 @@ const profiles = await trustApi.batchProfiles([1n, 2n, 3n]);`} filename="trust-c
                   borderBottom: `1px solid ${BORDER}`,
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: SYN_FN }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: SYN_FN }}>
                       aegis {cmd.name}
                     </span>
                   </div>
-                  <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM }}>{cmd.desc}</div>
+                  <div style={{ fontSize: 12, color: TEXT_DIM }}>{cmd.desc}</div>
                 </div>
                 <div style={{ padding: "12px 16px" }}>
                   <div style={{

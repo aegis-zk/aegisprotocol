@@ -136,7 +136,7 @@ export function Dashboard() {
               textDecoration: item.label === "Dashboard" ? "underline" : "none",
               textUnderlineOffset: "6px",
               textDecorationColor: item.label === "Dashboard" ? ACCENT : "transparent",
-              fontSize: 13, fontFamily: FONT,
+              fontSize: 13,
               fontWeight: item.label === "Dashboard" ? 600 : 400,
               transition: "color 0.2s",
               cursor: item.label === "Dashboard" ? "default" : "pointer",
@@ -233,7 +233,7 @@ export function Dashboard() {
             </h2>
             <span
               onClick={() => navigate("/leaderboard")}
-              style={{ fontSize: 11, color: ACCENT, cursor: "pointer", fontFamily: FONT, letterSpacing: "0.02em" }}
+              style={{ fontSize: 11, color: ACCENT, cursor: "pointer", letterSpacing: "0.02em" }}
             >
               View All &rarr;
             </span>

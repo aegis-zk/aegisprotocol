@@ -124,7 +124,7 @@ export function Leaderboard() {
           {navItems.map(item => (
             <a key={item.label} href="#" style={{
               color: TEXT_DIM, textDecoration: "none",
-              fontSize: 13, fontFamily: FONT, fontWeight: 400,
+              fontSize: 13, fontWeight: 400,
               transition: "color 0.2s", cursor: "pointer",
             }}
               onClick={e => { e.preventDefault(); item.onClick(); }}
