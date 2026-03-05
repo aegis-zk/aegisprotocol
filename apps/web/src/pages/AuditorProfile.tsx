@@ -146,29 +146,52 @@ export function AuditorProfile() {
         background: "rgba(9,9,11,0.85)", backdropFilter: "blur(20px)",
         borderBottom: `1px solid ${BORDER}`,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/")}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
             width: 28, height: 28, border: `2px solid ${ACCENT}`, borderRadius: 4,
             transform: "rotate(45deg)", display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
+            cursor: "pointer",
+          }} onClick={() => navigate("/")}>
             <div style={{ width: 8, height: 8, background: ACCENT, borderRadius: 1 }} />
           </div>
-          <span style={{ fontFamily: FONT_HEAD, fontSize: 18, fontWeight: 700, color: TEXT, letterSpacing: "-0.02em" }}>
+          <span style={{ fontFamily: FONT_HEAD, fontSize: 18, fontWeight: 700, color: TEXT, letterSpacing: "-0.02em", cursor: "pointer" }} onClick={() => navigate("/")}>
             AEGIS
           </span>
+          <span style={{
+            fontSize: 11, color: TEXT_DIM,
+            background: `${ACCENT}18`, border: `1px solid ${ACCENT}30`, padding: "2px 8px", borderRadius: 4,
+            marginLeft: 4,
+          }}>AUDITOR</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
           {navItems.map(item => (
             <a key={item.label} href="#" style={{
-              color: TEXT_DIM, textDecoration: "none",
-              fontSize: 13, fontWeight: 400,
-              transition: "color 0.2s", cursor: "pointer",
+              color: item.label === "Auditors" ? TEXT : TEXT_DIM,
+              textDecoration: "none",
+              fontSize: 13, fontWeight: item.label === "Auditors" ? 700 : 400,
+              borderBottom: item.label === "Auditors" ? `2px solid ${ACCENT}` : "2px solid transparent",
+              paddingBottom: 2,
+              transition: "color 0.15s", cursor: item.label === "Auditors" ? "default" : "pointer",
             }}
-              onClick={e => { e.preventDefault(); item.onClick(); }}
-              onMouseEnter={e => (e.target as HTMLElement).style.color = TEXT}
-              onMouseLeave={e => (e.target as HTMLElement).style.color = TEXT_DIM}
+              onClick={e => { e.preventDefault(); if (item.label !== "Auditors") item.onClick(); }}
+              onMouseEnter={e => { if (item.label !== "Auditors") (e.target as HTMLElement).style.color = TEXT; }}
+              onMouseLeave={e => { if (item.label !== "Auditors") (e.target as HTMLElement).style.color = TEXT_DIM; }}
             >{item.label}</a>
           ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: -8 }}>
+            <a href="https://github.com/aegisaudit/aegis" target="_blank" rel="noopener noreferrer" title="GitHub"
+              style={{ color: TEXT_DIM, transition: "color 0.2s", display: "flex" }}
+              onMouseEnter={e => (e.currentTarget.style.color = TEXT)}
+              onMouseLeave={e => (e.currentTarget.style.color = TEXT_DIM)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </a>
+            <a href="https://www.npmjs.com/package/@aegisaudit/sdk" target="_blank" rel="noopener noreferrer" title="npm"
+              style={{ color: TEXT_DIM, transition: "color 0.2s", display: "flex" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#CB3837")}
+              onMouseLeave={e => (e.currentTarget.style.color = TEXT_DIM)}>
+              <svg width="20" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M0 256V0h256v256H0zm49.6-49.6h46.4V92.8H128v113.6h32V46.4H49.6v160z"/></svg>
+            </a>
+          </div>
           <NavConnectWallet />
         </div>
       </nav>
@@ -179,12 +202,12 @@ export function AuditorProfile() {
         {/* Back link */}
         <div style={{ marginBottom: 24, animation: "fadeInUp 0.5s ease 0s both" }}>
           <span
-            onClick={() => navigate("/leaderboard")}
+            onClick={() => navigate("/auditors")}
             style={{ fontSize: 12, color: ACCENT, cursor: "pointer", transition: "opacity 0.2s" }}
             onMouseEnter={e => (e.currentTarget.style.opacity = "0.7")}
             onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
           >
-            &larr; Back to Leaderboard
+            &larr; Back to Auditors
           </span>
         </div>
 

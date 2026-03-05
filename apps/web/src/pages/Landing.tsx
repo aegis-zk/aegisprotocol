@@ -919,7 +919,6 @@ function Footer() {
       items: [
         { label: "Registry", onClick: () => navigate("/registry") },
         { label: "Dashboard", onClick: () => navigate("/dashboard") },
-        { label: "Leaderboard", onClick: () => navigate("/leaderboard") },
         { label: "Auditors", onClick: () => navigate("/auditors") },
         { label: "Documentation", onClick: () => navigate("/docs") },
         { label: "Launch App", onClick: () => navigate("/app") },

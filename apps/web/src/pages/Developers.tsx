@@ -1074,11 +1074,11 @@ function DevNavBar() {
         ].map(item => (
           <a key={item.label} href="#" style={{
             color: item.label === "Developers" ? TEXT : TEXT_DIM,
-            textDecoration: item.label === "Developers" ? "underline" : "none",
-            textUnderlineOffset: 6,
-            textDecorationColor: item.label === "Developers" ? ACCENT : "transparent",
+            textDecoration: "none",
+            borderBottom: item.label === "Developers" ? `2px solid ${ACCENT}` : "2px solid transparent",
+            paddingBottom: 2,
             fontSize: 13,
-            fontWeight: item.label === "Developers" ? 600 : 400,
+            fontWeight: item.label === "Developers" ? 700 : 400,
             transition: "color 0.2s",
             cursor: item.label === "Developers" ? "default" : "pointer",
           }}

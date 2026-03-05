@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
+import { useAuditorLeaderboard, useProtocolStats } from "../hooks/useSubgraphData";
+import { formatEther } from "viem";
 
 // ── Design System (matches Landing / Registry / Developers) ──
 const ACCENT = "#FF3366";
@@ -56,6 +58,27 @@ const TIER_REQUIREMENTS = [
   { tier: "Gold", rep: "25 – 49", stake: "≥ 0.1 ETH", perks: "Eligible for all levels, priority queue" },
   { tier: "Diamond", rep: "50+", stake: "≥ 0.5 ETH", perks: "All levels, governance votes, bonus rewards" },
 ];
+
+function getTier(score: number): string {
+  if (score >= 50) return "Diamond";
+  if (score >= 25) return "Gold";
+  if (score >= 10) return "Silver";
+  return "Bronze";
+}
+
+function truncHex(hex: string): string {
+  if (hex.length < 12) return hex;
+  return hex.slice(0, 6) + "\u2026" + hex.slice(-4);
+}
+
+function formatStake(weiStr: string): string {
+  try {
+    const eth = Number(formatEther(BigInt(weiStr)));
+    return eth >= 0.01 ? eth.toFixed(3) : eth.toFixed(4);
+  } catch {
+    return "0";
+  }
+}
 
 // ── Animated Counter ─────────────────────────────────────────
 function Counter({ end, suffix = "", duration = 1600 }: { end: number; suffix?: string; duration?: number }) {
@@ -655,7 +678,6 @@ function AuditorNavBar() {
           { label: "Registry", onClick: () => navigate("/registry") },
           { label: "Dashboard", onClick: () => navigate("/dashboard") },
           { label: "Auditors", onClick: () => navigate("/auditors") },
-          { label: "Leaderboard", onClick: () => navigate("/leaderboard") },
           { label: "Developers", onClick: () => navigate("/developers") },
           { label: "Docs", onClick: () => navigate("/docs") },
         ].map(item => (
@@ -725,6 +747,7 @@ function SubtleBG() {
 const PER_PAGE = 8;
 
 export function Auditors() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -734,6 +757,17 @@ export function Auditors() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'info' | 'leaderboard'>('info');
+
+  // Leaderboard data (from subgraph)
+  const { auditors: lbAuditors, loading: lbLoading } = useAuditorLeaderboard();
+  const { stats: lbStats } = useProtocolStats();
+  const [lbSearch, setLbSearch] = useState("");
+  const [lbTierFilter, setLbTierFilter] = useState<string | null>(null);
+  const [lbPage, setLbPage] = useState(1);
+  const [lbSearchFocused, setLbSearchFocused] = useState(false);
 
   function handleSort(key: string) {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -778,6 +812,34 @@ export function Auditors() {
     const el = document.getElementById("auditor-table");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
+
+  // Leaderboard computed values
+  const lbTotalStake = lbAuditors.reduce((sum, a) => {
+    try { return sum + Number(formatEther(BigInt(a.currentStake))); } catch { return sum; }
+  }, 0);
+  const lbAvgScore = lbAuditors.length > 0
+    ? Math.round(lbAuditors.reduce((sum, a) => sum + Number(a.reputationScore), 0) / lbAuditors.length)
+    : 0;
+  const lbTierCounts = useMemo(() => {
+    const counts: Record<string, number> = { Bronze: 0, Silver: 0, Gold: 0, Diamond: 0 };
+    for (const a of lbAuditors) counts[getTier(Number(a.reputationScore))]++;
+    return counts;
+  }, [lbAuditors]);
+  const lbFiltered = useMemo(() => {
+    let data = [...lbAuditors];
+    if (lbSearch) {
+      const q = lbSearch.toLowerCase();
+      data = data.filter(a => a.id.toLowerCase().includes(q));
+    }
+    if (lbTierFilter) {
+      data = data.filter(a => getTier(Number(a.reputationScore)) === lbTierFilter);
+    }
+    return data;
+  }, [lbAuditors, lbSearch, lbTierFilter]);
+  const LB_PER_PAGE = 15;
+  const lbTotalPages = Math.max(1, Math.ceil(lbFiltered.length / LB_PER_PAGE));
+  const lbCurrentPage = Math.min(lbPage, lbTotalPages);
+  const lbPageData = lbFiltered.slice((lbCurrentPage - 1) * LB_PER_PAGE, lbCurrentPage * LB_PER_PAGE);
 
   return (
     <>
@@ -853,6 +915,41 @@ export function Auditors() {
           </div>
         </div>
 
+        {/* ── Tab Toggle ──────────────────────────── */}
+        <div style={{
+          padding: "0 48px", maxWidth: 1200, margin: "0 auto",
+          borderBottom: `1px solid ${BORDER}`,
+        }}>
+          <div style={{ display: "flex", gap: 0 }}>
+            {([
+              { id: 'info' as const, label: 'Network Info' },
+              { id: 'leaderboard' as const, label: 'Leaderboard' },
+            ]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: activeTab === tab.id ? `2px solid ${ACCENT}` : "2px solid transparent",
+                  color: activeTab === tab.id ? TEXT : TEXT_DIM,
+                  fontWeight: activeTab === tab.id ? 700 : 400,
+                  fontSize: 13,
+                  padding: "16px 24px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  letterSpacing: "0.01em",
+                }}
+                onMouseEnter={e => { if (activeTab !== tab.id) (e.currentTarget.style.color = TEXT); }}
+                onMouseLeave={e => { if (activeTab !== tab.id) (e.currentTarget.style.color = TEXT_DIM); }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {activeTab === 'info' && (<>
         {/* ── How It Works ─────────────────────────── */}
         <div style={{
           padding: "48px 48px", maxWidth: 1200, margin: "0 auto",
@@ -1219,132 +1316,6 @@ export function Auditors() {
           </div>
         </div>
 
-        {/* ── Auditor Leaderboard ──────────────────── */}
-        <div id="auditor-table" style={{
-          padding: "48px 48px 24px", maxWidth: 1200, margin: "0 auto",
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-            <div>
-              <div style={{
-                fontSize: 12, color: ACCENT,
-                textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
-              }}>Leaderboard</div>
-              <h2 style={{
-                fontFamily: FONT_HEAD, fontSize: 22, fontWeight: 700,
-                color: TEXT, letterSpacing: "-0.01em", margin: 0,
-              }}>Active auditors</h2>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: GREEN, animation: "pulse 2s infinite" }} />
-              <span style={{ fontSize: 12, color: TEXT_MUTED }}>Live &middot; Base L2</span>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div style={{ maxWidth: 680, marginBottom: 24 }}>
-            <div style={{
-              display: "flex", alignItems: "center",
-              background: searchFocused ? SURFACE2 : SURFACE,
-              border: `1px solid ${searchFocused ? `${ACCENT}60` : BORDER}`,
-              borderRadius: 10, padding: "0 16px",
-              transition: "all 0.15s ease",
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={searchFocused ? ACCENT : TEXT_MUTED} strokeWidth="2" strokeLinecap="round">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                value={search}
-                onChange={e => { setSearch(e.target.value); setPage(1); }}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder="Search by commitment, tier, or skill name..."
-                style={{
-                  flex: 1, background: "transparent", border: "none", outline: "none",
-                  fontSize: 14, color: TEXT, padding: "14px 12px",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-            <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Tier</span>
-            <FilterChip label="All" count={AUDITOR_DATA.length} active={tierFilter === null} onClick={() => { setTierFilter(null); setPage(1); }} />
-            {["Bronze", "Silver", "Gold", "Diamond"].map(t => (
-              <FilterChip key={t} label={t} count={tierCounts[t]} active={tierFilter === t} onClick={() => { setTierFilter(prev => prev === t ? null : t); setPage(1); }} />
-            ))}
-
-            <div style={{ width: 1, height: 20, background: BORDER, margin: "0 8px" }} />
-
-            <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Status</span>
-            <FilterChip label="All" active={statusFilter === null} onClick={() => { setStatusFilter(null); setPage(1); }} />
-            <FilterChip label="Active" active={statusFilter === "active"} onClick={() => { setStatusFilter(prev => prev === "active" ? null : "active"); setPage(1); }} />
-            <FilterChip label="Suspended" active={statusFilter === "suspended"} onClick={() => { setStatusFilter(prev => prev === "suspended" ? null : "suspended"); setPage(1); }} />
-            <FilterChip label="Slashed" active={statusFilter === "slashed"} onClick={() => { setStatusFilter(prev => prev === "slashed" ? null : "slashed"); setPage(1); }} />
-          </div>
-        </div>
-
-        {/* Data Table */}
-        <div style={{
-          maxWidth: 1200, margin: "-1px auto 0", background: SURFACE,
-          border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "clip",
-        }}>
-          {/* Table Header */}
-          <div style={{
-            display: "grid", gridTemplateColumns: GRID,
-            padding: "12px 20px", background: SURFACE,
-            borderBottom: `1px solid ${BORDER}`,
-            fontSize: 10, color: TEXT_MUTED,
-            textTransform: "uppercase", letterSpacing: "0.06em",
-          }}>
-            <SortHeader label="Commitment" sortKey="commitment" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-            <span>Tier</span>
-            <SortHeader label="Stake" sortKey="stake" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-            <SortHeader label="Audits" sortKey="attestations" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-            <SortHeader label="Reputation" sortKey="reputation" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
-            <span>Status</span>
-            <span>Levels</span>
-            <span />
-          </div>
-
-          {/* Rows */}
-          {pageData.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <div style={{ fontSize: 14, color: TEXT_DIM, marginBottom: 6 }}>No auditors found</div>
-              <div style={{ fontSize: 12, color: TEXT_MUTED }}>Try adjusting your search or filters</div>
-            </div>
-          ) : (
-            pageData.map((auditor, i) => (
-              <AuditorRow
-                key={auditor.commitment}
-                auditor={auditor}
-                index={i}
-                expanded={expandedId === auditor.commitment}
-                onToggle={() => setExpandedId(prev => prev === auditor.commitment ? null : auditor.commitment)}
-              />
-            ))
-          )}
-
-          {/* Pagination */}
-          {filtered.length > 0 && (
-            <Pagination page={currentPage} totalPages={totalPages} onPage={setPage} />
-          )}
-        </div>
-
-        {/* Bottom info bar */}
-        <div style={{
-          maxWidth: 1200, margin: "12px auto 0", display: "flex",
-          justifyContent: "space-between", padding: "0 4px",
-        }}>
-          <span style={{ fontSize: 11, color: TEXT_MUTED }}>
-            Showing {Math.min((currentPage - 1) * PER_PAGE + 1, filtered.length)}-{Math.min(currentPage * PER_PAGE, filtered.length)} of {filtered.length} auditors
-          </span>
-          <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
-            Base Mainnet &middot; Registry 0xBED5...7E1D
-          </span>
-        </div>
-
         {/* ── CTA Section ──────────────────────────── */}
         <div style={{
           padding: "80px 48px 100px", maxWidth: 1200, margin: "0 auto",
@@ -1390,6 +1361,252 @@ export function Auditors() {
             >Read Documentation &rarr;</button>
           </div>
         </div>
+        </>)}
+
+        {/* ── Leaderboard Tab ────────────────────────── */}
+        {activeTab === 'leaderboard' && (<>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 60px" }}>
+            {/* Leaderboard Header */}
+            <div style={{ marginBottom: 32, animation: "fadeInUp 0.5s ease 0s both" }}>
+              <h2 style={{ fontFamily: FONT_HEAD, fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: "-0.01em" }}>
+                Auditor Leaderboard
+              </h2>
+              <p style={{ color: TEXT_DIM, fontSize: 13, marginTop: 8 }}>
+                Ranked by on-chain reputation score — updated every 30s
+              </p>
+            </div>
+
+            {/* Stat Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32, animation: "fadeInUp 0.5s ease 0.05s both" }}>
+              {[
+                { label: "AUDITORS", value: String(lbStats.totalAuditors) },
+                { label: "TOTAL STAKED", value: `${lbTotalStake.toFixed(3)} ETH` },
+                { label: "AVG REPUTATION", value: String(lbAvgScore) },
+                { label: "ACTIVE DISPUTES", value: String(lbStats.openDisputes) },
+              ].map(card => (
+                <div key={card.label} style={{
+                  background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "20px 24px",
+                }}>
+                  <div style={{ fontSize: 10, color: TEXT_DIM, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                    {card.label}
+                  </div>
+                  <div style={{ fontFamily: FONT_HEAD, fontSize: 24, fontWeight: 700, color: TEXT }}>
+                    {card.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Search Bar */}
+            <div style={{ maxWidth: 680, marginBottom: 16, animation: "fadeInUp 0.5s ease 0.1s both" }}>
+              <div style={{
+                display: "flex", alignItems: "center",
+                background: lbSearchFocused ? SURFACE2 : SURFACE,
+                border: `1px solid ${lbSearchFocused ? ACCENT + "60" : BORDER}`,
+                borderRadius: 10, padding: "0 16px",
+                transition: "all 0.15s ease",
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={lbSearchFocused ? ACCENT : TEXT_MUTED} strokeWidth="2" strokeLinecap="round">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  value={lbSearch}
+                  onChange={e => { setLbSearch(e.target.value); setLbPage(1); }}
+                  onFocus={() => setLbSearchFocused(true)}
+                  onBlur={() => setLbSearchFocused(false)}
+                  placeholder="Search by auditor commitment..."
+                  style={{
+                    flex: 1, background: "transparent", border: "none", outline: "none",
+                    fontSize: 14, color: TEXT, padding: "14px 12px",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Tier Filter */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, animation: "fadeInUp 0.5s ease 0.12s both" }}>
+              <span style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>
+                Tier
+              </span>
+              <FilterChip label="All" count={lbAuditors.length} active={!lbTierFilter} onClick={() => { setLbTierFilter(null); setLbPage(1); }} />
+              {(["Bronze", "Silver", "Gold", "Diamond"] as const).map(t => (
+                <FilterChip
+                  key={t}
+                  label={t}
+                  count={lbTierCounts[t]}
+                  active={lbTierFilter === t}
+                  onClick={() => { setLbTierFilter(lbTierFilter === t ? null : t); setLbPage(1); }}
+                />
+              ))}
+            </div>
+
+            {/* Leaderboard Table */}
+            <div style={{ marginBottom: 48, animation: "fadeInUp 0.5s ease 0.15s both" }}>
+              <div style={{
+                background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: "hidden",
+              }}>
+                {/* Header row */}
+                <div style={{
+                  display: "grid", gridTemplateColumns: "50px 1fr 100px 110px 90px 100px",
+                  padding: "12px 20px", borderBottom: `1px solid ${BORDER}`,
+                  fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em",
+                }}>
+                  <span>#</span>
+                  <span>Auditor</span>
+                  <span>Tier</span>
+                  <span>Stake</span>
+                  <span>Attests</span>
+                  <span style={{ textAlign: "right" }}>Rep Score</span>
+                </div>
+
+                {lbLoading ? (
+                  <div style={{ padding: 40, textAlign: "center", color: TEXT_DIM }}>Loading auditors...</div>
+                ) : lbFiltered.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: "center", color: TEXT_DIM }}>
+                    {lbAuditors.length === 0 ? (
+                      <>No auditors registered yet. Be the first — switch to the{" "}
+                        <span style={{ color: ACCENT, cursor: "pointer" }} onClick={() => setActiveTab('info')}>Network Info</span> tab to learn how.
+                      </>
+                    ) : (
+                      <>No auditors match your search.</>
+                    )}
+                  </div>
+                ) : (
+                  lbPageData.map((auditor, i) => {
+                    const globalRank = (lbCurrentPage - 1) * LB_PER_PAGE + i + 1;
+                    const score = Number(auditor.reputationScore);
+                    const tier = getTier(score);
+                    const medalRank = !lbSearch && !lbTierFilter ? globalRank : null;
+                    const tierColor = TIER_COLORS[tier] || TEXT_DIM;
+                    return (
+                      <div key={auditor.id} style={{
+                        display: "grid", gridTemplateColumns: "50px 1fr 100px 110px 90px 100px",
+                        padding: "14px 20px", alignItems: "center",
+                        borderBottom: i < lbPageData.length - 1 ? `1px solid ${BORDER}` : "none",
+                        transition: "background 0.15s",
+                        cursor: "pointer",
+                        animation: `fadeInUp 0.4s ease ${i * 0.03}s both`,
+                      }}
+                        onClick={() => navigate(`/auditor/${auditor.id}`)}
+                        onMouseEnter={e => (e.currentTarget.style.background = SURFACE2)}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <span style={{
+                          fontFamily: FONT_HEAD, fontSize: 14, fontWeight: 700,
+                          color: medalRank === 1 ? AMBER : medalRank === 2 ? "#C0C0C0" : medalRank === 3 ? "#CD7F32" : TEXT_DIM,
+                        }}>
+                          {globalRank}
+                        </span>
+                        <span style={{ fontSize: 13, fontFamily: FONT, color: TEXT }}>
+                          {truncHex(auditor.id)}
+                        </span>
+                        <span>
+                          <span style={{
+                            fontFamily: FONT, fontSize: 10, fontWeight: 700,
+                            color: tierColor, background: `${tierColor}18`, border: `1px solid ${tierColor}30`,
+                            padding: "3px 10px", borderRadius: 4,
+                            textTransform: "uppercase", letterSpacing: "0.04em",
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: tierColor }} />
+                            {tier}
+                          </span>
+                        </span>
+                        <span style={{ fontSize: 12, color: TEXT }}>{formatStake(auditor.currentStake)} ETH</span>
+                        <span style={{ fontSize: 12, color: TEXT }}>{auditor.attestationCount}</span>
+                        <span style={{
+                          textAlign: "right", fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 700,
+                          color: score >= 50 ? PURPLE : score >= 25 ? AMBER : score >= 10 ? "#C0C0C0" : TEXT,
+                        }}>
+                          {score}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Pagination */}
+              {lbTotalPages > 1 && (
+                <div style={{
+                  display: "flex", justifyContent: "center", alignItems: "center", gap: 4, marginTop: 20,
+                }}>
+                  <button
+                    disabled={lbCurrentPage <= 1}
+                    onClick={() => setLbPage(p => Math.max(1, p - 1))}
+                    style={{
+                      width: 32, height: 32, borderRadius: 6, fontSize: 14,
+                      background: "transparent", border: "none", color: lbCurrentPage <= 1 ? TEXT_MUTED : TEXT,
+                      cursor: lbCurrentPage <= 1 ? "default" : "pointer",
+                      opacity: lbCurrentPage <= 1 ? 0.4 : 1, transition: "all 0.12s",
+                    }}
+                  >
+                    &lsaquo;
+                  </button>
+                  {Array.from({ length: lbTotalPages }, (_, i) => i + 1).map(p => (
+                    <button key={p} onClick={() => setLbPage(p)} style={{
+                      width: 32, height: 32, borderRadius: 6, fontSize: 12, fontWeight: p === lbCurrentPage ? 700 : 400,
+                      background: p === lbCurrentPage ? `${ACCENT}20` : "transparent",
+                      border: p === lbCurrentPage ? `1px solid ${ACCENT}40` : "1px solid transparent",
+                      color: p === lbCurrentPage ? ACCENT : TEXT_DIM,
+                      cursor: "pointer", transition: "all 0.12s",
+                    }}>
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    disabled={lbCurrentPage >= lbTotalPages}
+                    onClick={() => setLbPage(p => Math.min(lbTotalPages, p + 1))}
+                    style={{
+                      width: 32, height: 32, borderRadius: 6, fontSize: 14,
+                      background: "transparent", border: "none", color: lbCurrentPage >= lbTotalPages ? TEXT_MUTED : TEXT,
+                      cursor: lbCurrentPage >= lbTotalPages ? "default" : "pointer",
+                      opacity: lbCurrentPage >= lbTotalPages ? 0.4 : 1, transition: "all 0.12s",
+                    }}
+                  >
+                    &rsaquo;
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Tier Requirements */}
+            <div style={{ animation: "fadeInUp 0.5s ease 0.2s both" }}>
+              <h2 style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 600, margin: "0 0 16px", letterSpacing: "-0.01em" }}>
+                Tier Requirements
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+                {TIER_REQUIREMENTS.map(t => {
+                  const color = TIER_COLORS[t.tier];
+                  return (
+                    <div key={t.tier} style={{
+                      background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "20px 24px",
+                      borderTop: `3px solid ${color}`,
+                    }}>
+                      <div style={{
+                        fontFamily: FONT_HEAD, fontSize: 14, fontWeight: 700, color,
+                        marginBottom: 12, display: "flex", alignItems: "center", gap: 8,
+                      }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+                        {t.tier}
+                      </div>
+                      <div style={{ fontSize: 11, color: TEXT_DIM, marginBottom: 6 }}>
+                        Reputation: <span style={{ color: TEXT }}>{t.rep}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: TEXT_DIM, marginBottom: 6 }}>
+                        Min Stake: <span style={{ color: TEXT }}>{t.stake}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: TEXT_DIM }}>
+                        {t.perks}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </>)}
 
         {/* ── Footer ───────────────────────────────── */}
         <footer style={{

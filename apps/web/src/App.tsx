@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ConnectWallet } from './components/ConnectWallet';
 import { Landing } from './pages/Landing';
 import { Registry } from './pages/Registry';
@@ -8,7 +8,7 @@ import { Auditors } from './pages/Auditors';
 import { Dashboard } from './pages/Dashboard';
 import { Docs } from './pages/Docs';
 import { Home } from './pages/Home';
-import { Leaderboard } from './pages/Leaderboard';
+// Leaderboard is now a tab within Auditors page
 import { AuditorProfile } from './pages/AuditorProfile';
 import { RegisterAuditor } from './pages/RegisterAuditor';
 import { RegisterSkill } from './pages/RegisterSkill';
@@ -75,7 +75,7 @@ export function App() {
         <Route path="/developers" element={<Developers />} />
         <Route path="/auditors" element={<Auditors />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/leaderboard" element={<Navigate to="/auditors" replace />} />
         <Route path="/auditor/:commitment" element={<AuditorProfile />} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/app" element={<DApp />} />
