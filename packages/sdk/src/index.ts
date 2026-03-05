@@ -10,7 +10,10 @@ export type {
   DisputeInfo,
   AegisConfig,
   RegisterSkillParams,
+  ListSkillParams,
+  SkillListing,
   SubmitAttestationParams,
+  SkillListedEvent,
   SkillRegisteredEvent,
   AuditorRegisteredEvent,
   DisputeOpenedEvent,
@@ -66,6 +69,7 @@ export {
   PROTOCOL_FEE_BPS,
   MIN_BOUNTY,
   BOUNTY_EXPIRATION,
+  LISTING_FEE,
   REVERT_ERRORS,
 } from './constants';
 

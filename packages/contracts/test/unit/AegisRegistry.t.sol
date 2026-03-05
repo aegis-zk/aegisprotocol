@@ -893,6 +893,126 @@ contract AegisRegistryTest is Test {
         assertEq(b.publisher, address(0));
     }
 
+    // ──────────────────────────────────────────────
+    //  Skill Listing
+    // ──────────────────────────────────────────────
+
+    function test_listSkill() public {
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+
+        IAegisRegistry.SkillListing memory listing = registry.getSkillListing(skillHash);
+        assertTrue(listing.listed);
+        assertEq(listing.publisher, publisher);
+        assertEq(listing.metadataURI, "ipfs://QmSkillMeta");
+        assertGt(listing.timestamp, 0);
+    }
+
+    function test_listSkill_storesMetadataURI() public {
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "data:application/json;base64,eyJuYW1lIjoiVGVzdCJ9");
+
+        string memory uri = registry.metadataURIs(skillHash);
+        assertEq(uri, "data:application/json;base64,eyJuYW1lIjoiVGVzdCJ9");
+    }
+
+    function test_listSkill_protocolFeeAccumulates() public {
+        uint256 protocolBefore = registry.protocolBalance();
+
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+
+        assertEq(registry.protocolBalance() - protocolBefore, 0.001 ether);
+    }
+
+    function test_listSkill_emitsEvent() public {
+        vm.prank(publisher);
+        vm.expectEmit(true, true, false, true);
+        emit IAegisRegistry.SkillListed(skillHash, publisher, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+    }
+
+    function test_listSkill_revertInsufficientFee() public {
+        vm.prank(publisher);
+        vm.expectRevert(AegisErrors.InsufficientListingFee.selector);
+        registry.listSkill{value: 0.0005 ether}(skillHash, "ipfs://QmSkillMeta");
+    }
+
+    function test_listSkill_revertZeroFee() public {
+        vm.prank(publisher);
+        vm.expectRevert(AegisErrors.InsufficientListingFee.selector);
+        registry.listSkill{value: 0}(skillHash, "ipfs://QmSkillMeta");
+    }
+
+    function test_listSkill_revertEmptyMetadata() public {
+        vm.prank(publisher);
+        vm.expectRevert(AegisErrors.EmptyMetadata.selector);
+        registry.listSkill{value: 0.001 ether}(skillHash, "");
+    }
+
+    function test_listSkill_revertZeroSkillHash() public {
+        vm.prank(publisher);
+        vm.expectRevert(AegisErrors.InvalidSkillHash.selector);
+        registry.listSkill{value: 0.001 ether}(bytes32(0), "ipfs://QmSkillMeta");
+    }
+
+    function test_listSkill_revertAlreadyListed() public {
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+
+        vm.prank(publisher);
+        vm.expectRevert(AegisErrors.SkillAlreadyListed.selector);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta2");
+    }
+
+    function test_listSkill_thenRegisterSkill() public {
+        // List a skill first (unaudited)
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+
+        // Then register an auditor and attest it
+        vm.prank(auditor);
+        registry.registerAuditor{value: 0.02 ether}(auditorCommitment);
+
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(1));
+        publicInputs[3] = auditorCommitment;
+
+        vm.prank(publisher);
+        registry.registerSkill{value: 0.001 ether}(
+            skillHash, "ipfs://QmUpdatedMeta", fakeProof, publicInputs, auditorCommitment, 1, address(0)
+        );
+
+        // Both listing and attestation should exist
+        IAegisRegistry.SkillListing memory listing = registry.getSkillListing(skillHash);
+        assertTrue(listing.listed);
+
+        IAegisRegistry.Attestation[] memory attestations = registry.getAttestations(skillHash);
+        assertEq(attestations.length, 1);
+
+        // Metadata should be updated by registerSkill
+        string memory uri = registry.metadataURIs(skillHash);
+        assertEq(uri, "ipfs://QmUpdatedMeta");
+    }
+
+    function test_listSkill_overpayGoesToProtocol() public {
+        uint256 protocolBefore = registry.protocolBalance();
+
+        vm.prank(publisher);
+        registry.listSkill{value: 0.01 ether}(skillHash, "ipfs://QmSkillMeta");
+
+        // Entire msg.value goes to protocol balance
+        assertEq(registry.protocolBalance() - protocolBefore, 0.01 ether);
+    }
+
+    function test_getSkillListing_nonexistent() public view {
+        IAegisRegistry.SkillListing memory listing = registry.getSkillListing(skillHash);
+        assertFalse(listing.listed);
+        assertEq(listing.publisher, address(0));
+    }
+
     // Allow this contract to receive ETH (for completeUnstake tests)
     receive() external payable {}
 }

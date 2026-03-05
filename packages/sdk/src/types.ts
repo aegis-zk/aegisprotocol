@@ -99,8 +99,59 @@ export interface SubmitAttestationParams {
 }
 
 // ──────────────────────────────────────────────
+//  Skill Listing Types
+// ──────────────────────────────────────────────
+
+/**
+ * Parameters for listing a skill on the AEGIS Registry (no audit required).
+ *
+ * This is the lightweight alternative to `registerSkill()` — it lets anyone
+ * list a skill for future auditing without needing an auditor or ZK proof.
+ *
+ * **Requirements:**
+ * - `skillHash` must not be zero
+ * - `metadataURI` must not be empty (provide skill name, description, version)
+ * - A listing fee of 0.001 ETH must be sent with the transaction
+ * - The skill must not already be listed
+ *
+ * **Common revert errors:**
+ * - `InvalidSkillHash` (0xd556b563) — skillHash is bytes32(0)
+ * - `EmptyMetadata` (0xae921357) — metadataURI is empty
+ * - `InsufficientListingFee` (0xbf8513a4) — msg.value < 0.001 ETH
+ * - `SkillAlreadyListed` (0x8046aa2c) — skill already has a listing
+ */
+export interface ListSkillParams {
+  /** keccak256 hash of the skill/plugin source code (bytes32) */
+  skillHash: Hex;
+  /** URI pointing to skill metadata JSON (IPFS, HTTP, or data URI). Cannot be empty. Use `metadataToDataURI()` to encode inline. */
+  metadataURI: string;
+  /** Listing fee in wei (default: 0.001 ETH = 1000000000000000n). Must be >= 0.001 ETH or tx reverts. */
+  fee?: bigint;
+}
+
+/** On-chain skill listing data */
+export interface SkillListing {
+  /** Address that listed the skill */
+  publisher: Address;
+  /** Metadata URI for the skill */
+  metadataURI: string;
+  /** Block timestamp of when the skill was listed */
+  timestamp: bigint;
+  /** Whether the skill is listed */
+  listed: boolean;
+}
+
+// ──────────────────────────────────────────────
 //  Event Types — for discovery & history queries
 // ──────────────────────────────────────────────
+
+export interface SkillListedEvent {
+  skillHash: Hex;
+  publisher: Address;
+  metadataURI: string;
+  blockNumber: bigint;
+  transactionHash: Hex;
+}
 
 export interface SkillRegisteredEvent {
   skillHash: Hex;

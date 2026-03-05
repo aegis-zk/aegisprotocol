@@ -41,10 +41,18 @@ interface IAegisRegistry {
         bool claimed;
     }
 
+    struct SkillListing {
+        address publisher;
+        string metadataURI;
+        uint256 timestamp;
+        bool listed;
+    }
+
     // ──────────────────────────────────────────────
     //  Events
     // ──────────────────────────────────────────────
 
+    event SkillListed(bytes32 indexed skillHash, address indexed publisher, string metadataURI);
     event SkillRegistered(bytes32 indexed skillHash, uint8 auditLevel, bytes32 auditorCommitment);
     event AuditorRegistered(bytes32 indexed auditorCommitment, uint256 stake);
     event StakeAdded(bytes32 indexed auditorCommitment, uint256 amount, uint256 totalStake);
@@ -56,6 +64,20 @@ interface IAegisRegistry {
     event BountyPosted(bytes32 indexed skillHash, uint256 amount, uint8 requiredLevel, uint256 expiresAt);
     event BountyClaimed(bytes32 indexed skillHash, address indexed recipient, uint256 auditorPayout, uint256 protocolFee);
     event BountyReclaimed(bytes32 indexed skillHash, address indexed publisher, uint256 amount);
+
+    // ──────────────────────────────────────────────
+    //  Skill Listing (no audit required)
+    // ──────────────────────────────────────────────
+
+    /// @notice List a skill for future auditing (no auditor or ZK proof required)
+    /// @param skillHash keccak256 of the skill package source code
+    /// @param metadataURI URI pointing to skill metadata JSON (IPFS, HTTP, or data URI). Cannot be empty.
+    function listSkill(bytes32 skillHash, string calldata metadataURI) external payable;
+
+    /// @notice Get a skill listing
+    /// @param skillHash keccak256 of the skill package
+    /// @return The listing info (listed=false if not listed)
+    function getSkillListing(bytes32 skillHash) external view returns (SkillListing memory);
 
     // ──────────────────────────────────────────────
     //  Publisher Actions

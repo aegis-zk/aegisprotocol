@@ -74,6 +74,12 @@ contract AegisRegistry is IAegisRegistry {
     /// @notice skillHash → bounty
     mapping(bytes32 => Bounty) private _bounties;
 
+    /// @notice skillHash → skill listing (for unaudited skills awaiting audit)
+    mapping(bytes32 => SkillListing) private _skillListings;
+
+    /// @notice Listing fee (same as registration fee) — required to prevent spam
+    uint256 public constant LISTING_FEE = 0.001 ether;
+
     // ──────────────────────────────────────────────
     //  Constructor
     // ──────────────────────────────────────────────
@@ -90,6 +96,37 @@ contract AegisRegistry is IAegisRegistry {
     modifier onlyOwner() {
         if (msg.sender != owner) revert AegisErrors.Unauthorized();
         _;
+    }
+
+    // ──────────────────────────────────────────────
+    //  Skill Listing (no audit required)
+    // ──────────────────────────────────────────────
+
+    /// @inheritdoc IAegisRegistry
+    function listSkill(bytes32 skillHash, string calldata metadataURI) external payable {
+        if (skillHash == bytes32(0)) revert AegisErrors.InvalidSkillHash();
+        if (bytes(metadataURI).length == 0) revert AegisErrors.EmptyMetadata();
+        if (msg.value < LISTING_FEE) revert AegisErrors.InsufficientListingFee();
+        if (_skillListings[skillHash].listed) revert AegisErrors.SkillAlreadyListed();
+
+        protocolBalance += msg.value;
+
+        _skillListings[skillHash] = SkillListing({
+            publisher: msg.sender,
+            metadataURI: metadataURI,
+            timestamp: block.timestamp,
+            listed: true
+        });
+
+        // Also store in metadataURIs for unified metadata lookups
+        metadataURIs[skillHash] = metadataURI;
+
+        emit SkillListed(skillHash, msg.sender, metadataURI);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function getSkillListing(bytes32 skillHash) external view returns (SkillListing memory) {
+        return _skillListings[skillHash];
     }
 
     // ──────────────────────────────────────────────

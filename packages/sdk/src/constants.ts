@@ -18,8 +18,8 @@ export const CHAIN_CONFIG = {
 export const REGISTRY_ADDRESSES: Record<number, Address> = {
   // Base Sepolia
   84532: '0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba',
-  // Base Mainnet
-  8453: '0xBED52D8CEe2690900e21e5ffcb988DFF728D7E1D',
+  // Base Mainnet (v2 — with listSkill support)
+  8453: '0x2E993439E0241b220BF12652897342054202f57C',
 };
 
 export const MIN_AUDITOR_STAKE = BigInt('10000000000000000'); // 0.01 ETH
@@ -29,6 +29,7 @@ export const UNSTAKE_COOLDOWN = 3 * 24 * 60 * 60; // 3 days in seconds
 export const PROTOCOL_FEE_BPS = 500; // 5% fee on staking (500 basis points)
 export const MIN_BOUNTY = BigInt('1000000000000000'); // 0.001 ETH
 export const BOUNTY_EXPIRATION = 30 * 24 * 60 * 60; // 30 days in seconds
+export const LISTING_FEE = BigInt('1000000000000000'); // 0.001 ETH (same as registration fee)
 
 /**
  * Deployment block numbers for each chain.
@@ -36,7 +37,7 @@ export const BOUNTY_EXPIRATION = 30 * 24 * 60 * 60; // 30 days in seconds
  */
 export const DEPLOYMENT_BLOCKS: Record<number, bigint> = {
   84532: 38210000n, // Base Sepolia deployment (Feb 27 2026)
-  8453: 42937983n, // Base Mainnet deployment (Mar 4 2026)
+  8453: 42940673n, // Base Mainnet deployment v2 (Mar 4 2026)
 };
 
 /** Max block range for eth_getLogs (public RPCs typically limit to 10K) */
@@ -62,4 +63,8 @@ export const REVERT_ERRORS: Record<string, string> = {
   '0x025dbdd4': 'InsufficientFee — transaction value < 0.001 ETH registration fee',
   '0xf1bc94d2': 'InsufficientStake — auditor stake below 0.01 ETH minimum',
   '0x82b42900': 'Unauthorized — caller not authorized for this action',
+  '0x8046aa2c': 'SkillAlreadyListed — skill hash already has a listing',
+  '0xae921357': 'EmptyMetadata — metadataURI cannot be empty',
+  '0xd556b563': 'InvalidSkillHash — skill hash cannot be zero',
+  '0xbf8513a4': 'InsufficientListingFee — listing fee must be >= 0.001 ETH',
 };

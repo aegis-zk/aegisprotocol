@@ -6,9 +6,12 @@ import type {
   AuditorReputation,
   UnstakeRequest,
   BountyInfo,
+  SkillListing,
+  ListSkillParams,
   Hex,
   RegisterSkillParams,
   SkillRegisteredEvent,
+  SkillListedEvent,
   AuditorRegisteredEvent,
   DisputeOpenedEvent,
   DisputeResolvedEvent,
@@ -28,11 +31,14 @@ import {
   verifyAttestation as _verifyAttestation,
   getAuditorReputation as _getAuditorReputation,
   getMetadataURI as _getMetadataURI,
+  getSkillListing as _getSkillListing,
   getUnstakeRequest as _getUnstakeRequest,
   listAllSkills as _listAllSkills,
+  listListedSkills as _listListedSkills,
   listAllAuditors as _listAllAuditors,
   listDisputes as _listDisputes,
   listResolvedDisputes as _listResolvedDisputes,
+  listSkill as _listSkill,
   registerAuditor as _registerAuditor,
   addStake as _addStake,
   registerSkill as _registerSkill,
@@ -150,6 +156,11 @@ export class AegisClient {
     return _getMetadataURI(this.publicClient, this.config.registryAddress, skillHash);
   }
 
+  /** Get a skill listing (for unaudited/listed skills awaiting audit) */
+  async getSkillListing(skillHash: Hex): Promise<SkillListing> {
+    return _getSkillListing(this.publicClient, this.config.registryAddress, skillHash);
+  }
+
   // ──────────────────────────────────────────────
   //  Discovery — browse skills, auditors, disputes
   // ──────────────────────────────────────────────
@@ -162,6 +173,16 @@ export class AegisClient {
     options?: { fromBlock?: bigint; toBlock?: bigint },
   ): Promise<SkillRegisteredEvent[]> {
     return _listAllSkills(this.publicClient, this.config.registryAddress, options);
+  }
+
+  /**
+   * List all listed skills (awaiting audit) by scanning SkillListed events.
+   * These are skills that were listed via listSkill() but haven't been audited yet.
+   */
+  async listListedSkills(
+    options?: { fromBlock?: bigint; toBlock?: bigint },
+  ): Promise<SkillListedEvent[]> {
+    return _listListedSkills(this.publicClient, this.config.registryAddress, options);
   }
 
   /**
@@ -194,6 +215,40 @@ export class AegisClient {
   // ──────────────────────────────────────────────
   //  Write Operations (require wallet)
   // ──────────────────────────────────────────────
+
+  /**
+   * List a skill for future auditing (no auditor or ZK proof required).
+   *
+   * This is the lightweight way to populate the registry with skills.
+   * Anyone can list a skill with metadata; auditors can then discover
+   * and audit listed skills.
+   *
+   * **Requirements:**
+   * - `skillHash` must not be zero
+   * - `metadataURI` must not be empty
+   * - Wallet must have >= 0.001 ETH for the listing fee
+   *
+   * @param params - See {@link ListSkillParams} for details
+   * @returns Transaction hash
+   *
+   * @example
+   * ```ts
+   * import { keccak256, toBytes } from 'viem';
+   * import { metadataToDataURI } from '@aegisaudit/sdk';
+   *
+   * const skillHash = keccak256(toBytes(sourceCode));
+   * const metadataURI = metadataToDataURI({
+   *   name: 'My AI Skill',
+   *   description: 'A skill that does X',
+   *   version: '1.0.0',
+   * });
+   *
+   * const txHash = await client.listSkill({ skillHash, metadataURI });
+   * ```
+   */
+  async listSkill(params: ListSkillParams): Promise<Hex> {
+    return _listSkill(this.requireWallet(), this.config.registryAddress, params);
+  }
 
   /**
    * Register a skill attestation on the AEGIS Registry.

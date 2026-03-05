@@ -17,7 +17,7 @@ const TEXT_MUTED = "#52525B";
 const FONT_HEAD = "'Orbitron', sans-serif";
 const FONT = "'Space Mono', monospace";
 
-// ── On-Chain Data (Base Sepolia) ──────────────────────────
+// ── On-Chain Data (Base Mainnet) ──────────────────────────
 const AUDITOR_COMMITMENT = "0x1b90cf3b44d7b16293e1aca7f37148ec665c1592d33682571b3af18d62d6abb7";
 const DEPLOYER = "0x51C8Df6ce7b35EF9b13d5fC040CF81AC74c984e3";
 
@@ -28,9 +28,10 @@ interface Attestation {
   category: string;
   publisher: string;
   auditor: string;
-  level: 1 | 2 | 3;
+  level: 0 | 1 | 2 | 3;
   stake: number;
   status: "active" | "disputed" | "expired" | "revoked";
+  auditStatus: "unaudited" | "in_review" | "attested";
   timestamp: number;
   verifications: number;
   txHash: string;
@@ -48,6 +49,7 @@ const REGISTRY_DATA: Attestation[] = [
     level: 2,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 347,
     txHash: "0x1964e3d0776d57ebde1654e8e782fbf1fef3c555e12896a54985e5d2c8e59ac2",
@@ -63,6 +65,7 @@ const REGISTRY_DATA: Attestation[] = [
     level: 1,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 214,
     txHash: "0xb0df058956bf1786a4addb8817f5c313a02ce3c522415dac474d36984f87f58d",
@@ -78,6 +81,7 @@ const REGISTRY_DATA: Attestation[] = [
     level: 2,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 531,
     txHash: "0xc6dcb8cf3503e7f681d3896c4661502cf336f3ac6393506d9f47b945daf3187d",
@@ -93,6 +97,7 @@ const REGISTRY_DATA: Attestation[] = [
     level: 1,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 189,
     txHash: "0xd75a77ec9c5b83b7902bc3980183bebe8269056ae8e2873e5fb6f003d4fee4de",
@@ -108,6 +113,7 @@ const REGISTRY_DATA: Attestation[] = [
     level: 2,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 423,
     txHash: "0x75556ec28ed8a44310cabde97a2ea3d59c51f5feaf99a5c0ffce09eaae0dc66d",
@@ -123,6 +129,7 @@ const REGISTRY_DATA: Attestation[] = [
     level: 1,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 156,
     txHash: "0x240611d5b766d4f87353019d59e193d047d361c9a5595e13edc739d585d50d4c",
@@ -138,6 +145,7 @@ const REGISTRY_DATA: Attestation[] = [
     level: 2,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 278,
     txHash: "0xf05878ca008716517e72d7d0ffc2f73fc4f2eedc6c0b548da5b7bfcbe99a14b2",
@@ -153,10 +161,59 @@ const REGISTRY_DATA: Attestation[] = [
     level: 3,
     stake: 0.02,
     status: "active",
+    auditStatus: "attested",
     timestamp: Date.now() - 5 * 86400000,
     verifications: 612,
     txHash: "0xcca87e7892b25b74b10ee184f0b981ba476c8901be0afa1ce51f53b7e66fa8ab",
     blockNumber: 38222673,
+  },
+  {
+    id: "0x44ab12ef",
+    skillHash: "0x44ab12efdc8735a0f21c9b3e5678abcd1234ef5678ab90cd1234567890abcdef",
+    name: "Stripe Payment Gateway",
+    category: "Payments",
+    publisher: "0x3Ac587e2F9156C40BBa4F9d4269B79E5FBa06382",
+    auditor: "",
+    level: 0,
+    stake: 0,
+    status: "active",
+    auditStatus: "unaudited",
+    timestamp: Date.now() - 1 * 86400000,
+    verifications: 0,
+    txHash: "0xaa11bb22cc33dd44ee55ff66001122334455667788990011223344556677889900",
+    blockNumber: 42940680,
+  },
+  {
+    id: "0x55cd34ab",
+    skillHash: "0x55cd34ab19e8f7a6b5c4d3e2f1098765432abcdef0123456789abcdef01234567",
+    name: "Notion Integration MCP",
+    category: "Productivity",
+    publisher: "0x7Bf291c3E4D5F6A7B8C9D0E1F2345678901AbCdE",
+    auditor: "",
+    level: 0,
+    stake: 0,
+    status: "active",
+    auditStatus: "unaudited",
+    timestamp: Date.now() - 2 * 86400000,
+    verifications: 0,
+    txHash: "0xbb22cc33dd44ee55ff66001122334455667788990011223344556677889900aa11",
+    blockNumber: 42940682,
+  },
+  {
+    id: "0x66ef56cd",
+    skillHash: "0x66ef56cd23a1b2c3d4e5f6789012345abcdef67890abcdef1234567890abcdef",
+    name: "Discord Bot Framework",
+    category: "Communication",
+    publisher: "0x9De4F5A6B7C8D9E0F1234567890AbCdEf12345678",
+    auditor: "",
+    level: 0,
+    stake: 0,
+    status: "active",
+    auditStatus: "unaudited",
+    timestamp: Date.now() - 3 * 86400000,
+    verifications: 0,
+    txHash: "0xcc33dd44ee55ff66001122334455667788990011223344556677889900aa11bb22",
+    blockNumber: 42940685,
   },
 ];
 
@@ -205,7 +262,21 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
   );
 }
 
-function LevelDots({ level }: { level: 1 | 2 | 3 }) {
+function LevelDots({ level }: { level: 0 | 1 | 2 | 3 }) {
+  if (level === 0) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+        {[1, 2, 3].map(n => (
+          <div key={n} style={{
+            width: 7, height: 7, borderRadius: "50%",
+            background: SURFACE3,
+            border: `1px solid ${BORDER}`,
+          }} />
+        ))}
+        <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, marginLeft: 4 }}>{"\u2014"}</span>
+      </div>
+    );
+  }
   const fillColor = level === 3 ? ACCENT : level === 2 ? ACCENT2 : TEXT_DIM;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -235,6 +306,22 @@ function StatusBadge({ status }: { status: string }) {
       color: s.color, background: s.bg, padding: "3px 8px", borderRadius: 4,
       textTransform: "uppercase",
     }}>{status}</span>
+  );
+}
+
+function AuditStatusBadge({ status }: { status: "unaudited" | "in_review" | "attested" }) {
+  const map: Record<string, { color: string; bg: string; label: string }> = {
+    unaudited: { color: "#FBBF24", bg: "#FBBF2415", label: "UNAUDITED" },
+    in_review: { color: "#60A5FA", bg: "#60A5FA15", label: "IN REVIEW" },
+    attested: { color: "#4ADE80", bg: "#4ADE8015", label: "ATTESTED" },
+  };
+  const s = map[status];
+  return (
+    <span style={{
+      fontFamily: FONT, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+      color: s.color, background: s.bg, padding: "3px 8px", borderRadius: 4,
+      textTransform: "uppercase",
+    }}>{s.label}</span>
   );
 }
 
@@ -350,7 +437,7 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 
 // ── Attestation Row ────────────────────────────────────────
 
-const GRID = "minmax(180px, 1.5fr) 120px 80px minmax(140px, 1fr) 100px 80px 100px 40px";
+const GRID = "minmax(180px, 1.5fr) 120px 80px 100px minmax(120px, 1fr) 80px 80px 100px 40px";
 
 function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; expanded: boolean; onToggle: () => void; index: number }) {
   const dateStr = new Date(att.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -381,10 +468,14 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
         <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM }}>{att.publisher.slice(0, 6)}...{att.publisher.slice(-4)}</div>
         {/* Level */}
         <LevelDots level={att.level} />
+        {/* Audit Status */}
+        <AuditStatusBadge status={att.auditStatus} />
         {/* Auditor */}
-        <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM }}>{att.auditor.slice(0, 6)}...{att.auditor.slice(-4)}</div>
+        <div style={{ fontFamily: FONT, fontSize: 12, color: TEXT_DIM }}>
+          {att.auditor ? `${att.auditor.slice(0, 6)}...${att.auditor.slice(-4)}` : "\u2014"}
+        </div>
         {/* Stake */}
-        <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 400, color: TEXT }}>{att.stake} ETH</div>
+        <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 400, color: TEXT }}>{att.stake > 0 ? `${att.stake} ETH` : "\u2014"}</div>
         {/* Status */}
         <StatusBadge status={att.status} />
         {/* Date */}
@@ -410,9 +501,9 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
             <DetailCell label="Days Active" value={`${daysActive} days`} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
-            <DetailCell label="Audit Level" value={`Level ${att.level} \u2014 ${att.level === 1 ? "Basic" : att.level === 2 ? "Standard" : "Comprehensive"}`} />
-            <DetailCell label="Bonded Stake" value={`${att.stake} ETH`} accent />
-            <DetailCell label="Auditor Commitment" value={`${att.auditor.slice(0, 10)}...${att.auditor.slice(-8)}`} />
+            <DetailCell label="Audit Level" value={att.level === 0 ? "Unaudited \u2014 awaiting audit" : `Level ${att.level} \u2014 ${att.level === 1 ? "Basic" : att.level === 2 ? "Standard" : "Comprehensive"}`} />
+            <DetailCell label="Bonded Stake" value={att.stake > 0 ? `${att.stake} ETH` : "None"} accent={att.stake > 0} />
+            <DetailCell label="Auditor Commitment" value={att.auditor ? `${att.auditor.slice(0, 10)}...${att.auditor.slice(-8)}` : "No auditor yet"} />
             <DetailCell label="Verification Count" value={att.verifications.toLocaleString()} />
           </div>
           <div style={{ display: "flex", gap: 10, paddingTop: 16, borderTop: `1px solid ${BORDER}` }}>
@@ -437,6 +528,7 @@ export function Registry() {
   const [sortKey, setSortKey] = useState("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
+  const [auditFilter, setAuditFilter] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -455,6 +547,11 @@ export function Registry() {
     setPage(1);
   }
 
+  function toggleAudit(s: string) {
+    setAuditFilter(prev => prev === s ? null : s);
+    setPage(1);
+  }
+
   const filtered = useMemo(() => {
     let data = [...REGISTRY_DATA];
     if (search) {
@@ -469,6 +566,7 @@ export function Registry() {
     }
     if (levelFilter) data = data.filter(a => a.level === levelFilter);
     if (statusFilter) data = data.filter(a => a.status === statusFilter);
+    if (auditFilter) data = data.filter(a => a.auditStatus === auditFilter);
 
     data.sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
@@ -478,7 +576,7 @@ export function Registry() {
       return ((av as number) - (bv as number)) * dir;
     });
     return data;
-  }, [search, levelFilter, statusFilter, sortKey, sortDir]);
+  }, [search, levelFilter, statusFilter, auditFilter, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, totalPages);
@@ -486,7 +584,8 @@ export function Registry() {
 
   const levelCounts = { 1: 0, 2: 0, 3: 0 };
   const statusCounts: Record<string, number> = { active: 0, disputed: 0, expired: 0, revoked: 0 };
-  REGISTRY_DATA.forEach(a => { levelCounts[a.level]++; statusCounts[a.status]++; });
+  const auditCounts: Record<string, number> = { unaudited: 0, in_review: 0, attested: 0 };
+  REGISTRY_DATA.forEach(a => { levelCounts[a.level as 1 | 2 | 3]++; statusCounts[a.status]++; auditCounts[a.auditStatus]++; });
 
   const totalStake = REGISTRY_DATA.reduce((s, a) => s + a.stake, 0);
   const totalVerifications = REGISTRY_DATA.reduce((s, a) => s + a.verifications, 0);
@@ -633,7 +732,7 @@ export function Registry() {
 
           {/* Stats Row */}
           <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-            <StatCard label="Total Attestations" value={String(REGISTRY_DATA.length)} sub={`${statusCounts.active} active`} />
+            <StatCard label="Total Skills" value={String(REGISTRY_DATA.length)} sub={`${auditCounts.attested} attested`} />
             <StatCard label="Total Staked" value={`${totalStake.toFixed(2)}`} sub="ETH bonded" accent />
             <StatCard label="Verifications" value={totalVerifications.toLocaleString()} sub="all-time queries" />
             <StatCard label="Active Disputes" value={String(statusCounts.disputed)} sub="under review" />
@@ -653,6 +752,13 @@ export function Registry() {
             <FilterChip label="All" active={statusFilter === null} onClick={() => { setStatusFilter(null); setPage(1); }} />
             <FilterChip label="Active" active={statusFilter === "active"} onClick={() => toggleStatus("active")} />
             <FilterChip label="Disputed" active={statusFilter === "disputed"} onClick={() => toggleStatus("disputed")} />
+
+            <div style={{ width: 1, height: 20, background: BORDER, margin: "0 8px" }} />
+
+            <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Audit</span>
+            <FilterChip label="All" active={auditFilter === null} onClick={() => { setAuditFilter(null); setPage(1); }} />
+            <FilterChip label="Unaudited" count={auditCounts.unaudited} active={auditFilter === "unaudited"} onClick={() => toggleAudit("unaudited")} />
+            <FilterChip label="Attested" count={auditCounts.attested} active={auditFilter === "attested"} onClick={() => toggleAudit("attested")} />
           </div>
         </div>
 
@@ -672,6 +778,7 @@ export function Registry() {
             <SortHeader label="Skill" sortKey="name" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
             <SortHeader label="Publisher" sortKey="publisher" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
             <SortHeader label="Level" sortKey="level" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
+            <SortHeader label="Audit" sortKey="auditStatus" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
             <SortHeader label="Auditor" sortKey="auditor" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
             <SortHeader label="Stake" sortKey="stake" currentSort={sortKey} currentDir={sortDir} onSort={handleSort} />
             <span>Status</span>
@@ -712,7 +819,7 @@ export function Registry() {
             Showing {Math.min((currentPage - 1) * PER_PAGE + 1, filtered.length)}-{Math.min(currentPage * PER_PAGE, filtered.length)} of {filtered.length} attestations
           </span>
           <span style={{ fontFamily: FONT, fontSize: 11, color: TEXT_MUTED }}>
-            Base Sepolia &middot; Registry 0x851C...D6Bba
+            Base &middot; Registry 0x2E99...f57C
           </span>
         </div>
       </div>

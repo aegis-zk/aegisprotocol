@@ -18,15 +18,17 @@ import type {
   AuditorReputation,
   UnstakeRequest,
   BountyInfo,
+  SkillListing,
   Hex,
   Address,
   SkillRegisteredEvent,
+  SkillListedEvent,
   AuditorRegisteredEvent,
   DisputeOpenedEvent,
   DisputeResolvedEvent,
   BountyPostedEvent,
 } from './types';
-import { REGISTRATION_FEE, DEPLOYMENT_BLOCKS, MAX_LOG_RANGE } from './constants';
+import { REGISTRATION_FEE, LISTING_FEE, DEPLOYMENT_BLOCKS, MAX_LOG_RANGE } from './constants';
 
 const CHAINS: Record<number, Chain> = {
   8453: base,
@@ -119,9 +121,33 @@ export async function getMetadataURI(
   return result as string;
 }
 
+export async function getSkillListing(
+  client: PublicClient,
+  registryAddress: Address,
+  skillHash: Hex,
+): Promise<SkillListing> {
+  const result = (await client.readContract({
+    address: registryAddress,
+    abi,
+    functionName: 'getSkillListing',
+    args: [skillHash],
+  })) as { publisher: Address; metadataURI: string; timestamp: bigint; listed: boolean };
+
+  return {
+    publisher: result.publisher,
+    metadataURI: result.metadataURI,
+    timestamp: result.timestamp,
+    listed: result.listed,
+  };
+}
+
 // ──────────────────────────────────────────────
 //  Event Queries — Discovery & History
 // ──────────────────────────────────────────────
+
+const skillListedEvent = parseAbiItem(
+  'event SkillListed(bytes32 indexed skillHash, address indexed publisher, string metadataURI)',
+);
 
 const skillRegisteredEvent = parseAbiItem(
   'event SkillRegistered(bytes32 indexed skillHash, uint8 auditLevel, bytes32 auditorCommitment)',
@@ -224,6 +250,37 @@ export async function listAllSkills(
 }
 
 /**
+ * List all listed skills (unaudited) by scanning SkillListed events.
+ * These are skills awaiting audit — they don't have ZK proofs yet.
+ */
+export async function listListedSkills(
+  client: PublicClient,
+  registryAddress: Address,
+  options?: { fromBlock?: bigint; toBlock?: bigint },
+): Promise<SkillListedEvent[]> {
+  const currentBlock = await client.getBlockNumber();
+  const from = resolveFromBlock(client, options?.fromBlock);
+  const to = options?.toBlock ?? currentBlock;
+
+  return getLogsChunked(
+    client,
+    {
+      address: registryAddress,
+      event: skillListedEvent,
+      fromBlock: from,
+      toBlock: to,
+    },
+    (log) => ({
+      skillHash: log.args.skillHash! as Hex,
+      publisher: log.args.publisher! as Address,
+      metadataURI: log.args.metadataURI!,
+      blockNumber: log.blockNumber,
+      transactionHash: log.transactionHash as Hex,
+    }),
+  );
+}
+
+/**
  * List all registered auditors by scanning AuditorRegistered events.
  */
 export async function listAllAuditors(
@@ -314,6 +371,53 @@ export async function listResolvedDisputes(
 // ──────────────────────────────────────────────
 //  Write Operations
 // ──────────────────────────────────────────────
+
+/**
+ * List a skill for future auditing (no auditor or ZK proof required).
+ *
+ * This is the lightweight entry point for populating the registry.
+ * Anyone can list a skill by providing its hash and metadata, paying a small listing fee.
+ * Auditors can then discover and audit listed skills.
+ *
+ * **Requirements:**
+ * - `skillHash` must not be zero. Error: InvalidSkillHash (0xd556b563)
+ * - `metadataURI` must not be empty. Error: EmptyMetadata (0xae921357)
+ * - Fee must be >= 0.001 ETH. Error: InsufficientListingFee (0xbf8513a4)
+ * - Skill must not already be listed. Error: SkillAlreadyListed (0x8046aa2c)
+ */
+export async function listSkill(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+  params: {
+    skillHash: Hex;
+    metadataURI: string;
+    fee?: bigint;
+  },
+): Promise<Hex> {
+  if (params.skillHash === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+    throw new Error('Invalid skillHash: cannot be zero bytes32.');
+  }
+  if (!params.metadataURI || params.metadataURI.length === 0) {
+    throw new Error(
+      'metadataURI cannot be empty. Provide an IPFS URI, HTTP URL, or use metadataToDataURI() to encode inline.',
+    );
+  }
+  const fee = params.fee ?? LISTING_FEE;
+  if (fee < LISTING_FEE) {
+    throw new Error(
+      `Listing fee too low: ${fee} wei. Minimum is ${LISTING_FEE} wei (0.001 ETH). ` +
+      `The contract will revert with InsufficientListingFee (0xbf8513a4).`,
+    );
+  }
+
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'listSkill',
+    args: [params.skillHash, params.metadataURI],
+    value: fee,
+  });
+}
 
 export async function registerAuditor(
   walletClient: WalletClient<Transport, Chain, Account>,

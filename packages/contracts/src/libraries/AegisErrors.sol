@@ -72,4 +72,16 @@ library AegisErrors {
 
     /// @notice ETH transfer to bounty recipient failed
     error BountyTransferFailed();
+
+    /// @notice Skill has already been listed
+    error SkillAlreadyListed();
+
+    /// @notice Metadata URI cannot be empty
+    error EmptyMetadata();
+
+    /// @notice Skill hash cannot be zero
+    error InvalidSkillHash();
+
+    /// @notice Listing fee not met
+    error InsufficientListingFee();
 }
