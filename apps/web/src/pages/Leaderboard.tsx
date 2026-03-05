@@ -102,6 +102,9 @@ export function Leaderboard() {
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: TEXT }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+      `}</style>
       {/* Nav */}
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
