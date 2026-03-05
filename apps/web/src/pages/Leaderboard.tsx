@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 import { useAuditorLeaderboard, useProtocolStats } from "../hooks/useSubgraphData";
@@ -8,6 +9,7 @@ const ACCENT = "#FF3366";
 const BG = "#09090B";
 const SURFACE = "#131316";
 const SURFACE2 = "#1A1A1F";
+const SURFACE3 = "#222228";
 const BORDER = "#2A2A30";
 const TEXT = "#E4E4E7";
 const TEXT_DIM = "#71717A";
@@ -16,7 +18,6 @@ const TEXT_MUTED = "#52525B";
 const FONT_HEAD = "'Orbitron', sans-serif";
 const FONT = "'Space Mono', monospace";
 
-const GREEN = "#4ADE80";
 const AMBER = "#FBBF24";
 const PURPLE = "#A78BFA";
 
@@ -72,10 +73,41 @@ function TierBadge({ tier }: { tier: string }) {
   );
 }
 
+function FilterChip({ label, count, active, onClick }: { label: string; count?: number; active: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{
+      background: active ? `${ACCENT}18` : "transparent",
+      border: `1px solid ${active ? ACCENT + "40" : BORDER}`,
+      color: active ? ACCENT : TEXT_DIM,
+      fontSize: 12, fontWeight: active ? 700 : 400,
+      padding: "5px 10px", borderRadius: 6,
+      cursor: "pointer", transition: "all 0.12s ease",
+      display: "inline-flex", alignItems: "center", gap: 6,
+    }}>
+      {label}
+      {count !== undefined && (
+        <span style={{
+          fontSize: 10, background: active ? `${ACCENT}30` : SURFACE3,
+          padding: "1px 6px", borderRadius: 10,
+        }}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+const PER_PAGE = 15;
+
 export function Leaderboard() {
   const navigate = useNavigate();
   const { auditors, loading } = useAuditorLeaderboard();
   const { stats } = useProtocolStats();
+
+  const [search, setSearch] = useState("");
+  const [tierFilter, setTierFilter] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const navItems = [
     { label: "Registry", onClick: () => navigate("/registry") },
@@ -93,6 +125,30 @@ export function Leaderboard() {
     ? Math.round(auditors.reduce((sum, a) => sum + Number(a.reputationScore), 0) / auditors.length)
     : 0;
 
+  // Tier counts for filter chips
+  const tierCounts = useMemo(() => {
+    const counts: Record<string, number> = { Bronze: 0, Silver: 0, Gold: 0, Diamond: 0 };
+    for (const a of auditors) counts[getTier(Number(a.reputationScore))]++;
+    return counts;
+  }, [auditors]);
+
+  // Filtered + paginated data
+  const filtered = useMemo(() => {
+    let data = [...auditors];
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter(a => a.id.toLowerCase().includes(q));
+    }
+    if (tierFilter) {
+      data = data.filter(a => getTier(Number(a.reputationScore)) === tierFilter);
+    }
+    return data;
+  }, [auditors, search, tierFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const pageData = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
   const statCards = [
     { label: "AUDITORS", value: String(stats.totalAuditors) },
     { label: "TOTAL STAKED", value: `${totalStake.toFixed(3)} ETH` },
@@ -104,7 +160,12 @@ export function Leaderboard() {
     <div style={{ minHeight: "100vh", background: BG, color: TEXT }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
+
       {/* Nav */}
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
@@ -142,7 +203,7 @@ export function Leaderboard() {
       {/* Content */}
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "100px 24px 60px" }}>
         {/* Header */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 40, animation: "fadeInUp 0.5s ease 0s both" }}>
           <h1 style={{ fontFamily: FONT_HEAD, fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
             Auditor Leaderboard
           </h1>
@@ -152,7 +213,7 @@ export function Leaderboard() {
         </div>
 
         {/* Stat Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 40 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 40, animation: "fadeInUp 0.5s ease 0.05s both" }}>
           {statCards.map(card => (
             <div key={card.label} style={{
               background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "20px 24px",
@@ -167,8 +228,52 @@ export function Leaderboard() {
           ))}
         </div>
 
+        {/* Search Bar */}
+        <div style={{ maxWidth: 680, marginBottom: 16, animation: "fadeInUp 0.5s ease 0.1s both" }}>
+          <div style={{
+            display: "flex", alignItems: "center",
+            background: searchFocused ? SURFACE2 : SURFACE,
+            border: `1px solid ${searchFocused ? ACCENT + "60" : BORDER}`,
+            borderRadius: 10, padding: "0 16px",
+            transition: "all 0.15s ease",
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={searchFocused ? ACCENT : TEXT_MUTED} strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search by auditor commitment..."
+              style={{
+                flex: 1, background: "transparent", border: "none", outline: "none",
+                fontSize: 14, color: TEXT, padding: "14px 12px",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Tier Filter */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, animation: "fadeInUp 0.5s ease 0.12s both" }}>
+          <span style={{ fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>
+            Tier
+          </span>
+          <FilterChip label="All" count={auditors.length} active={!tierFilter} onClick={() => { setTierFilter(null); setPage(1); }} />
+          {(["Bronze", "Silver", "Gold", "Diamond"] as const).map(t => (
+            <FilterChip
+              key={t}
+              label={t}
+              count={tierCounts[t]}
+              active={tierFilter === t}
+              onClick={() => { setTierFilter(tierFilter === t ? null : t); setPage(1); }}
+            />
+          ))}
+        </div>
+
         {/* Leaderboard Table */}
-        <div style={{ marginBottom: 48 }}>
+        <div style={{ marginBottom: 48, animation: "fadeInUp 0.5s ease 0.15s both" }}>
           <div style={{
             background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: "hidden",
           }}>
@@ -188,39 +293,45 @@ export function Leaderboard() {
 
             {loading ? (
               <div style={{ padding: 40, textAlign: "center", color: TEXT_DIM }}>Loading auditors...</div>
-            ) : auditors.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <div style={{ padding: 40, textAlign: "center", color: TEXT_DIM }}>
-                No auditors registered yet. Be the first to{" "}
-                <a href="#/app" style={{ color: ACCENT, textDecoration: "none" }}>register as an auditor</a>.
+                {auditors.length === 0 ? (
+                  <>No auditors registered yet. Be the first to{" "}
+                    <a href="#/app" style={{ color: ACCENT, textDecoration: "none" }}>register as an auditor</a>.
+                  </>
+                ) : (
+                  <>No auditors match your search.</>
+                )}
               </div>
             ) : (
-              auditors.map((auditor, i) => {
+              pageData.map((auditor, i) => {
+                const globalRank = (currentPage - 1) * PER_PAGE + i + 1;
                 const score = Number(auditor.reputationScore);
                 const tier = getTier(score);
+                // Use global rank for medal colors (only if not filtered)
+                const medalRank = !search && !tierFilter ? globalRank : null;
                 return (
                   <div key={auditor.id} style={{
                     display: "grid", gridTemplateColumns: "50px 1fr 100px 110px 90px 100px",
                     padding: "14px 20px", alignItems: "center",
-                    borderBottom: i < auditors.length - 1 ? `1px solid ${BORDER}` : "none",
+                    borderBottom: i < pageData.length - 1 ? `1px solid ${BORDER}` : "none",
                     transition: "background 0.15s",
+                    cursor: "pointer",
+                    animation: `fadeInUp 0.4s ease ${i * 0.03}s both`,
                   }}
+                    onClick={() => navigate(`/auditor/${auditor.id}`)}
                     onMouseEnter={e => (e.currentTarget.style.background = SURFACE2)}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
                     <span style={{
                       fontFamily: FONT_HEAD, fontSize: 14, fontWeight: 700,
-                      color: i === 0 ? AMBER : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : TEXT_DIM,
+                      color: medalRank === 1 ? AMBER : medalRank === 2 ? "#C0C0C0" : medalRank === 3 ? "#CD7F32" : TEXT_DIM,
                     }}>
-                      {i + 1}
+                      {globalRank}
                     </span>
-                    <a
-                      href={`https://basescan.org/tx/${auditor.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: TEXT, textDecoration: "none", fontSize: 13, fontFamily: FONT }}
-                    >
+                    <span style={{ fontSize: 13, fontFamily: FONT, color: TEXT }}>
                       {truncHex(auditor.id)}
-                    </a>
+                    </span>
                     <span><TierBadge tier={tier} /></span>
                     <span style={{ fontSize: 12, color: TEXT }}>{formatStake(auditor.currentStake)} ETH</span>
                     <span style={{ fontSize: 12, color: TEXT }}>{auditor.attestationCount}</span>
@@ -235,10 +346,53 @@ export function Leaderboard() {
               })
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{
+              display: "flex", justifyContent: "center", alignItems: "center", gap: 4, marginTop: 20,
+            }}>
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                style={{
+                  width: 32, height: 32, borderRadius: 6, fontSize: 14,
+                  background: "transparent", border: "none", color: currentPage <= 1 ? TEXT_MUTED : TEXT,
+                  cursor: currentPage <= 1 ? "default" : "pointer",
+                  opacity: currentPage <= 1 ? 0.4 : 1, transition: "all 0.12s",
+                }}
+              >
+                &lsaquo;
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button key={p} onClick={() => setPage(p)} style={{
+                  width: 32, height: 32, borderRadius: 6, fontSize: 12, fontWeight: p === currentPage ? 700 : 400,
+                  background: p === currentPage ? `${ACCENT}20` : "transparent",
+                  border: p === currentPage ? `1px solid ${ACCENT}40` : "1px solid transparent",
+                  color: p === currentPage ? ACCENT : TEXT_DIM,
+                  cursor: "pointer", transition: "all 0.12s",
+                }}>
+                  {p}
+                </button>
+              ))}
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                style={{
+                  width: 32, height: 32, borderRadius: 6, fontSize: 14,
+                  background: "transparent", border: "none", color: currentPage >= totalPages ? TEXT_MUTED : TEXT,
+                  cursor: currentPage >= totalPages ? "default" : "pointer",
+                  opacity: currentPage >= totalPages ? 0.4 : 1, transition: "all 0.12s",
+                }}
+              >
+                &rsaquo;
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Tier Requirements */}
-        <div>
+        <div style={{ animation: "fadeInUp 0.5s ease 0.2s both" }}>
           <h2 style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 600, margin: "0 0 16px", letterSpacing: "-0.01em" }}>
             Tier Requirements
           </h2>

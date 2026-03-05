@@ -9,6 +9,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Docs } from './pages/Docs';
 import { Home } from './pages/Home';
 import { Leaderboard } from './pages/Leaderboard';
+import { AuditorProfile } from './pages/AuditorProfile';
 import { RegisterAuditor } from './pages/RegisterAuditor';
 import { RegisterSkill } from './pages/RegisterSkill';
 import { Verify } from './pages/Verify';
@@ -75,6 +76,7 @@ export function App() {
         <Route path="/auditors" element={<Auditors />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/auditor/:commitment" element={<AuditorProfile />} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/app" element={<DApp />} />
       </Routes>

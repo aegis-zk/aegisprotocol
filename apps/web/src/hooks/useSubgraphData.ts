@@ -67,6 +67,15 @@ export interface AuditorEntry {
   txHash: string;
 }
 
+export interface AuditorAttestationEntry {
+  id: string;
+  skill: { id: string; skillName: string; category: string };
+  auditLevel: number;
+  revoked: boolean;
+  txHash: string;
+  timestamp: string;
+}
+
 // ── Queries ──────────────────────────────────────────────
 
 const STATS_QUERY = `{
@@ -118,6 +127,29 @@ const LEADERBOARD_QUERY = `{
     reputationScore
     timestamp
     txHash
+  }
+}`;
+
+const AUDITOR_PROFILE_QUERY = `query AuditorProfile($id: ID!) {
+  auditor(id: $id) {
+    id
+    currentStake
+    initialStake
+    attestationCount
+    disputesInvolved
+    disputesLost
+    reputationScore
+    registered
+    timestamp
+    txHash
+    attestations(first: 100, orderBy: timestamp, orderDirection: desc) {
+      id
+      skill { id skillName category }
+      auditLevel
+      revoked
+      txHash
+      timestamp
+    }
   }
 }`;
 
@@ -272,4 +304,35 @@ export function useSkillNames(refreshMs = 30_000) {
   }, [fetch_, refreshMs]);
 
   return { skills, loading };
+}
+
+export function useAuditorProfile(commitment: string, refreshMs = 30_000) {
+  const [auditor, setAuditor] = useState<AuditorEntry | null>(null);
+  const [attestations, setAttestations] = useState<AuditorAttestationEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch_ = useCallback(async () => {
+    if (!commitment) return;
+    try {
+      const data = await subgraphQuery<{
+        auditor: (AuditorEntry & { attestations: AuditorAttestationEntry[] }) | null;
+      }>(AUDITOR_PROFILE_QUERY, { id: commitment.toLowerCase() });
+      if (data.auditor) {
+        setAuditor(data.auditor);
+        setAttestations(data.auditor.attestations ?? []);
+      }
+    } catch (err) {
+      console.error("[subgraph] Failed to fetch auditor profile:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [commitment]);
+
+  useEffect(() => {
+    fetch_();
+    const id = setInterval(fetch_, refreshMs);
+    return () => clearInterval(id);
+  }, [fetch_, refreshMs]);
+
+  return { auditor, attestations, loading };
 }

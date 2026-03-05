@@ -113,6 +113,10 @@ export function Dashboard() {
     <div style={{ minHeight: "100vh", background: BG, color: TEXT }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
       {/* Nav */}
       <nav style={{
@@ -156,7 +160,7 @@ export function Dashboard() {
       {/* Content */}
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "100px 24px 60px" }}>
         {/* Header */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 40, animation: "fadeInUp 0.5s ease 0s both" }}>
           <h1 style={{ fontFamily: FONT_HEAD, fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
             Protocol Dashboard
           </h1>
@@ -166,7 +170,7 @@ export function Dashboard() {
         </div>
 
         {/* Stat Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 40 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 40, animation: "fadeInUp 0.5s ease 0.05s both" }}>
           {statCards.map(card => (
             <div key={card.label} style={{
               background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "20px 24px",
@@ -185,7 +189,7 @@ export function Dashboard() {
         </div>
 
         {/* Audit Level Distribution */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 40, animation: "fadeInUp 0.5s ease 0.1s both" }}>
           <h2 style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 600, margin: "0 0 16px", letterSpacing: "-0.01em" }}>
             Audit Level Distribution
           </h2>
@@ -229,7 +233,7 @@ export function Dashboard() {
         </div>
 
         {/* Top Auditors */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 40, animation: "fadeInUp 0.5s ease 0.15s both" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <h2 style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 600, margin: 0, letterSpacing: "-0.01em" }}>
               Top Auditors
@@ -264,8 +268,9 @@ export function Dashboard() {
                     display: "grid", gridTemplateColumns: "40px 1fr 90px 100px 80px",
                     padding: "12px 20px", alignItems: "center",
                     borderBottom: i < topAuditors.length - 1 ? `1px solid ${BORDER}` : "none",
-                    transition: "background 0.15s",
+                    transition: "background 0.15s", cursor: "pointer",
                   }}
+                    onClick={() => navigate(`/auditor/${a.id}`)}
                     onMouseEnter={e => (e.currentTarget.style.background = SURFACE2)}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
@@ -300,7 +305,7 @@ export function Dashboard() {
         </div>
 
         {/* Activity Feed */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 40, animation: "fadeInUp 0.5s ease 0.2s both" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <h2 style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 600, margin: 0, letterSpacing: "-0.01em" }}>
               Activity Feed
@@ -318,12 +323,21 @@ export function Dashboard() {
             ) : (
               events.map((ev, i) => {
                 const config = EVENT_COLORS[ev.eventName] || { color: TEXT_DIM, label: ev.eventName };
+                const isSkillEvent = ["SkillListed", "SkillRegistered", "BountyPosted", "BountyClaimed", "BountyReclaimed", "AttestationRevoked"].includes(ev.eventName);
+                const isAuditorEvent = ["AuditorRegistered", "StakeAdded", "UnstakeInitiated", "UnstakeCompleted", "UnstakeCancelled"].includes(ev.eventName);
+                const isClickable = isSkillEvent || isAuditorEvent;
+                const handleEventClick = () => {
+                  if (isSkillEvent) navigate("/registry");
+                  else if (isAuditorEvent) navigate(`/auditor/${ev.data}`);
+                };
                 return (
                   <div key={ev.id} style={{
                     display: "flex", alignItems: "center", gap: 16, padding: "14px 20px",
                     borderBottom: i < events.length - 1 ? `1px solid ${BORDER}` : "none",
                     transition: "background 0.15s",
+                    cursor: isClickable ? "pointer" : "default",
                   }}
+                    onClick={isClickable ? handleEventClick : undefined}
                     onMouseEnter={e => (e.currentTarget.style.background = SURFACE2)}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
@@ -365,6 +379,7 @@ export function Dashboard() {
                       href={`https://basescan.org/tx/${ev.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
                       style={{
                         fontSize: 10, color: ACCENT, textDecoration: "none",
                         opacity: 0.7, transition: "opacity 0.2s",
@@ -382,7 +397,7 @@ export function Dashboard() {
         </div>
 
         {/* Protocol Health */}
-        <div>
+        <div style={{ animation: "fadeInUp 0.5s ease 0.25s both" }}>
           <h2 style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 600, margin: "0 0 16px", letterSpacing: "-0.01em" }}>
             Protocol Health
           </h2>
