@@ -30,8 +30,8 @@ export {
 } from './prover';
 export type { ProofResult, ProveAttestationParams, CLIProveOptions } from './prover';
 
-// IPFS
-export { fetchMetadata, fetchAuditMetadata, uploadMetadata } from './ipfs';
+// IPFS & Metadata
+export { fetchMetadata, fetchAuditMetadata, uploadMetadata, metadataToDataURI, dataURIToMetadata } from './ipfs';
 export type { SkillMetadata } from './ipfs';
 
 // Schema — Audit level standards & metadata validation

@@ -5,6 +5,10 @@
  * on IPFS. Defaults to using a public gateway for reads and requires
  * Pinata credentials for writes.
  *
+ * When no Pinata keys are available, `uploadMetadata()` automatically
+ * falls back to encoding metadata as a base64 data URI — no external
+ * services or API keys needed.
+ *
  * Supports both the legacy `SkillMetadata` format and the new structured
  * `AuditMetadata` format (aegis/audit-metadata@1).
  */
@@ -79,12 +83,62 @@ export async function fetchAuditMetadata(
 }
 
 /**
- * Upload skill metadata to IPFS via Pinata.
+ * Encode metadata as a base64 data URI.
+ *
+ * This is a zero-dependency alternative to IPFS/Pinata — the metadata JSON is
+ * base64-encoded and stored on-chain as a `data:` URI. No external services or
+ * API keys needed. Suitable for small metadata payloads (< 4 KB recommended).
+ *
+ * @example
+ * ```ts
+ * import { metadataToDataURI } from '@aegisaudit/sdk';
+ *
+ * const uri = metadataToDataURI({ name: 'My Skill', description: '...', version: '1.0.0' });
+ * // => "data:application/json;base64,eyJuYW1lIjoi..."
+ *
+ * await client.registerSkill({ skillHash, metadataURI: uri, ... });
+ * ```
+ */
+export function metadataToDataURI(metadata: SkillMetadata | AuditMetadata): string {
+  const json = JSON.stringify(metadata);
+  // Use btoa for browser, Buffer for Node
+  const base64 =
+    typeof btoa === 'function'
+      ? btoa(unescape(encodeURIComponent(json)))
+      : Buffer.from(json, 'utf-8').toString('base64');
+  return `data:application/json;base64,${base64}`;
+}
+
+/**
+ * Decode a base64 data URI back to metadata JSON.
+ *
+ * Inverse of `metadataToDataURI()`. Returns the parsed JSON object.
+ */
+export function dataURIToMetadata<T = SkillMetadata | AuditMetadata>(dataURI: string): T {
+  if (!dataURI.startsWith('data:')) {
+    throw new Error('Not a data URI');
+  }
+  const base64 = dataURI.split(',')[1];
+  if (!base64) throw new Error('Invalid data URI format');
+  const json =
+    typeof atob === 'function'
+      ? decodeURIComponent(escape(atob(base64)))
+      : Buffer.from(base64, 'base64').toString('utf-8');
+  return JSON.parse(json) as T;
+}
+
+/**
+ * Upload skill metadata to IPFS via Pinata, or encode as a data URI.
  *
  * Accepts either legacy `SkillMetadata` or the new `AuditMetadata` format.
  *
- * Requires PINATA_API_KEY and PINATA_SECRET_KEY environment variables,
- * or pass credentials explicitly.
+ * If Pinata credentials are not available (no PINATA_API_KEY / PINATA_SECRET_KEY
+ * env vars and no explicit credentials), automatically falls back to encoding
+ * metadata as a base64 data URI. The data URI is stored on-chain directly —
+ * no external service or API keys needed.
+ *
+ * To always use Pinata, pass credentials explicitly.
+ * To always use data URIs, call `metadataToDataURI()` directly.
  */
 export async function uploadMetadata(
   metadata: SkillMetadata | AuditMetadata,
@@ -93,10 +147,9 @@ export async function uploadMetadata(
   const apiKey = credentials?.apiKey ?? process.env.PINATA_API_KEY;
   const secretKey = credentials?.secretKey ?? process.env.PINATA_SECRET_KEY;
 
+  // No Pinata keys → encode as data URI (works without any external service)
   if (!apiKey || !secretKey) {
-    throw new Error(
-      'Pinata credentials required. Set PINATA_API_KEY and PINATA_SECRET_KEY env vars or pass them explicitly.',
-    );
+    return metadataToDataURI(metadata);
   }
 
   // Determine pin name from metadata format
