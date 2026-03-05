@@ -195,12 +195,72 @@ export class AegisClient {
   //  Write Operations (require wallet)
   // ──────────────────────────────────────────────
 
-  /** Register a skill with a verified attestation */
+  /**
+   * Register a skill attestation on the AEGIS Registry.
+   *
+   * **Prerequisites (all required or the transaction will revert):**
+   * 1. Call `registerAuditor()` first — the `auditorCommitment` must be registered on-chain
+   * 2. Generate a valid ZK proof via the Noir circuit (`generateAttestation()` or CLI)
+   * 3. Wallet must have >= 0.001 ETH for the registration fee
+   *
+   * **auditLevel must be exactly 1, 2, or 3:**
+   * - `1` = L1 Functional (automated scan)
+   * - `2` = L2 Robust (static + dynamic analysis)
+   * - `3` = L3 Security (full manual audit)
+   *
+   * **Common revert errors:**
+   * - `InvalidAuditLevel` (0x657f08f5) — auditLevel is not 1, 2, or 3
+   * - `AuditorNotRegistered` (0x57fb4f95) — auditorCommitment not registered
+   * - `InvalidProof` (0x09bde339) — ZK proof failed on-chain verification
+   * - `InsufficientFee` (0x025dbdd4) — less than 0.001 ETH sent
+   *
+   * @param params - See {@link RegisterSkillParams} for detailed field descriptions
+   * @returns Transaction hash
+   *
+   * @example
+   * ```ts
+   * // Step 1: Register auditor (one-time)
+   * await client.registerAuditor(commitment, parseEther('0.01'));
+   *
+   * // Step 2: Register skill
+   * const txHash = await client.registerSkill({
+   *   skillHash: '0x...',
+   *   metadataURI: metadataToDataURI({ name: 'My Skill', description: '...', version: '1.0' }),
+   *   attestationProof: '0x...',
+   *   publicInputs: [skillHash, criteriaHash, auditLevelHex, auditorCommitment],
+   *   auditorCommitment: '0x...',
+   *   auditLevel: 2, // MUST be 1, 2, or 3
+   * });
+   * ```
+   */
   async registerSkill(params: RegisterSkillParams): Promise<Hex> {
     return _registerSkill(this.requireWallet(), this.config.registryAddress, params);
   }
 
-  /** Register as an anonymous auditor by staking ETH */
+  /**
+   * Register as an anonymous auditor by staking ETH.
+   *
+   * This must be called **before** `registerSkill()` — the auditorCommitment
+   * must exist on-chain or skill registration will revert with `AuditorNotRegistered`.
+   *
+   * The commitment is a Pedersen hash of the auditor's private key, providing
+   * anonymous on-chain identity (no wallet address or KYC).
+   * A 5% protocol fee is deducted from the stake.
+   *
+   * @param auditorCommitment - Pedersen hash of auditor private key (bytes32)
+   * @param stakeAmount - Amount to stake in wei (minimum 0.01 ETH = 10000000000000000n)
+   * @returns Transaction hash
+   *
+   * @example
+   * ```ts
+   * import { parseEther } from 'viem';
+   *
+   * const txHash = await client.registerAuditor(
+   *   '0x1b90cf3b...', // Pedersen commitment
+   *   parseEther('0.02'), // Stake 0.02 ETH
+   * );
+   * ```
+   */
   async registerAuditor(auditorCommitment: Hex, stakeAmount: bigint): Promise<Hex> {
     return _registerAuditor(
       this.requireWallet(),

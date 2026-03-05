@@ -1,6 +1,6 @@
 {
   "name": "@aegisaudit/sdk",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "TypeScript SDK for the AEGIS Protocol — query and interact with on-chain ZK skill attestations on Base",
   "type": "module",
   "main": "./dist/index.cjs",

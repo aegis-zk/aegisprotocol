@@ -41,3 +41,25 @@ export const DEPLOYMENT_BLOCKS: Record<number, bigint> = {
 
 /** Max block range for eth_getLogs (public RPCs typically limit to 10K) */
 export const MAX_LOG_RANGE = 9_999n;
+
+/**
+ * Contract error selectors for debugging reverts.
+ *
+ * When a transaction reverts, the error data starts with a 4-byte selector.
+ * Match it against this map to identify the error.
+ *
+ * @example
+ * ```ts
+ * // If you catch a revert with data starting with 0x657f08f5:
+ * const errorName = REVERT_ERRORS['0x657f08f5'];
+ * // => 'InvalidAuditLevel — auditLevel must be 1, 2, or 3'
+ * ```
+ */
+export const REVERT_ERRORS: Record<string, string> = {
+  '0x657f08f5': 'InvalidAuditLevel — auditLevel must be 1, 2, or 3',
+  '0x57fb4f95': 'AuditorNotRegistered — auditorCommitment not registered on-chain (call registerAuditor first)',
+  '0x09bde339': 'InvalidProof — ZK proof failed on-chain verification',
+  '0x025dbdd4': 'InsufficientFee — transaction value < 0.001 ETH registration fee',
+  '0xf1bc94d2': 'InsufficientStake — auditor stake below 0.01 ETH minimum',
+  '0x82b42900': 'Unauthorized — caller not authorized for this action',
+};

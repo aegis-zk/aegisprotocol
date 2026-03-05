@@ -66,6 +66,7 @@ export {
   PROTOCOL_FEE_BPS,
   MIN_BOUNTY,
   BOUNTY_EXPIRATION,
+  REVERT_ERRORS,
 } from './constants';
 
 // ERC-8004 Integration

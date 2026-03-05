@@ -345,6 +345,17 @@ export async function addStake(
   });
 }
 
+/**
+ * Register a skill attestation on the AEGIS Registry.
+ *
+ * **IMPORTANT — common pitfalls that cause reverts:**
+ * - `auditLevel` must be exactly 1, 2, or 3 (not 0, not 4+). Error: InvalidAuditLevel (0x657f08f5)
+ * - `auditorCommitment` must already be registered on-chain via registerAuditor(). Error: AuditorNotRegistered (0x57fb4f95)
+ * - The ZK proof must be valid and match the public inputs. Error: InvalidProof (0x09bde339)
+ * - Transaction must include >= 0.001 ETH as the registration fee. Error: InsufficientFee (0x025dbdd4)
+ *
+ * @throws Error if auditLevel is not 1, 2, or 3 (caught client-side before sending tx)
+ */
 export async function registerSkill(
   walletClient: WalletClient<Transport, Chain, Account>,
   registryAddress: Address,
@@ -354,11 +365,26 @@ export async function registerSkill(
     attestationProof: Hex;
     publicInputs: Hex[];
     auditorCommitment: Hex;
-    auditLevel: number;
+    auditLevel: 1 | 2 | 3;
     bountyRecipient?: Address;
     fee?: bigint;
   },
 ): Promise<Hex> {
+  // Runtime validation — catch common mistakes before they hit the chain
+  if (![1, 2, 3].includes(params.auditLevel)) {
+    throw new Error(
+      `Invalid auditLevel: ${params.auditLevel}. Must be 1 (L1 Functional), 2 (L2 Robust), or 3 (L3 Security). ` +
+      `The contract will revert with InvalidAuditLevel (0x657f08f5) for any other value.`,
+    );
+  }
+  const fee = params.fee ?? REGISTRATION_FEE;
+  if (fee < REGISTRATION_FEE) {
+    throw new Error(
+      `Registration fee too low: ${fee} wei. Minimum is ${REGISTRATION_FEE} wei (0.001 ETH). ` +
+      `The contract will revert with InsufficientFee (0x025dbdd4).`,
+    );
+  }
+
   const zeroAddress: Address = '0x0000000000000000000000000000000000000000';
   return walletClient.writeContract({
     address: registryAddress,
@@ -373,7 +399,7 @@ export async function registerSkill(
       params.auditLevel,
       params.bountyRecipient ?? zeroAddress,
     ],
-    value: params.fee ?? REGISTRATION_FEE,
+    value: fee,
   });
 }
 
