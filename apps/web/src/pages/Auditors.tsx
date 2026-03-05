@@ -1375,6 +1375,7 @@ export function Auditors() {
               padding: "14px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer",
               transition: "opacity 0.2s",
             }}
+              onClick={() => navigate("/app")}
               onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
               onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
             >Register as Auditor</button>
@@ -1383,6 +1384,7 @@ export function Auditors() {
               borderRadius: 8, padding: "14px 32px", fontSize: 14, fontWeight: 700,
               cursor: "pointer", transition: "border-color 0.2s",
             }}
+              onClick={() => navigate("/docs")}
               onMouseEnter={e => (e.currentTarget.style.borderColor = ACCENT)}
               onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}
             >Read Documentation &rarr;</button>
