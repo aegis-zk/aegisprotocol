@@ -297,7 +297,7 @@ export function Leaderboard() {
               <div style={{ padding: 40, textAlign: "center", color: TEXT_DIM }}>
                 {auditors.length === 0 ? (
                   <>No auditors registered yet. Be the first to{" "}
-                    <a href="#/app" style={{ color: ACCENT, textDecoration: "none" }}>register as an auditor</a>.
+                    <a href="#/auditors" style={{ color: ACCENT, textDecoration: "none" }}>register as an auditor</a>.
                   </>
                 ) : (
                   <>No auditors match your search.</>
