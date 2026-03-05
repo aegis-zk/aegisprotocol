@@ -27,6 +27,11 @@ import type {
   DisputeOpenedEvent,
   DisputeResolvedEvent,
   BountyPostedEvent,
+  DisputeDetails,
+  AuditorProfile,
+  AuditorAttestationRecord,
+  AuditorDisputeRecord,
+  AttestationRevokedEvent,
 } from './types';
 import { REGISTRATION_FEE, LISTING_FEE, DEPLOYMENT_BLOCKS, MAX_LOG_RANGE } from './constants';
 
@@ -686,4 +691,229 @@ export async function reclaimBounty(
     functionName: 'reclaimBounty',
     args: [skillHash],
   });
+}
+
+// ──────────────────────────────────────────────
+//  Dispute Queries — Direct Contract Reads
+// ──────────────────────────────────────────────
+
+/**
+ * Get full dispute details by ID from the contract.
+ */
+export async function getDispute(
+  client: PublicClient,
+  registryAddress: Address,
+  disputeId: bigint,
+): Promise<DisputeDetails> {
+  const [skillHash, attestationIndex, evidence, challenger, bond, resolved, auditorFault] =
+    (await client.readContract({
+      address: registryAddress,
+      abi,
+      functionName: 'getDispute',
+      args: [disputeId],
+    })) as [Hex, bigint, Hex, Address, bigint, boolean, boolean];
+
+  return { disputeId, skillHash, attestationIndex, evidence, challenger, bond, resolved, auditorFault };
+}
+
+/**
+ * Get the number of active (unresolved) disputes for an auditor.
+ */
+export async function getActiveDisputeCount(
+  client: PublicClient,
+  registryAddress: Address,
+  auditorCommitment: Hex,
+): Promise<bigint> {
+  return (await client.readContract({
+    address: registryAddress,
+    abi,
+    functionName: 'getActiveDisputeCount',
+    args: [auditorCommitment],
+  })) as bigint;
+}
+
+/**
+ * Get the total number of disputes ever created.
+ */
+export async function getDisputeCount(
+  client: PublicClient,
+  registryAddress: Address,
+): Promise<bigint> {
+  return (await client.readContract({
+    address: registryAddress,
+    abi,
+    functionName: 'getDisputeCount',
+    args: [],
+  })) as bigint;
+}
+
+// ──────────────────────────────────────────────
+//  Revocation Operations
+// ──────────────────────────────────────────────
+
+/**
+ * Check if an attestation has been revoked.
+ */
+export async function isAttestationRevoked(
+  client: PublicClient,
+  registryAddress: Address,
+  skillHash: Hex,
+  attestationIndex: bigint,
+): Promise<boolean> {
+  return (await client.readContract({
+    address: registryAddress,
+    abi,
+    functionName: 'isAttestationRevoked',
+    args: [skillHash, attestationIndex],
+  })) as boolean;
+}
+
+/**
+ * Revoke an attestation (contract owner only).
+ */
+export async function revokeAttestation(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+  skillHash: Hex,
+  attestationIndex: bigint,
+): Promise<Hex> {
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'revokeAttestation',
+    args: [skillHash, attestationIndex],
+  });
+}
+
+// ──────────────────────────────────────────────
+//  Auditor Profile — Aggregated Query
+// ──────────────────────────────────────────────
+
+const attestationRevokedEvent = parseAbiItem(
+  'event AttestationRevoked(bytes32 indexed skillHash, uint256 attestationIndex, bytes32 indexed auditorCommitment)',
+);
+
+/**
+ * Build an aggregated auditor profile combining reputation, attestation history,
+ * dispute record, and active dispute count.
+ */
+export async function getAuditorProfile(
+  client: PublicClient,
+  registryAddress: Address,
+  auditorCommitment: Hex,
+  options?: { fromBlock?: bigint; toBlock?: bigint },
+): Promise<AuditorProfile> {
+  const currentBlock = await client.getBlockNumber();
+  const from = resolveFromBlock(client, options?.fromBlock);
+  const to = options?.toBlock ?? currentBlock;
+
+  // 1. Get on-chain reputation data + active dispute count in parallel
+  const [reputation, activeDisputeCount, auditorEvents, skillEvents, openedDisputes, resolvedDisputes] =
+    await Promise.all([
+      getAuditorReputation(client, registryAddress, auditorCommitment),
+      getActiveDisputeCount(client, registryAddress, auditorCommitment),
+      // 2. Scan AuditorRegistered events for this auditor
+      getLogsChunked(
+        client,
+        {
+          address: registryAddress,
+          event: auditorRegisteredEvent,
+          args: { auditorCommitment },
+          fromBlock: from,
+          toBlock: to,
+        },
+        (log) => ({
+          blockNumber: log.blockNumber as bigint,
+          transactionHash: log.transactionHash as Hex,
+        }),
+      ),
+      // 3. Scan SkillRegistered events for this auditor's attestations
+      getLogsChunked(
+        client,
+        {
+          address: registryAddress,
+          event: skillRegisteredEvent,
+          fromBlock: from,
+          toBlock: to,
+        },
+        (log) => ({
+          skillHash: log.args.skillHash! as Hex,
+          auditLevel: Number(log.args.auditLevel!),
+          auditorCommitment: log.args.auditorCommitment! as Hex,
+          blockNumber: log.blockNumber as bigint,
+          transactionHash: log.transactionHash as Hex,
+        }),
+      ),
+      // 4. Scan DisputeOpened events
+      listDisputes(client, registryAddress, { fromBlock: from, toBlock: to }),
+      // 5. Scan DisputeResolved events
+      listResolvedDisputes(client, registryAddress, { fromBlock: from, toBlock: to }),
+    ]);
+
+  // Filter attestations by this auditor
+  const auditorAttestations = skillEvents.filter(
+    (e) => e.auditorCommitment === auditorCommitment,
+  );
+
+  // Check revocation status for each attestation
+  const attestations: AuditorAttestationRecord[] = await Promise.all(
+    auditorAttestations.map(async (att) => {
+      // Get the attestation index for this skill+auditor combo
+      const attestationsList = await getAttestations(client, registryAddress, att.skillHash);
+      const idx = attestationsList.findIndex(
+        (a) => a.auditorCommitment === auditorCommitment && Number(a.auditLevel) === att.auditLevel,
+      );
+      const revoked = idx >= 0 ? await isAttestationRevoked(client, registryAddress, att.skillHash, BigInt(idx)) : false;
+
+      return {
+        skillHash: att.skillHash,
+        auditLevel: att.auditLevel,
+        blockNumber: att.blockNumber,
+        transactionHash: att.transactionHash,
+        revoked,
+      };
+    }),
+  );
+
+  // Build dispute records: cross-reference opened disputes with attestation data
+  const resolvedMap = new Map(resolvedDisputes.map((r) => [r.disputeId.toString(), r]));
+  const disputes: AuditorDisputeRecord[] = [];
+
+  for (const opened of openedDisputes) {
+    // Check if this dispute is against one of the auditor's attestations
+    try {
+      const disputeDetails = await getDispute(client, registryAddress, opened.disputeId);
+      // Check attestation at that index for this skill
+      const attList = await getAttestations(client, registryAddress, disputeDetails.skillHash);
+      if (
+        Number(disputeDetails.attestationIndex) < attList.length &&
+        attList[Number(disputeDetails.attestationIndex)].auditorCommitment === auditorCommitment
+      ) {
+        const resolved = resolvedMap.get(opened.disputeId.toString());
+        disputes.push({
+          disputeId: opened.disputeId,
+          skillHash: opened.skillHash,
+          attestationIndex: disputeDetails.attestationIndex,
+          resolved: resolved ? true : false,
+          auditorFault: resolved?.auditorSlashed ?? false,
+          blockNumber: opened.blockNumber,
+          transactionHash: opened.transactionHash,
+        });
+      }
+    } catch {
+      // Skip if dispute fetch fails
+    }
+  }
+
+  const registration = auditorEvents[0] ?? { blockNumber: 0n, transactionHash: '0x' as Hex };
+
+  return {
+    auditorCommitment,
+    reputation,
+    attestations,
+    disputes,
+    activeDisputeCount,
+    registeredAt: registration.blockNumber,
+    registrationTxHash: registration.transactionHash,
+  };
 }

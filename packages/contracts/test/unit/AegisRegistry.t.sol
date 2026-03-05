@@ -1013,6 +1013,192 @@ contract AegisRegistryTest is Test {
         assertEq(listing.publisher, address(0));
     }
 
+    // ──────────────────────────────────────────────
+    //  Dispute Queries
+    // ──────────────────────────────────────────────
+
+    function test_getDispute_returnsCorrectData() public {
+        _registerAuditorAndSkill();
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.01 ether}(skillHash, 0, "malicious code found");
+
+        (
+            bytes32 dSkillHash,
+            uint256 dAttestationIndex,
+            bytes memory dEvidence,
+            address dChallenger,
+            uint256 dBond,
+            bool dResolved,
+            bool dAuditorFault
+        ) = registry.getDispute(0);
+
+        assertEq(dSkillHash, skillHash);
+        assertEq(dAttestationIndex, 0);
+        assertEq(string(dEvidence), "malicious code found");
+        assertEq(dChallenger, challenger);
+        assertEq(dBond, 0.01 ether);
+        assertFalse(dResolved);
+        assertFalse(dAuditorFault);
+    }
+
+    function test_getDispute_afterResolution() public {
+        _registerAuditorAndSkill();
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash, 0, "evidence");
+
+        registry.resolveDispute(0, true);
+
+        (,,,,, bool dResolved, bool dAuditorFault) = registry.getDispute(0);
+        assertTrue(dResolved);
+        assertTrue(dAuditorFault);
+    }
+
+    function test_getDispute_revertNotFound() public {
+        vm.expectRevert(AegisErrors.DisputeNotFound.selector);
+        registry.getDispute(0);
+    }
+
+    function test_getDispute_revertNotFound_outOfRange() public {
+        _registerAuditorAndSkill();
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash, 0, "evidence");
+
+        // Dispute 0 exists, but 1 does not
+        vm.expectRevert(AegisErrors.DisputeNotFound.selector);
+        registry.getDispute(1);
+    }
+
+    function test_getActiveDisputeCount_incrementsOnOpen() public {
+        _registerAuditorAndSkill();
+
+        assertEq(registry.getActiveDisputeCount(auditorCommitment), 0);
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash, 0, "evidence1");
+        assertEq(registry.getActiveDisputeCount(auditorCommitment), 1);
+
+        // Register a second skill to open a second dispute
+        bytes32 skillHash2 = keccak256(abi.encodePacked("second_skill"));
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash2;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(1));
+        publicInputs[3] = auditorCommitment;
+
+        vm.prank(publisher);
+        registry.registerSkill{value: 0.001 ether}(
+            skillHash2, "ipfs://QmSecondSkill", fakeProof, publicInputs, auditorCommitment, 1, address(0)
+        );
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash2, 0, "evidence2");
+        assertEq(registry.getActiveDisputeCount(auditorCommitment), 2);
+    }
+
+    function test_getActiveDisputeCount_decrementsOnResolve() public {
+        _registerAuditorAndSkill();
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash, 0, "evidence");
+        assertEq(registry.getActiveDisputeCount(auditorCommitment), 1);
+
+        registry.resolveDispute(0, false);
+        assertEq(registry.getActiveDisputeCount(auditorCommitment), 0);
+    }
+
+    function test_getDisputeCount_incrementsOnOpen() public {
+        _registerAuditorAndSkill();
+
+        assertEq(registry.getDisputeCount(), 0);
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash, 0, "evidence1");
+        assertEq(registry.getDisputeCount(), 1);
+
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash, 0, "evidence2");
+        assertEq(registry.getDisputeCount(), 2);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Attestation Revocation
+    // ──────────────────────────────────────────────
+
+    function test_revokeAttestation_success() public {
+        _registerAuditorAndSkill();
+
+        registry.revokeAttestation(skillHash, 0);
+
+        assertTrue(registry.isAttestationRevoked(skillHash, 0));
+    }
+
+    function test_revokeAttestation_emitsEvent() public {
+        _registerAuditorAndSkill();
+
+        vm.expectEmit(true, false, true, true);
+        emit IAegisRegistry.AttestationRevoked(skillHash, 0, auditorCommitment);
+        registry.revokeAttestation(skillHash, 0);
+    }
+
+    function test_revokeAttestation_revertNotOwner() public {
+        _registerAuditorAndSkill();
+
+        vm.prank(challenger);
+        vm.expectRevert(AegisErrors.Unauthorized.selector);
+        registry.revokeAttestation(skillHash, 0);
+    }
+
+    function test_revokeAttestation_revertAlreadyRevoked() public {
+        _registerAuditorAndSkill();
+
+        registry.revokeAttestation(skillHash, 0);
+
+        vm.expectRevert(AegisErrors.AlreadyRevoked.selector);
+        registry.revokeAttestation(skillHash, 0);
+    }
+
+    function test_revokeAttestation_revertNoAttestation() public {
+        vm.expectRevert(AegisErrors.AttestationNotFound.selector);
+        registry.revokeAttestation(skillHash, 0);
+    }
+
+    function test_isAttestationRevoked_returnsFalseByDefault() public view {
+        assertFalse(registry.isAttestationRevoked(skillHash, 0));
+    }
+
+    function test_isAttestationRevoked_returnsTrueAfterRevoke() public {
+        _registerAuditorAndSkill();
+
+        assertFalse(registry.isAttestationRevoked(skillHash, 0));
+        registry.revokeAttestation(skillHash, 0);
+        assertTrue(registry.isAttestationRevoked(skillHash, 0));
+    }
+
+    function test_revokeAttestation_doesNotAffectOtherIndices() public {
+        _registerAuditorAndSkill();
+
+        // Register a second attestation for the same skill
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash;
+        publicInputs[1] = keccak256("criteria_v2_standard");
+        publicInputs[2] = bytes32(uint256(2));
+        publicInputs[3] = auditorCommitment;
+
+        vm.prank(publisher);
+        registry.registerSkill{value: 0.001 ether}(
+            skillHash, "ipfs://QmUpdated", fakeProof, publicInputs, auditorCommitment, 2, address(0)
+        );
+
+        // Revoke only the first attestation
+        registry.revokeAttestation(skillHash, 0);
+
+        assertTrue(registry.isAttestationRevoked(skillHash, 0));
+        assertFalse(registry.isAttestationRevoked(skillHash, 1));
+    }
+
     // Allow this contract to receive ETH (for completeUnstake tests)
     receive() external payable {}
 }

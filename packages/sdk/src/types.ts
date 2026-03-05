@@ -182,6 +182,57 @@ export interface DisputeResolvedEvent {
   transactionHash: Hex;
 }
 
+export interface AttestationRevokedEvent {
+  skillHash: Hex;
+  attestationIndex: bigint;
+  auditorCommitment: Hex;
+  blockNumber: bigint;
+  transactionHash: Hex;
+}
+
+/** Full dispute details from the contract's getDispute() getter */
+export interface DisputeDetails {
+  disputeId: bigint;
+  skillHash: Hex;
+  attestationIndex: bigint;
+  evidence: Hex;
+  challenger: Address;
+  bond: bigint;
+  resolved: boolean;
+  auditorFault: boolean;
+}
+
+/** Aggregated auditor profile combining reputation, attestation history, and dispute record */
+export interface AuditorProfile {
+  auditorCommitment: Hex;
+  reputation: AuditorReputation;
+  attestations: AuditorAttestationRecord[];
+  disputes: AuditorDisputeRecord[];
+  activeDisputeCount: bigint;
+  registeredAt: bigint;
+  registrationTxHash: Hex;
+}
+
+/** An attestation made by an auditor (from SkillRegistered event) */
+export interface AuditorAttestationRecord {
+  skillHash: Hex;
+  auditLevel: number;
+  blockNumber: bigint;
+  transactionHash: Hex;
+  revoked: boolean;
+}
+
+/** A dispute involving an auditor's attestation */
+export interface AuditorDisputeRecord {
+  disputeId: bigint;
+  skillHash: Hex;
+  attestationIndex: bigint;
+  resolved: boolean;
+  auditorFault: boolean;
+  blockNumber: bigint;
+  transactionHash: Hex;
+}
+
 export interface BountyPostedEvent {
   skillHash: Hex;
   amount: bigint;

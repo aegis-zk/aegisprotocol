@@ -84,4 +84,10 @@ library AegisErrors {
 
     /// @notice Listing fee not met
     error InsufficientListingFee();
+
+    /// @notice Attestation has already been revoked
+    error AlreadyRevoked();
+
+    /// @notice Dispute ID does not exist
+    error DisputeNotFound();
 }

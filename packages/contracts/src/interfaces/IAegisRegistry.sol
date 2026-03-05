@@ -64,6 +64,7 @@ interface IAegisRegistry {
     event BountyPosted(bytes32 indexed skillHash, uint256 amount, uint8 requiredLevel, uint256 expiresAt);
     event BountyClaimed(bytes32 indexed skillHash, address indexed recipient, uint256 auditorPayout, uint256 protocolFee);
     event BountyReclaimed(bytes32 indexed skillHash, address indexed publisher, uint256 amount);
+    event AttestationRevoked(bytes32 indexed skillHash, uint256 attestationIndex, bytes32 indexed auditorCommitment);
 
     // ──────────────────────────────────────────────
     //  Skill Listing (no audit required)
@@ -152,6 +153,52 @@ interface IAegisRegistry {
     /// @param disputeId The dispute identifier
     /// @param auditorFault True if the auditor is at fault (triggers slashing)
     function resolveDispute(uint256 disputeId, bool auditorFault) external;
+
+    /// @notice Get full dispute details by ID
+    /// @param disputeId The dispute identifier
+    /// @return skillHash The disputed skill
+    /// @return attestationIndex The contested attestation index
+    /// @return evidence Encoded evidence
+    /// @return challenger Address that opened the dispute
+    /// @return bond ETH bond posted by challenger
+    /// @return resolved Whether the dispute has been resolved
+    /// @return auditorFault Whether the auditor was found at fault
+    function getDispute(uint256 disputeId)
+        external
+        view
+        returns (
+            bytes32 skillHash,
+            uint256 attestationIndex,
+            bytes memory evidence,
+            address challenger,
+            uint256 bond,
+            bool resolved,
+            bool auditorFault
+        );
+
+    /// @notice Get the number of active (unresolved) disputes for an auditor
+    /// @param auditorCommitment The auditor's commitment identifier
+    /// @return count Number of unresolved disputes
+    function getActiveDisputeCount(bytes32 auditorCommitment) external view returns (uint256 count);
+
+    /// @notice Get the total number of disputes ever created
+    /// @return count Total dispute count
+    function getDisputeCount() external view returns (uint256 count);
+
+    // ──────────────────────────────────────────────
+    //  Revocation Actions
+    // ──────────────────────────────────────────────
+
+    /// @notice Revoke an attestation (admin/governance only)
+    /// @param skillHash keccak256 of the skill package
+    /// @param attestationIndex Index of the attestation to revoke
+    function revokeAttestation(bytes32 skillHash, uint256 attestationIndex) external;
+
+    /// @notice Check if an attestation has been revoked
+    /// @param skillHash keccak256 of the skill package
+    /// @param attestationIndex Index of the attestation
+    /// @return revoked True if the attestation is revoked
+    function isAttestationRevoked(bytes32 skillHash, uint256 attestationIndex) external view returns (bool revoked);
 
     // ──────────────────────────────────────────────
     //  Unstaking Actions

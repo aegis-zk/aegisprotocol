@@ -34,6 +34,15 @@ import { registerGetErc8004Validation } from './get-erc8004-validation.js';
 import { registerLinkSkillToAgent } from './link-skill-to-agent.js';
 import { registerCreateAgentRegistration } from './create-agent-registration.js';
 
+// Dispute & Revocation tools
+import { registerGetDispute } from './get-dispute.js';
+import { registerGetActiveDisputeCount } from './get-active-dispute-count.js';
+import { registerGetDisputeCount } from './get-dispute-count.js';
+import { registerIsAttestationRevoked } from './is-attestation-revoked.js';
+import { registerGetAuditorProfile } from './get-auditor-profile.js';
+import { registerResolveDispute } from './resolve-dispute.js';
+import { registerRevokeAttestation } from './revoke-attestation.js';
+
 // Trust Profile tools
 import { registerQueryTrustProfile } from './query-trust-profile.js';
 import { registerQuerySkillTrust } from './query-skill-trust.js';
@@ -56,7 +65,12 @@ export function registerAllTools(server: McpServer): void {
   registerListDisputes(server);
   registerListResolvedDisputes(server);
 
-  // Read: unstaking & bounties
+  // Read: disputes, unstaking & bounties
+  registerGetDispute(server);
+  registerGetActiveDisputeCount(server);
+  registerGetDisputeCount(server);
+  registerIsAttestationRevoked(server);
+  registerGetAuditorProfile(server);
   registerGetUnstakeRequest(server);
   registerGetBounty(server);
 
@@ -64,6 +78,8 @@ export function registerAllTools(server: McpServer): void {
   registerRegisterAuditor(server);
   registerAddStake(server);
   registerOpenDispute(server);
+  registerResolveDispute(server);
+  registerRevokeAttestation(server);
   registerInitiateUnstake(server);
   registerCompleteUnstake(server);
   registerCancelUnstake(server);

@@ -11,7 +11,7 @@ import { REGISTRY_ADDRESS } from "../config";
 
 // ── Constants ─────────────────────────────────────────────
 const REGISTRY = REGISTRY_ADDRESS[8453];
-const DEPLOYMENT_BLOCK = 42940673n;
+const DEPLOYMENT_BLOCK = 42942701n;
 const CHUNK_SIZE = 9_999n;
 
 // ── Singleton read-only client (no wallet needed) ─────────

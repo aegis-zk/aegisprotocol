@@ -39,3 +39,20 @@ contract DeployAegis is Script {
         vm.stopBroadcast();
     }
 }
+
+/// @notice Deploys AEGIS Registry using an existing verifier (for contract upgrades)
+/// @dev Reuses the already-deployed HonkVerifier to save gas
+contract DeployRegistryOnly is Script {
+    function run() external {
+        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address existingVerifier = vm.envAddress("VERIFIER_ADDRESS");
+
+        vm.startBroadcast(deployerKey);
+
+        AegisRegistry registry = new AegisRegistry(existingVerifier);
+        console2.log("AegisRegistry deployed at:", address(registry));
+        console2.log("Using existing verifier:", existingVerifier);
+
+        vm.stopBroadcast();
+    }
+}

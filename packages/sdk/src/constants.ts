@@ -18,8 +18,8 @@ export const CHAIN_CONFIG = {
 export const REGISTRY_ADDRESSES: Record<number, Address> = {
   // Base Sepolia
   84532: '0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba',
-  // Base Mainnet (v2 — with listSkill support)
-  8453: '0x2E993439E0241b220BF12652897342054202f57C',
+  // Base Mainnet (v3 — disputes, revocation, auditor profiles)
+  8453: '0xa0FF1563Ab7d5d514146F2713125098954Af1F61',
 };
 
 export const MIN_AUDITOR_STAKE = BigInt('10000000000000000'); // 0.01 ETH
@@ -37,7 +37,7 @@ export const LISTING_FEE = BigInt('1000000000000000'); // 0.001 ETH (same as reg
  */
 export const DEPLOYMENT_BLOCKS: Record<number, bigint> = {
   84532: 38210000n, // Base Sepolia deployment (Feb 27 2026)
-  8453: 42940673n, // Base Mainnet deployment v2 (Mar 4 2026)
+  8453: 42942701n, // Base Mainnet deployment v3 (Mar 4 2026)
 };
 
 /** Max block range for eth_getLogs (public RPCs typically limit to 10K) */
@@ -67,4 +67,6 @@ export const REVERT_ERRORS: Record<string, string> = {
   '0xae921357': 'EmptyMetadata — metadataURI cannot be empty',
   '0xd556b563': 'InvalidSkillHash — skill hash cannot be zero',
   '0xbf8513a4': 'InsufficientListingFee — listing fee must be >= 0.001 ETH',
+  '0x905e7107': 'AlreadyRevoked — attestation has already been revoked',
+  '0x4250af08': 'DisputeNotFound — dispute ID does not exist',
 };

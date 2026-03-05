@@ -77,6 +77,9 @@ contract AegisRegistry is IAegisRegistry {
     /// @notice skillHash → skill listing (for unaudited skills awaiting audit)
     mapping(bytes32 => SkillListing) private _skillListings;
 
+    /// @notice skillHash → attestationIndex → revoked
+    mapping(bytes32 => mapping(uint256 => bool)) private _revokedAttestations;
+
     /// @notice Listing fee (same as registration fee) — required to prevent spam
     uint256 public constant LISTING_FEE = 0.001 ether;
 
@@ -335,6 +338,55 @@ contract AegisRegistry is IAegisRegistry {
         }
 
         emit DisputeResolved(disputeId, auditorFault);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function getDispute(uint256 disputeId)
+        external
+        view
+        returns (
+            bytes32 skillHash,
+            uint256 attestationIndex,
+            bytes memory evidence,
+            address challenger,
+            uint256 bond,
+            bool resolved,
+            bool auditorFault
+        )
+    {
+        if (disputeId >= _nextDisputeId) revert AegisErrors.DisputeNotFound();
+        Dispute storage d = _disputes[disputeId];
+        return (d.skillHash, d.attestationIndex, d.evidence, d.challenger, d.bond, d.resolved, d.auditorFault);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function getActiveDisputeCount(bytes32 auditorCommitment) external view returns (uint256 count) {
+        return _activeDisputeCount[auditorCommitment];
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function getDisputeCount() external view returns (uint256 count) {
+        return _nextDisputeId;
+    }
+
+    // ──────────────────────────────────────────────
+    //  Revocation Actions
+    // ──────────────────────────────────────────────
+
+    /// @inheritdoc IAegisRegistry
+    function revokeAttestation(bytes32 skillHash, uint256 attestationIndex) external onlyOwner {
+        if (attestationIndex >= _attestations[skillHash].length) revert AegisErrors.AttestationNotFound();
+        if (_revokedAttestations[skillHash][attestationIndex]) revert AegisErrors.AlreadyRevoked();
+
+        _revokedAttestations[skillHash][attestationIndex] = true;
+
+        bytes32 auditorCommitment = _attestations[skillHash][attestationIndex].auditorCommitment;
+        emit AttestationRevoked(skillHash, attestationIndex, auditorCommitment);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function isAttestationRevoked(bytes32 skillHash, uint256 attestationIndex) external view returns (bool revoked) {
+        return _revokedAttestations[skillHash][attestationIndex];
     }
 
     // ──────────────────────────────────────────────

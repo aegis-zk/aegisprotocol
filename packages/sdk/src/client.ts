@@ -24,6 +24,8 @@ import type {
   RespondToErc8004ValidationParams,
   TrustProfile,
   SkillTrustScore,
+  DisputeDetails,
+  AuditorProfile,
 } from './types';
 import {
   createReadClient,
@@ -51,6 +53,12 @@ import {
   listBounties as _listBounties,
   postBounty as _postBounty,
   reclaimBounty as _reclaimBounty,
+  getDispute as _getDispute,
+  getActiveDisputeCount as _getActiveDisputeCount,
+  getDisputeCount as _getDisputeCount,
+  isAttestationRevoked as _isAttestationRevoked,
+  revokeAttestation as _revokeAttestation,
+  getAuditorProfile as _getAuditorProfile,
 } from './registry';
 import { REGISTRY_ADDRESSES } from './constants';
 import {
@@ -359,6 +367,65 @@ export class AegisClient {
       this.config.registryAddress,
       disputeId,
       auditorFault,
+    );
+  }
+
+  /** Get full dispute details by ID */
+  async getDispute(disputeId: bigint): Promise<DisputeDetails> {
+    return _getDispute(this.publicClient, this.config.registryAddress, disputeId);
+  }
+
+  /** Get the number of active (unresolved) disputes for an auditor */
+  async getActiveDisputeCount(auditorCommitment: Hex): Promise<bigint> {
+    return _getActiveDisputeCount(this.publicClient, this.config.registryAddress, auditorCommitment);
+  }
+
+  /** Get the total number of disputes ever created */
+  async getDisputeCount(): Promise<bigint> {
+    return _getDisputeCount(this.publicClient, this.config.registryAddress);
+  }
+
+  // ──────────────────────────────────────────────
+  //  Revocation Operations
+  // ──────────────────────────────────────────────
+
+  /** Check if an attestation has been revoked */
+  async isAttestationRevoked(skillHash: Hex, attestationIndex: number): Promise<boolean> {
+    return _isAttestationRevoked(
+      this.publicClient,
+      this.config.registryAddress,
+      skillHash,
+      BigInt(attestationIndex),
+    );
+  }
+
+  /** Revoke an attestation (contract owner only) */
+  async revokeAttestation(skillHash: Hex, attestationIndex: number): Promise<Hex> {
+    return _revokeAttestation(
+      this.requireWallet(),
+      this.config.registryAddress,
+      skillHash,
+      BigInt(attestationIndex),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  //  Auditor Profile — Aggregated Query
+  // ──────────────────────────────────────────────
+
+  /**
+   * Build an aggregated auditor profile combining reputation, attestation history,
+   * dispute record, and active dispute count into a single query.
+   */
+  async getAuditorProfile(
+    auditorCommitment: Hex,
+    options?: { fromBlock?: bigint; toBlock?: bigint },
+  ): Promise<AuditorProfile> {
+    return _getAuditorProfile(
+      this.publicClient,
+      this.config.registryAddress,
+      auditorCommitment,
+      options,
     );
   }
 
