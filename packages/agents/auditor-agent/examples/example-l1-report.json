@@ -1,0 +1,46 @@
+{
+  "schema": "aegis/audit-metadata@1",
+  "skill": {
+    "name": "Weather Data Fetcher",
+    "description": "Fetches current weather data for a given city using the OpenWeatherMap API",
+    "version": "1.0.3",
+    "sourceHash": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    "author": "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD68",
+    "repository": "https://github.com/example/weather-fetcher",
+    "tags": ["data", "weather", "api"]
+  },
+  "audit": {
+    "level": 1,
+    "timestamp": "2026-03-08T14:30:00Z",
+    "criteria": [
+      {
+        "id": "L1.EXEC",
+        "pass": true,
+        "notes": "Executed with 5 test inputs: 'London', 'Tokyo', 'New York', 'Sydney', 'Cairo'. All invocations completed successfully in 120-340ms. No uncaught exceptions or crashes.",
+        "evidenceHash": "sha256:e8f4a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
+      },
+      {
+        "id": "L1.OUTPUT",
+        "pass": true,
+        "notes": "Output matches declared JSON schema. Verified 5 responses. Required fields present: temperature, humidity, description, city. Types correct for all fields (number, number, string, string).",
+        "evidenceHash": "sha256:f9a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1"
+      },
+      {
+        "id": "L1.DEPS",
+        "pass": true,
+        "notes": "2 dependencies declared in package.json: node-fetch@3.3.2, dotenv@16.4.1. All imports resolve correctly. Clean install successful. No undeclared peer dependencies."
+      },
+      {
+        "id": "L1.DOCS",
+        "pass": true,
+        "notes": "Description accurately reflects skill behavior. 2 usage examples provided; both verified as runnable. Input parameter 'city' documented with type (string) and constraints (non-empty). Output schema documented with all 4 response fields."
+      }
+    ],
+    "summary": "L1 functional audit passed. The Weather Data Fetcher skill correctly fetches and returns weather data for valid city inputs. All 4 L1 criteria met."
+  },
+  "environment": {
+    "tools": ["aegis-mcp-server@0.5.0"],
+    "runtime": "node@22.0.0",
+    "platform": "linux-x64"
+  }
+}

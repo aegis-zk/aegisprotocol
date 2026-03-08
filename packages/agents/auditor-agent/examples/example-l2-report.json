@@ -1,0 +1,75 @@
+{
+  "schema": "aegis/audit-metadata@1",
+  "skill": {
+    "name": "Token Price Aggregator",
+    "description": "Aggregates token prices from multiple DEX sources on Base and returns the median price in USD",
+    "version": "2.1.0",
+    "sourceHash": "sha256:b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+    "author": "0x1234567890abcdef1234567890abcdef12345678",
+    "repository": "https://github.com/example/token-price-aggregator",
+    "skillUrl": "https://flow.bid/skill/token-price-aggregator.md",
+    "tags": ["defi", "price-feed", "aggregator"]
+  },
+  "audit": {
+    "level": 2,
+    "timestamp": "2026-03-08T15:00:00Z",
+    "criteria": [
+      {
+        "id": "L1.EXEC",
+        "pass": true,
+        "notes": "Executed with 5 token addresses: WETH, USDC, DAI, WBTC, AERO on Base. All invocations completed in 200-800ms. No errors.",
+        "evidenceHash": "sha256:c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+      },
+      {
+        "id": "L1.OUTPUT",
+        "pass": true,
+        "notes": "Output conforms to declared schema: { token, priceUsd, sources, medianPrice, timestamp }. All fields present with correct types. priceUsd is a string (avoids floating point), sources is an array of { dex, price } objects.",
+        "evidenceHash": "sha256:d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5"
+      },
+      {
+        "id": "L1.DEPS",
+        "pass": true,
+        "notes": "4 dependencies declared: viem@2.21.0, @uniswap/sdk-core@6.0.0, dotenv@16.4.1, bignumber.js@9.1.2. All imports resolve. Clean install successful. viem listed as both dep and peer dep — acceptable."
+      },
+      {
+        "id": "L1.DOCS",
+        "pass": true,
+        "notes": "Comprehensive README with description, input parameters (tokenAddress: string, chain: 'base'), output schema, 3 usage examples, and error code reference table."
+      },
+      {
+        "id": "L2.EDGE",
+        "pass": true,
+        "notes": "Tested edge cases: zero address (0x0) returns 'invalid token' error. Checksummed vs lowercase addresses both work. Non-existent token address returns empty sources array with null medianPrice. Very long hex string (>42 chars) rejected with validation error.",
+        "evidenceHash": "sha256:e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
+      },
+      {
+        "id": "L2.ERROR",
+        "pass": true,
+        "notes": "Error messages are descriptive: 'Invalid token address format: expected 0x-prefixed 40-char hex string'. No file paths, stack traces, or API keys leaked. RPC errors wrapped as 'Price source temporarily unavailable' without exposing provider URLs."
+      },
+      {
+        "id": "L2.VALIDATE",
+        "pass": true,
+        "notes": "Input validation: tokenAddress must be 0x-prefixed 42-char hex (validated via regex). chain parameter validated against whitelist ['base']. Extra fields in input object are ignored. Missing required fields return clear validation error before any processing.",
+        "evidenceHash": "sha256:f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1"
+      },
+      {
+        "id": "L2.RESOURCE",
+        "pass": true,
+        "notes": "Normal execution: 200-800ms (5 tokens tested). Large batch (20 tokens sequential): 4.2s total, ~210ms each. Memory usage stable at ~45MB throughout. No unbounded loops detected in source review. RPC calls have 10s timeout configured.",
+        "evidenceHash": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      },
+      {
+        "id": "L2.IDEMPOTENT",
+        "pass": true,
+        "notes": "Ran WETH price query 10 times consecutively. Core price values consistent within expected market variance (<0.1% spread). Timestamp field varies (expected). Source ordering is deterministic (alphabetical by DEX name). No state mutation between calls."
+      }
+    ],
+    "summary": "L2 robust audit passed. The Token Price Aggregator handles edge cases, validates inputs, provides meaningful errors, operates within resource limits, and produces consistent results. All 9 L2 criteria met."
+  },
+  "environment": {
+    "tools": ["aegis-mcp-server@0.5.0", "node@22.0.0"],
+    "runtime": "node@22.0.0",
+    "platform": "linux-x64"
+  }
+}

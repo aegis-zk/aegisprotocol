@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aegis/dispute-evidence@1",
+  "title": "AEGIS Dispute Evidence",
+  "description": "Structured evidence format for AEGIS Protocol dispute submissions. This document is JSON-stringified and hex-encoded before on-chain submission.",
+  "type": "object",
+  "required": ["schema", "skillHash", "attestationIndex", "claimedLevel", "findings", "conclusion"],
+  "properties": {
+    "schema": {
+      "const": "aegis/dispute-evidence@1",
+      "description": "Schema version identifier"
+    },
+    "skillHash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]{64}$",
+      "description": "The bytes32 skill hash being disputed"
+    },
+    "attestationIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero-based index of the attestation being disputed"
+    },
+    "claimedLevel": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "The audit level the attestation claims (L1/L2/L3)"
+    },
+    "findings": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One or more findings that demonstrate the attestation is invalid",
+      "items": {
+        "type": "object",
+        "required": ["criteriaId", "claimedPass", "actualResult", "description"],
+        "properties": {
+          "criteriaId": {
+            "type": "string",
+            "enum": [
+              "L1.EXEC", "L1.OUTPUT", "L1.DEPS", "L1.DOCS",
+              "L2.EDGE", "L2.ERROR", "L2.VALIDATE", "L2.RESOURCE", "L2.IDEMPOTENT",
+              "L3.INJECTION", "L3.EXFIL", "L3.SANDBOX", "L3.SUPPLY", "L3.ADVERSARIAL"
+            ],
+            "description": "The criteria ID that was incorrectly assessed"
+          },
+          "claimedPass": {
+            "type": "boolean",
+            "description": "What the auditor claimed (typically true, since attestations require all criteria to pass)"
+          },
+          "actualResult": {
+            "type": "string",
+            "enum": ["fail", "not_tested", "insufficient_evidence"],
+            "description": "The challenger's assessment: 'fail' = criteria actually fails, 'not_tested' = auditor did not test this, 'insufficient_evidence' = auditor's metadata lacks evidence for this claim"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 20,
+            "description": "Detailed description of the finding with specific evidence"
+          },
+          "reproduction": {
+            "type": "string",
+            "description": "Step-by-step reproduction instructions to verify the finding"
+          },
+          "evidenceHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "description": "SHA-256 hash of supporting evidence file (logs, screenshots, tool output)"
+          }
+        }
+      }
+    },
+    "metadataAnalysis": {
+      "type": "object",
+      "description": "Analysis of the auditor's published metadata document",
+      "properties": {
+        "metadataURI": {
+          "type": "string",
+          "description": "The metadata URI from the on-chain attestation"
+        },
+        "metadataAccessible": {
+          "type": "boolean",
+          "description": "Whether the metadata was retrievable at the time of dispute"
+        },
+        "metadataValid": {
+          "type": "boolean",
+          "description": "Whether the metadata passes validateAuditMetadata()"
+        },
+        "validationErrors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Validation errors from validateAuditMetadata(), if any"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional observations about the metadata quality"
+        }
+      }
+    },
+    "conclusion": {
+      "type": "string",
+      "minLength": 50,
+      "description": "Summary of why the attestation should be considered invalid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when this evidence was compiled"
+    }
+  }
+}

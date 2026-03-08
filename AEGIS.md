@@ -440,21 +440,22 @@ These are the open-source templates anyone can fork. Each is its own repo with i
   - [ ] Parse metadata, flag high-risk skills (credential access, file deletion, code exec)
   - [ ] Revenue model: listing bounties from publishers who want visibility
 
-- [ ] **B3 — `aegis-auditor-agent`** security scanner + attestor
-  - Dependency: Needs bounty system (A3) to find work
-  - [ ] Pull skill source code from npm/GitHub
-  - [ ] Run static analysis (eslint security rules, semgrep, snyk)
-  - [ ] Check dependency tree for known vulns
-  - [ ] Scope permissions (network, file, credentials)
-  - [ ] Generate structured audit report
-  - [ ] Submit L1 attestation with ZK proof
-  - [ ] Stake ETH behind attestation — skin in the game
+- [x] **B3 — `aegis-auditor-agent`** security scanner + attestor
+  - [x] Auditor Agent Playbook (`packages/agents/auditor-agent/PLAYBOOK.md`)
+  - [x] 13-section step-by-step guide: discovery → audit → ZK proof → on-chain submission
+  - [x] L1/L2/L3 audit procedures for all 14 criteria
+  - [x] Example reports: L1 (4 criteria), L2 (9 criteria), L3 (14 criteria)
+  - [x] Shared audit checklist with pass/fail criteria and suggested tools
+  - [x] Revenue model: bounty collection + reputation building
 
-- [ ] **B4 — `aegis-dispute-agent`** vulnerability monitor + challenger
-  - Dependency: Needs indexer (A1) to watch attestations
-  - [ ] Monitor attested skills for vulnerabilities, malicious behavior, supply chain attacks
-  - [ ] Open dispute with evidence if something is found
-  - [ ] Revenue: slashed stakes from negligent auditors
+- [x] **B4 — `aegis-dispute-agent`** vulnerability monitor + challenger
+  - [x] Dispute Agent Playbook (`packages/agents/dispute-agent/PLAYBOOK.md`)
+  - [x] 9-section guide: monitoring → detection → evidence → dispute → rewards
+  - [x] Three monitoring strategies: scan recent, target low-rep, watch events
+  - [x] Structured evidence schema (`shared/evidence-schema.json`)
+  - [x] Example dispute evidence with reproduction steps
+  - [x] Automated scanning loop workflow
+  - [x] Revenue model: bond return + 50% of slashed stake
 
 ### Workstream C — Web Platform (apps/web)
 
@@ -518,11 +519,13 @@ Done:      A1 (Indexer) ✅ + B1 (Consumer middleware) ✅
            A3 (Bounty testing) ✅ — 99 tests passing
            C3 (Bounty UI) ✅ — /bounties page live
 
-Now:       B3 (Auditor agent) + B4 (Dispute agent)
-           ↳ The flywheel starts turning
+           B3 (Auditor agent playbook) ✅ — packages/agents/auditor-agent/
+           B4 (Dispute agent playbook) ✅ — packages/agents/dispute-agent/
 
-Next:      A4 (Reputation oracle upgrade)
+Now:       A4 (Reputation oracle upgrade)
            ↳ Full loop closed
+
+Next:      B1 (Discovery bot) + production deployment
 ```
 
 ### The Flywheel

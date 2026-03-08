@@ -1,0 +1,33 @@
+{
+  "schema": "aegis/dispute-evidence@1",
+  "skillHash": "0xb2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+  "attestationIndex": 0,
+  "claimedLevel": 2,
+  "findings": [
+    {
+      "criteriaId": "L2.VALIDATE",
+      "claimedPass": true,
+      "actualResult": "fail",
+      "description": "The auditor's L2 attestation claims L2.VALIDATE passes ('Validates and sanitizes all inputs before processing'), but the skill does not validate input types. Passing a numeric value (12345) where a string token address is expected causes an unhandled TypeError: 'tokenAddress.startsWith is not a function' at line 47 of index.js. This error occurs deep in the processing logic, proving that no input validation occurs before the data is used. Additionally, passing an object {} as the amount parameter causes a silent NaN propagation that results in a transaction with amount=0.",
+      "reproduction": "1. Install the skill in a clean environment: npm install\n2. Call the skill with invalid type: skill.execute({ tokenAddress: 12345, amount: '1000' })\n3. Observe: TypeError: tokenAddress.startsWith is not a function\n4. Call with object amount: skill.execute({ tokenAddress: '0x4200000000000000000000000000000000000006', amount: {} })\n5. Observe: No validation error, amount silently becomes NaN, transaction proceeds with 0 value",
+      "evidenceHash": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+    },
+    {
+      "criteriaId": "L2.ERROR",
+      "claimedPass": true,
+      "actualResult": "fail",
+      "description": "The auditor's L2 attestation claims L2.ERROR passes ('Returns meaningful errors without leaking internal state'), but the skill leaks sensitive internal details in error messages. When an RPC connection fails, the error message includes the complete RPC endpoint URL with embedded API key: 'JSONRPC error: failed to connect to https://base-mainnet.g.alchemy.com/v2/sk-abc123def456...'. This exposes the provider's API key to any caller. Additionally, when a file read fails, the error includes the full server filesystem path: 'ENOENT: /home/deploy/services/token-aggregator/cache/prices.json'.",
+      "reproduction": "1. Configure the skill with an unreachable RPC endpoint (e.g., wrong port)\n2. Call the skill with any valid input: skill.execute({ tokenAddress: '0x4200000000000000000000000000000000000006' })\n3. Observe: Error message contains full RPC URL including API key\n4. Delete the local cache directory and call the skill again\n5. Observe: Error message contains full server filesystem path",
+      "evidenceHash": "sha256:b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3"
+    }
+  ],
+  "metadataAnalysis": {
+    "metadataURI": "data:application/json;base64,eyJzY2hlbWEiOiJhZWdpcy9hdWRpdC1tZXRhZGF0YUAxIiwic2tpbGwiOnsibmFtZSI6IlRva2VuIFByaWNlIEFnZ3JlZ2F0b3IifX0=",
+    "metadataAccessible": true,
+    "metadataValid": true,
+    "validationErrors": [],
+    "notes": "The auditor's metadata is structurally valid (passes validateAuditMetadata), but the notes for L2.VALIDATE only state 'Input validation confirmed — all inputs checked before processing' without specifying which inputs were tested, what validation was applied, or how type checking is performed. Similarly, L2.ERROR notes only state 'Errors are meaningful and safe — no internal leakage detected' without describing which error paths were tested. These superficial notes suggest the criteria were not rigorously evaluated."
+  },
+  "conclusion": "This L2 attestation should be invalidated because at least two of the nine required L2 criteria demonstrably fail. L2.VALIDATE fails because the skill performs zero input type validation — passing wrong types causes unhandled TypeErrors deep in processing logic, and NaN values propagate silently without any sanitization. L2.ERROR fails because error messages expose sensitive internal state including API keys embedded in RPC URLs and full server filesystem paths. The auditor's metadata notes for these criteria are superficial and do not describe actual test procedures, suggesting a negligent audit. Both findings are independently reproducible with the steps provided.",
+  "timestamp": "2026-03-08T17:30:00Z"
+}
