@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
-import { useRegistrySkills, type SkillEntry } from "../hooks/useOnChainData";
+import { useRegistrySkills, type SkillEntry } from "../hooks/useSubgraphData";
 
 const ACCENT = "#FF3366";
 const ACCENT2 = "#FF6B9D";
@@ -21,7 +21,7 @@ const FONT = "'Space Mono', monospace";
 // Type alias for backward compat with existing components
 type Attestation = SkillEntry;
 
-const PER_PAGE = 10;
+const PER_PAGE = 20;
 
 // ── Reusable Components ────────────────────────────────────
 
@@ -326,7 +326,7 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
 
 export function Registry() {
   const navigate = useNavigate();
-  const { skills, loading, error, blockNumber } = useRegistrySkills();
+  const { skills, loading, error } = useRegistrySkills();
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -440,8 +440,10 @@ export function Registry() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
           {[
+            { label: "DApp", onClick: () => navigate("/app") },
             { label: "Registry", onClick: () => navigate("/registry") },
             { label: "Dashboard", onClick: () => navigate("/dashboard") },
+            { label: "Bounties", onClick: () => navigate("/bounties") },
             { label: "Auditors", onClick: () => navigate("/auditors") },
             { label: "Developers", onClick: () => navigate("/developers") },
             { label: "Docs", onClick: () => navigate("/docs") },
@@ -499,7 +501,7 @@ export function Registry() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ADE80", animation: "pulse 2s infinite" }} />
               <span style={{ fontSize: 12, color: TEXT_MUTED }}>
-                {loading ? "Syncing\u2026" : `Synced to block #${Number(blockNumber).toLocaleString()}`}
+                {loading ? "Syncing\u2026" : `${skills.length} skills indexed`}
               </span>
             </div>
           </div>
@@ -595,6 +597,7 @@ export function Registry() {
           </div>
 
           {/* Rows */}
+          <div style={{ maxHeight: "calc(100vh - 340px)", overflowY: "auto" }}>
           {loading ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
               <div style={{ fontSize: 14, color: TEXT_DIM, marginBottom: 6, animation: "pulse 2s infinite" }}>
@@ -623,6 +626,7 @@ export function Registry() {
               />
             ))
           )}
+          </div>
 
           {/* Pagination */}
           {filtered.length > 0 && (

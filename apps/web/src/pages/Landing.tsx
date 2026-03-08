@@ -79,8 +79,10 @@ function NavBar() {
   }, []);
 
   const navItems = [
+    { label: "DApp", path: "/app" },
     { label: "Registry", path: "/registry" },
     { label: "Dashboard", path: "/dashboard" },
+    { label: "Bounties", path: "/bounties" },
     { label: "Auditors", path: "/auditors" },
     { label: "Developers", path: "/developers" },
     { label: "Docs", path: "/docs" },
@@ -919,6 +921,7 @@ function Footer() {
       items: [
         { label: "Registry", onClick: () => navigate("/registry") },
         { label: "Dashboard", onClick: () => navigate("/dashboard") },
+        { label: "Bounties", onClick: () => navigate("/bounties") },
         { label: "Auditors", onClick: () => navigate("/auditors") },
         { label: "Documentation", onClick: () => navigate("/docs") },
         { label: "Launch App", onClick: () => navigate("/app") },

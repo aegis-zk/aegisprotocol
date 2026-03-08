@@ -47,6 +47,12 @@ import { registerRevokeAttestation } from './revoke-attestation.js';
 import { registerQueryTrustProfile } from './query-trust-profile.js';
 import { registerQuerySkillTrust } from './query-skill-trust.js';
 
+// Subgraph-backed discovery & audit tools
+import { registerCheckSkill } from './check-skill.js';
+import { registerBrowseUnaudited } from './browse-unaudited.js';
+import { registerBrowseBounties } from './browse-bounties.js';
+import { registerAuditSkill } from './audit-skill.js';
+
 /**
  * Register all AEGIS MCP tools on the given server instance.
  */
@@ -97,4 +103,10 @@ export function registerAllTools(server: McpServer): void {
   // Trust Profile queries (direct mode, no x402)
   registerQueryTrustProfile(server);
   registerQuerySkillTrust(server);
+
+  // Subgraph-backed discovery & audit tools
+  registerCheckSkill(server);
+  registerBrowseUnaudited(server);
+  registerBrowseBounties(server);
+  registerAuditSkill(server);
 }

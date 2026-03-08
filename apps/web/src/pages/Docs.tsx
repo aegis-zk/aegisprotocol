@@ -272,26 +272,28 @@ function DocsNavBar() {
           AEGIS
         </span>
         <span style={{
-          fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
-          border: `1px solid ${ACCENT}30`, borderRadius: 4, padding: "2px 8px",
-          fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
-        }}>Docs</span>
+          fontSize: 11, color: TEXT_DIM,
+          background: SURFACE2, padding: "2px 8px", borderRadius: 4,
+          marginLeft: 4,
+        }}>DOCS</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
         {[
+          { label: "DApp", onClick: () => navigate("/app") },
           { label: "Registry", onClick: () => navigate("/registry") },
           { label: "Dashboard", onClick: () => navigate("/dashboard") },
+          { label: "Bounties", onClick: () => navigate("/bounties") },
           { label: "Auditors", onClick: () => navigate("/auditors") },
           { label: "Developers", onClick: () => navigate("/developers") },
           { label: "Docs", onClick: () => navigate("/docs") },
         ].map(item => (
           <a key={item.label} href="#" style={{
             color: item.label === "Docs" ? TEXT : TEXT_DIM,
-            textDecoration: item.label === "Docs" ? "underline" : "none",
-            textUnderlineOffset: 6,
-            textDecorationColor: item.label === "Docs" ? ACCENT : "transparent",
+            textDecoration: "none",
             fontSize: 13,
-            fontWeight: item.label === "Docs" ? 600 : 400,
+            fontWeight: item.label === "Docs" ? 700 : 400,
+            borderBottom: item.label === "Docs" ? `2px solid ${ACCENT}` : "2px solid transparent",
+            paddingBottom: 2,
             transition: "color 0.2s",
             cursor: item.label === "Docs" ? "default" : "pointer",
           }}

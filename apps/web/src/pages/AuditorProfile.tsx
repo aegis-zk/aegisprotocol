@@ -99,12 +99,15 @@ function LevelDots({ level }: { level: number }) {
 export function AuditorProfile() {
   const navigate = useNavigate();
   const { commitment } = useParams<{ commitment: string }>();
-  const { auditor, attestations, loading } = useAuditorProfile(commitment || "");
+  const { auditor, attestations, disputes, loading } = useAuditorProfile(commitment || "");
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const [hoveredDisputeRow, setHoveredDisputeRow] = useState<number | null>(null);
 
   const navItems = [
+    { label: "DApp", onClick: () => navigate("/app") },
     { label: "Registry", onClick: () => navigate("/registry") },
     { label: "Dashboard", onClick: () => navigate("/dashboard") },
+    { label: "Bounties", onClick: () => navigate("/bounties") },
     { label: "Auditors", onClick: () => navigate("/auditors") },
     { label: "Developers", onClick: () => navigate("/developers") },
     { label: "Docs", onClick: () => navigate("/docs") },
@@ -159,7 +162,7 @@ export function AuditorProfile() {
           </span>
           <span style={{
             fontSize: 11, color: TEXT_DIM,
-            background: `${ACCENT}18`, border: `1px solid ${ACCENT}30`, padding: "2px 8px", borderRadius: 4,
+            background: SURFACE2, padding: "2px 8px", borderRadius: 4,
             marginLeft: 4,
           }}>AUDITOR</span>
         </div>
@@ -425,6 +428,95 @@ export function AuditorProfile() {
                     {auditor.disputesLost}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Dispute History Table */}
+            <div style={{ marginTop: 40, animation: "fadeInUp 0.5s ease 0.3s both" }}>
+              <h2 style={{ fontFamily: FONT_HEAD, fontSize: 16, fontWeight: 600, margin: "0 0 16px", letterSpacing: "-0.01em" }}>
+                Dispute History
+              </h2>
+              <div style={{
+                background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: "hidden",
+              }}>
+                {/* Header */}
+                <div style={{
+                  display: "grid", gridTemplateColumns: "60px 1fr 120px 90px 80px 100px 80px",
+                  padding: "12px 20px", borderBottom: `1px solid ${BORDER}`,
+                  fontSize: 10, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em",
+                }}>
+                  <span>#</span>
+                  <span>Skill</span>
+                  <span>Challenger</span>
+                  <span>Bond</span>
+                  <span>Outcome</span>
+                  <span>Date</span>
+                  <span style={{ textAlign: "right" }}>Tx</span>
+                </div>
+
+                {disputes.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: "center", color: TEXT_DIM, fontSize: 12 }}>
+                    No disputes on record
+                  </div>
+                ) : (
+                  disputes.map((d, i) => {
+                    const outcome = !d.resolved
+                      ? { label: "OPEN", color: AMBER }
+                      : d.auditorFault
+                        ? { label: "LOST", color: RED }
+                        : { label: "WON", color: GREEN };
+                    return (
+                      <div key={d.id} style={{
+                        display: "grid", gridTemplateColumns: "60px 1fr 120px 90px 80px 100px 80px",
+                        padding: "14px 20px", alignItems: "center",
+                        borderBottom: i < disputes.length - 1 ? `1px solid ${BORDER}` : "none",
+                        background: hoveredDisputeRow === i ? SURFACE2 : "transparent",
+                        transition: "background 0.15s",
+                        animation: `fadeInUp 0.4s ease ${i * 0.03}s both`,
+                      }}
+                        onMouseEnter={() => setHoveredDisputeRow(i)}
+                        onMouseLeave={() => setHoveredDisputeRow(null)}
+                      >
+                        <span style={{ fontSize: 11, color: TEXT_DIM, fontFamily: FONT }}>
+                          {d.disputeId}
+                        </span>
+                        <span style={{ fontSize: 12, color: TEXT, fontWeight: 600 }}>
+                          {d.skillName !== "Unknown Skill" ? d.skillName : truncHex(d.skillId)}
+                        </span>
+                        <span style={{ fontSize: 11, color: TEXT_DIM, fontFamily: FONT }}>
+                          {truncHex(d.challenger)}
+                        </span>
+                        <span style={{ fontSize: 11, color: TEXT_DIM, fontFamily: FONT }}>
+                          {formatStake(d.bond)} ETH
+                        </span>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                          color: outcome.color,
+                          background: `${outcome.color}15`,
+                          padding: "2px 8px", borderRadius: 4, width: "fit-content",
+                        }}>
+                          {outcome.label}
+                        </span>
+                        <span style={{ fontSize: 11, color: TEXT_DIM }}>
+                          {formatDate(d.openedAt)}
+                        </span>
+                        <a
+                          href={`https://basescan.org/tx/${d.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: 10, color: ACCENT, textDecoration: "none", textAlign: "right",
+                            opacity: 0.7, transition: "opacity 0.2s",
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = "0.7")}
+                        >
+                          BaseScan
+                        </a>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </>

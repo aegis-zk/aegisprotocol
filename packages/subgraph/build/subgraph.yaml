@@ -10,9 +10,9 @@ dataSources:
     name: AegisRegistry
     network: base
     source:
-      address: "0xa0FF1563Ab7d5d514146F2713125098954Af1F61"
+      address: "0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd"
       abi: AegisRegistry
-      startBlock: 42942701
+      startBlock: 42983389
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9

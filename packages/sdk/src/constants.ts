@@ -19,7 +19,7 @@ export const REGISTRY_ADDRESSES: Record<number, Address> = {
   // Base Sepolia
   84532: '0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba',
   // Base Mainnet (v3 — disputes, revocation, auditor profiles)
-  8453: '0xa0FF1563Ab7d5d514146F2713125098954Af1F61',
+  8453: '0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd',
 };
 
 export const MIN_AUDITOR_STAKE = BigInt('10000000000000000'); // 0.01 ETH
@@ -37,7 +37,7 @@ export const LISTING_FEE = BigInt('1000000000000000'); // 0.001 ETH (same as reg
  */
 export const DEPLOYMENT_BLOCKS: Record<number, bigint> = {
   84532: 38210000n, // Base Sepolia deployment (Feb 27 2026)
-  8453: 42942701n, // Base Mainnet deployment v3 (Mar 4 2026)
+  8453: 42983389n, // Base Mainnet deployment v4 (Mar 5 2026)
 };
 
 /** Max block range for eth_getLogs (public RPCs typically limit to 10K) */

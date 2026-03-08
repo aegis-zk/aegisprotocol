@@ -1057,17 +1057,17 @@ function DevNavBar() {
           AEGIS
         </span>
         <span style={{
-          fontSize: 10, color: ACCENT, background: `${ACCENT}18`,
-          border: `1px solid ${ACCENT}30`, borderRadius: 4, padding: "2px 8px",
-          fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
-        }}>
-          Developers
-        </span>
+          fontSize: 11, color: TEXT_DIM,
+          background: SURFACE2, padding: "2px 8px", borderRadius: 4,
+          marginLeft: 4,
+        }}>DEVELOPERS</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
         {[
+          { label: "DApp", onClick: () => navigate("/app") },
           { label: "Registry", onClick: () => navigate("/registry") },
           { label: "Dashboard", onClick: () => navigate("/dashboard") },
+          { label: "Bounties", onClick: () => navigate("/bounties") },
           { label: "Auditors", onClick: () => navigate("/auditors") },
           { label: "Developers", onClick: () => navigate("/developers") },
           { label: "Docs", onClick: () => navigate("/docs") },

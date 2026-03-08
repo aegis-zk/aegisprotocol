@@ -11,7 +11,7 @@ import { REGISTRY_ADDRESS } from "../config";
 
 // ── Constants ─────────────────────────────────────────────
 const REGISTRY = REGISTRY_ADDRESS[8453];
-const DEPLOYMENT_BLOCK = 42942701n;
+const DEPLOYMENT_BLOCK = 42983389n;
 const CHUNK_SIZE = 9_999n;
 
 // ── Singleton read-only client (no wallet needed) ─────────
@@ -220,7 +220,7 @@ export interface LiveEvent {
 // ══════════════════════════════════════════════════════════
 //  Hook: useRegistrySkills — full skill list for Registry
 // ══════════════════════════════════════════════════════════
-export function useRegistrySkills() {
+export function useRegistrySkills(refreshMs = 30_000) {
   const [skills, setSkills] = useState<SkillEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -228,9 +228,6 @@ export function useRegistrySkills() {
   const fetched = useRef(false);
 
   useEffect(() => {
-    if (fetched.current) return;
-    fetched.current = true;
-
     async function load() {
       try {
         // 1) Current block + timestamp for time estimation
@@ -370,7 +367,9 @@ export function useRegistrySkills() {
     }
 
     load();
-  }, []);
+    const id = setInterval(load, refreshMs);
+    return () => clearInterval(id);
+  }, [refreshMs]);
 
   return { skills, loading, error, blockNumber };
 }

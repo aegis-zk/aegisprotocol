@@ -89,8 +89,10 @@ export function Dashboard() {
   const totalLevelCount = levelCounts.l1 + levelCounts.l2 + levelCounts.l3;
 
   const navItems = [
+    { label: "DApp", onClick: () => navigate("/app") },
     { label: "Registry", onClick: () => navigate("/registry") },
     { label: "Dashboard", onClick: () => navigate("/dashboard") },
+    { label: "Bounties", onClick: () => navigate("/bounties") },
     { label: "Auditors", onClick: () => navigate("/auditors") },
     { label: "Developers", onClick: () => navigate("/developers") },
     { label: "Docs", onClick: () => navigate("/docs") },

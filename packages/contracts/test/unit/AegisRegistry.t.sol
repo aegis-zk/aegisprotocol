@@ -893,6 +893,230 @@ contract AegisRegistryTest is Test {
         assertEq(b.publisher, address(0));
     }
 
+    // ── Bounty edge cases (A3) ──────────────────────────────
+
+    function test_bounty_feeExemptPublisherStillPaysBountyAmount() public {
+        // Fee exemption only skips listing/registration fees, not bounty escrow
+        registry.setFeeExempt(publisher, true);
+
+        vm.prank(publisher);
+        registry.postBounty{value: 0.1 ether}(skillHash, 2);
+
+        IAegisRegistry.Bounty memory b = registry.getBounty(skillHash);
+        assertEq(b.amount, 0.1 ether);
+        assertEq(b.publisher, publisher);
+        assertEq(b.requiredLevel, 2);
+    }
+
+    function test_bounty_feeExemptAuditorClaimsSkippingRegFee() public {
+        // Post bounty
+        vm.prank(publisher);
+        registry.postBounty{value: 0.1 ether}(skillHash, 1);
+
+        // Register auditor
+        vm.prank(auditor);
+        registry.registerAuditor{value: 0.02 ether}(auditorCommitment);
+
+        // Make auditor fee-exempt
+        registry.setFeeExempt(auditor, true);
+
+        address bountyRecipient = makeAddr("bountyRecipient");
+        uint256 recipientBalBefore = bountyRecipient.balance;
+
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(1));
+        publicInputs[3] = auditorCommitment;
+
+        // registerSkill with value: 0 (fee-exempt) — bounty should still pay
+        vm.prank(auditor);
+        registry.registerSkill{value: 0}(
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+        );
+
+        // Bounty claimed
+        IAegisRegistry.Bounty memory b = registry.getBounty(skillHash);
+        assertTrue(b.claimed);
+
+        // Recipient got 95% of bounty
+        uint256 expectedPayout = 0.1 ether - (0.1 ether * 500) / 10_000;
+        assertEq(bountyRecipient.balance - recipientBalBefore, expectedPayout);
+    }
+
+    function test_bounty_multipleBountiesAcrossSkills() public {
+        bytes32 skill2 = keccak256(abi.encodePacked("another_skill"));
+        bytes32 skill3 = keccak256(abi.encodePacked("third_skill"));
+
+        vm.startPrank(publisher);
+        registry.postBounty{value: 0.05 ether}(skillHash, 1);
+        registry.postBounty{value: 0.1 ether}(skill2, 2);
+        registry.postBounty{value: 0.2 ether}(skill3, 3);
+        vm.stopPrank();
+
+        // All three coexist
+        assertEq(registry.getBounty(skillHash).amount, 0.05 ether);
+        assertEq(registry.getBounty(skill2).amount, 0.1 ether);
+        assertEq(registry.getBounty(skill3).amount, 0.2 ether);
+
+        // Claim one by registering skill
+        vm.prank(auditor);
+        registry.registerAuditor{value: 0.02 ether}(auditorCommitment);
+
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skill2;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(2));
+        publicInputs[3] = auditorCommitment;
+
+        address bountyRecipient = makeAddr("bountyRecipient");
+
+        vm.prank(auditor);
+        registry.registerSkill{value: 0.001 ether}(
+            skill2, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 2, bountyRecipient
+        );
+
+        // skill2 bounty claimed, others untouched
+        assertTrue(registry.getBounty(skill2).claimed);
+        assertFalse(registry.getBounty(skillHash).claimed);
+        assertFalse(registry.getBounty(skill3).claimed);
+        assertEq(registry.getBounty(skillHash).amount, 0.05 ether);
+        assertEq(registry.getBounty(skill3).amount, 0.2 ether);
+    }
+
+    function test_bounty_reclaimWhenDisputeExists() public {
+        // Post bounty and register skill (without claiming bounty)
+        vm.prank(publisher);
+        registry.postBounty{value: 0.05 ether}(skillHash, 2);
+
+        vm.prank(auditor);
+        registry.registerAuditor{value: 0.02 ether}(auditorCommitment);
+
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(1));
+        publicInputs[3] = auditorCommitment;
+
+        // Register at L1, bounty requires L2 — no payout
+        vm.prank(auditor);
+        registry.registerSkill{value: 0.001 ether}(
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, makeAddr("recipient")
+        );
+
+        // Open dispute on the attestation
+        vm.prank(challenger);
+        registry.openDispute{value: 0.005 ether}(skillHash, 0, "evidence");
+
+        // Warp past expiry and reclaim — should succeed despite active dispute
+        vm.warp(block.timestamp + 30 days + 1);
+
+        uint256 publisherBalBefore = publisher.balance;
+        vm.prank(publisher);
+        registry.reclaimBounty(skillHash);
+
+        assertEq(publisher.balance - publisherBalBefore, 0.05 ether);
+    }
+
+    function test_bounty_veryLargeAmount() public {
+        vm.deal(publisher, 100 ether);
+        vm.prank(publisher);
+        registry.postBounty{value: 5 ether}(skillHash, 1);
+
+        IAegisRegistry.Bounty memory b = registry.getBounty(skillHash);
+        assertEq(b.amount, 5 ether);
+
+        // Claim it
+        vm.prank(auditor);
+        registry.registerAuditor{value: 0.02 ether}(auditorCommitment);
+
+        address bountyRecipient = makeAddr("bountyRecipient");
+        uint256 recipientBalBefore = bountyRecipient.balance;
+
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(1));
+        publicInputs[3] = auditorCommitment;
+
+        vm.prank(auditor);
+        registry.registerSkill{value: 0.001 ether}(
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+        );
+
+        // Protocol cut: 5 ETH * 500 / 10000 = 0.25 ETH
+        uint256 expectedProtocolCut = 0.25 ether;
+        uint256 expectedPayout = 5 ether - expectedProtocolCut; // 4.75 ETH
+
+        assertEq(bountyRecipient.balance - recipientBalBefore, expectedPayout);
+        // Protocol balance includes: auditor reg fee (5%) + registration fee + bounty cut
+        uint256 auditorRegFee = (0.02 ether * 500) / 10_000;
+        assertEq(registry.protocolBalance(), auditorRegFee + 0.001 ether + expectedProtocolCut);
+    }
+
+    function test_bounty_recipientIsMsgSender() public {
+        vm.prank(publisher);
+        registry.postBounty{value: 0.1 ether}(skillHash, 1);
+
+        vm.prank(auditor);
+        registry.registerAuditor{value: 0.02 ether}(auditorCommitment);
+
+        uint256 auditorBalBefore = auditor.balance;
+
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(1));
+        publicInputs[3] = auditorCommitment;
+
+        // Auditor sets self as bounty recipient
+        vm.prank(auditor);
+        registry.registerSkill{value: 0.001 ether}(
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, auditor
+        );
+
+        // Net change: paid 0.001 ETH reg fee, received 0.095 ETH bounty
+        uint256 expectedBountyPayout = 0.1 ether - (0.1 ether * 500) / 10_000; // 0.095
+        uint256 expectedNetGain = expectedBountyPayout - 0.001 ether; // 0.094
+        assertEq(auditor.balance - auditorBalBefore, expectedNetGain);
+    }
+
+    function test_bounty_canRepostAfterReclaim() public {
+        // Post bounty
+        vm.prank(publisher);
+        registry.postBounty{value: 0.05 ether}(skillHash, 1);
+
+        // Warp past expiry and reclaim
+        vm.warp(block.timestamp + 30 days + 1);
+        vm.prank(publisher);
+        registry.reclaimBounty(skillHash);
+
+        // Bounty should be deleted
+        assertEq(registry.getBounty(skillHash).amount, 0);
+
+        // Repost on the same skill hash — should succeed
+        vm.prank(publisher);
+        registry.postBounty{value: 0.08 ether}(skillHash, 2);
+
+        IAegisRegistry.Bounty memory b = registry.getBounty(skillHash);
+        assertEq(b.amount, 0.08 ether);
+        assertEq(b.requiredLevel, 2);
+        assertFalse(b.claimed);
+    }
+
+    function test_bounty_postOnUnlistedSkill() public {
+        // Use a skill hash that was never listed via listSkill
+        bytes32 unlistedSkill = keccak256(abi.encodePacked("never_listed_skill"));
+
+        vm.prank(publisher);
+        registry.postBounty{value: 0.05 ether}(unlistedSkill, 1);
+
+        IAegisRegistry.Bounty memory b = registry.getBounty(unlistedSkill);
+        assertEq(b.amount, 0.05 ether);
+        assertEq(b.publisher, publisher);
+        assertEq(b.requiredLevel, 1);
+    }
+
     // ──────────────────────────────────────────────
     //  Skill Listing
     // ──────────────────────────────────────────────

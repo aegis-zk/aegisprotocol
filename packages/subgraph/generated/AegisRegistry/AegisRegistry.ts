@@ -689,6 +689,25 @@ export class AegisRegistry extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  feeExempt(param0: Address): boolean {
+    let result = super.call("feeExempt", "feeExempt(address):(bool)", [
+      ethereum.Value.fromAddress(param0),
+    ]);
+
+    return result[0].toBoolean();
+  }
+
+  try_feeExempt(param0: Address): ethereum.CallResult<boolean> {
+    let result = super.tryCall("feeExempt", "feeExempt(address):(bool)", [
+      ethereum.Value.fromAddress(param0),
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
   getActiveDisputeCount(auditorCommitment: Bytes): BigInt {
     let result = super.call(
       "getActiveDisputeCount",
@@ -1522,6 +1541,40 @@ export class RevokeAttestationCall__Outputs {
   _call: RevokeAttestationCall;
 
   constructor(call: RevokeAttestationCall) {
+    this._call = call;
+  }
+}
+
+export class SetFeeExemptCall extends ethereum.Call {
+  get inputs(): SetFeeExemptCall__Inputs {
+    return new SetFeeExemptCall__Inputs(this);
+  }
+
+  get outputs(): SetFeeExemptCall__Outputs {
+    return new SetFeeExemptCall__Outputs(this);
+  }
+}
+
+export class SetFeeExemptCall__Inputs {
+  _call: SetFeeExemptCall;
+
+  constructor(call: SetFeeExemptCall) {
+    this._call = call;
+  }
+
+  get account(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get exempt(): boolean {
+    return this._call.inputValues[1].value.toBoolean();
+  }
+}
+
+export class SetFeeExemptCall__Outputs {
+  _call: SetFeeExemptCall;
+
+  constructor(call: SetFeeExemptCall) {
     this._call = call;
   }
 }

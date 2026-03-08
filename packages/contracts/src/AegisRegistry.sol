@@ -80,6 +80,9 @@ contract AegisRegistry is IAegisRegistry {
     /// @notice skillHash → attestationIndex → revoked
     mapping(bytes32 => mapping(uint256 => bool)) private _revokedAttestations;
 
+    /// @notice Addresses exempt from listing / registration fees
+    mapping(address => bool) public feeExempt;
+
     /// @notice Listing fee (same as registration fee) — required to prevent spam
     uint256 public constant LISTING_FEE = 0.001 ether;
 
@@ -109,10 +112,10 @@ contract AegisRegistry is IAegisRegistry {
     function listSkill(bytes32 skillHash, string calldata metadataURI) external payable {
         if (skillHash == bytes32(0)) revert AegisErrors.InvalidSkillHash();
         if (bytes(metadataURI).length == 0) revert AegisErrors.EmptyMetadata();
-        if (msg.value < LISTING_FEE) revert AegisErrors.InsufficientListingFee();
+        if (!feeExempt[msg.sender] && msg.value < LISTING_FEE) revert AegisErrors.InsufficientListingFee();
         if (_skillListings[skillHash].listed) revert AegisErrors.SkillAlreadyListed();
 
-        protocolBalance += msg.value;
+        if (msg.value > 0) protocolBalance += msg.value;
 
         _skillListings[skillHash] = SkillListing({
             publisher: msg.sender,
@@ -146,11 +149,11 @@ contract AegisRegistry is IAegisRegistry {
         uint8 auditLevel,
         address bountyRecipient
     ) external payable {
-        if (msg.value < REGISTRATION_FEE) revert AegisErrors.InsufficientFee();
+        if (!feeExempt[msg.sender] && msg.value < REGISTRATION_FEE) revert AegisErrors.InsufficientFee();
         if (auditLevel < 1 || auditLevel > 3) revert AegisErrors.InvalidAuditLevel();
         if (!_auditors[auditorCommitment].registered) revert AegisErrors.AuditorNotRegistered();
 
-        protocolBalance += msg.value;
+        if (msg.value > 0) protocolBalance += msg.value;
 
         // Verify the ZK proof on-chain
         bool valid = verifier.verify(attestationProof, publicInputs);
@@ -517,6 +520,11 @@ contract AegisRegistry is IAegisRegistry {
         protocolBalance = 0;
         (bool sent,) = to.call{value: amount}("");
         require(sent, "Transfer failed");
+    }
+
+    /// @notice Set fee exemption for an address (e.g. protocol bots)
+    function setFeeExempt(address account, bool exempt) external onlyOwner {
+        feeExempt[account] = exempt;
     }
 
     /// @notice Transfer ownership (for future DAO migration)
