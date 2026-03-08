@@ -76,7 +76,7 @@ aegis/
 ## Quick Start
 
 ```bash
-git clone https://github.com/aegisaudit/aegis.git
+git clone https://github.com/aegis-zk/aegisprotocol.git
 cd aegis
 pnpm install
 pnpm build
@@ -113,7 +113,7 @@ Requires **Node.js 20+** and **pnpm 9+**.
 - **Website** — [aegisprotocol.tech](https://aegisprotocol.tech)
 - **SDK** — [npmjs.com/package/@aegisaudit/sdk](https://www.npmjs.com/package/@aegisaudit/sdk)
 - **MCP Server** — [npmjs.com/package/@aegisaudit/mcp-server](https://www.npmjs.com/package/@aegisaudit/mcp-server)
-- **GitHub** — [github.com/aegisaudit/aegis](https://github.com/aegisaudit/aegis)
+- **GitHub** — [github.com/aegis-zk/aegisprotocol](https://github.com/aegis-zk/aegisprotocol)
 
 ## License
 

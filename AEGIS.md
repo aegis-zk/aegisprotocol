@@ -14,7 +14,7 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 |---|---|
 | Website | https://aegisprotocol.tech |
 | Vercel project | `jadebroccoli-2626s-projects/dist` (deploy from `apps/web/dist`) |
-| GitHub | https://github.com/aegisaudit/aegis |
+| GitHub | https://github.com/aegis-zk/aegisprotocol |
 | npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.5.0) |
 | npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (v0.5.0) |
 | AegisRegistry (mainnet v4) | `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389) |

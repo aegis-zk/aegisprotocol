@@ -182,7 +182,7 @@ export function AuditorProfile() {
             >{item.label}</a>
           ))}
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: -8 }}>
-            <a href="https://github.com/aegisaudit/aegis" target="_blank" rel="noopener noreferrer" title="GitHub"
+            <a href="https://github.com/aegis-zk/aegisprotocol" target="_blank" rel="noopener noreferrer" title="GitHub"
               style={{ color: TEXT_DIM, transition: "color 0.2s", display: "flex" }}
               onMouseEnter={e => (e.currentTarget.style.color = TEXT)}
               onMouseLeave={e => (e.currentTarget.style.color = TEXT_DIM)}>

@@ -120,7 +120,7 @@ function NavBar() {
           >{item.label}</a>
         ))}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: -8 }}>
-          <a href="https://github.com/aegisaudit/aegis" target="_blank" rel="noopener noreferrer" title="GitHub"
+          <a href="https://github.com/aegis-zk/aegisprotocol" target="_blank" rel="noopener noreferrer" title="GitHub"
             style={{ color: TEXT_DIM, transition: "color 0.2s", display: "flex" }}
             onMouseEnter={e => (e.currentTarget.style.color = TEXT)}
             onMouseLeave={e => (e.currentTarget.style.color = TEXT_DIM)}>
@@ -900,7 +900,7 @@ function CTA() {
           background: "transparent", color: TEXT, border: `1px solid ${BORDER}`,
           borderRadius: 8, padding: "16px 36px", fontSize: 14, fontWeight: 700,
           cursor: "pointer", fontFamily: FONT_BODY,
-        }} onClick={() => window.open("https://github.com/aegisaudit/aegis", "_blank")}>View on GitHub</button>
+        }} onClick={() => window.open("https://github.com/aegis-zk/aegisprotocol", "_blank")}>View on GitHub</button>
       </div>
     </section>
   );
@@ -931,7 +931,7 @@ function Footer() {
       title: "Developers",
       items: [
         { label: "SDK Reference", onClick: () => navigate("/developers") },
-        { label: "GitHub", href: "https://github.com/aegisaudit/aegis" },
+        { label: "GitHub", href: "https://github.com/aegis-zk/aegisprotocol" },
         { label: "npm Package", href: "https://www.npmjs.com/package/@aegisaudit/sdk" },
       ],
     },

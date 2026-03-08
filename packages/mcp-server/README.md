@@ -172,7 +172,7 @@ The middleware queries the AEGIS subgraph (with on-chain fallback) and blocks to
 ## Links
 
 - [AEGIS Protocol](https://aegisprotocol.tech)
-- [GitHub](https://github.com/aegisaudit/aegis)
+- [GitHub](https://github.com/aegis-zk/aegisprotocol)
 - [SDK](https://www.npmjs.com/package/@aegisaudit/sdk)
 - [Consumer Middleware](https://www.npmjs.com/package/@aegisaudit/consumer-middleware)
 

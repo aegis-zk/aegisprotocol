@@ -224,7 +224,7 @@ interface AegisConfig {
 ## Links
 
 - [AEGIS Protocol](https://aegisprotocol.tech)
-- [GitHub](https://github.com/aegisaudit/aegis)
+- [GitHub](https://github.com/aegis-zk/aegisprotocol)
 - [MCP Server](https://www.npmjs.com/package/@aegisaudit/mcp-server)
 
 ## License

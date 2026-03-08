@@ -1,6 +1,6 @@
 specVersion: 1.3.0
 description: AEGIS Protocol — On-chain ZK skill attestations on Base
-repository: https://github.com/aegisaudit/aegis
+repository: https://github.com/aegis-zk/aegisprotocol
 
 schema:
   file: ./schema.graphql

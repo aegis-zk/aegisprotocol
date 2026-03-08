@@ -503,7 +503,7 @@ Higher levels require more auditor stake (ETH at risk), providing stronger econo
 - [AEGIS Protocol](https://aegisprotocol.tech)
 - [SDK Documentation](https://www.npmjs.com/package/@aegisaudit/sdk)
 - [MCP Server](https://www.npmjs.com/package/@aegisaudit/mcp-server)
-- [GitHub](https://github.com/aegisaudit/aegis)
+- [GitHub](https://github.com/aegis-zk/aegisprotocol)
 
 ## License
 
