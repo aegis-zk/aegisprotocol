@@ -446,6 +446,49 @@ export class Auditor extends Entity {
     this.set("attestationCount", Value.fromI32(value));
   }
 
+  get l2AttestationCount(): i32 {
+    let value = this.get("l2AttestationCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set l2AttestationCount(value: i32) {
+    this.set("l2AttestationCount", Value.fromI32(value));
+  }
+
+  get l3AttestationCount(): i32 {
+    let value = this.get("l3AttestationCount");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set l3AttestationCount(value: i32) {
+    this.set("l3AttestationCount", Value.fromI32(value));
+  }
+
+  get lastAttestationAt(): BigInt | null {
+    let value = this.get("lastAttestationAt");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set lastAttestationAt(value: BigInt | null) {
+    if (!value) {
+      this.unset("lastAttestationAt");
+    } else {
+      this.set("lastAttestationAt", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
   get disputesInvolved(): i32 {
     let value = this.get("disputesInvolved");
     if (!value || value.kind == ValueKind.NULL) {

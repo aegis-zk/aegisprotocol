@@ -22,7 +22,7 @@ const AMBER = "#FBBF24";
 const RED = "#F87171";
 const PURPLE = "#A78BFA";
 
-// ── Tier logic ───────────────────────────────────────────
+// ── Tier logic (A4: min-stake gating) ────────────────────
 const TIER_COLORS: Record<string, string> = {
   Bronze: "#CD7F32",
   Silver: "#C0C0C0",
@@ -30,18 +30,28 @@ const TIER_COLORS: Record<string, string> = {
   Diamond: PURPLE,
 };
 
-const TIER_THRESHOLDS = [
-  { tier: "Bronze", min: 0 },
-  { tier: "Silver", min: 10 },
-  { tier: "Gold", min: 25 },
-  { tier: "Diamond", min: 50 },
+const TIER_CONFIG = [
+  { tier: "Diamond", minScore: 50, minStakeEth: 0.5 },
+  { tier: "Gold",    minScore: 25, minStakeEth: 0.1 },
+  { tier: "Silver",  minScore: 10, minStakeEth: 0.025 },
+  { tier: "Bronze",  minScore: 0,  minStakeEth: 0.01 },
 ];
 
-function getTier(score: number): string {
-  if (score >= 50) return "Diamond";
-  if (score >= 25) return "Gold";
-  if (score >= 10) return "Silver";
+const TIER_THRESHOLDS = TIER_CONFIG.map(t => ({ tier: t.tier, min: t.minScore }));
+
+function getTier(score: number, stakeEth: number = Infinity): string {
+  for (const t of TIER_CONFIG) {
+    if (score >= t.minScore && stakeEth >= t.minStakeEth) return t.tier;
+  }
   return "Bronze";
+}
+
+function getStakeCap(score: number, stakeEth: number): { capped: boolean; requiredStake: number; uncappedTier: string } | null {
+  const uncappedTier = getTier(score);
+  const actualTier = getTier(score, stakeEth);
+  if (uncappedTier === actualTier) return null;
+  const uncapped = TIER_CONFIG.find(t => t.tier === uncappedTier);
+  return { capped: true, requiredStake: uncapped?.minStakeEth ?? 0, uncappedTier };
 }
 
 function truncHex(hex: string): string {
@@ -114,8 +124,10 @@ export function AuditorProfile() {
   ];
 
   const score = auditor ? Number(auditor.reputationScore) : 0;
-  const tier = getTier(score);
+  const stakeEth = auditor ? Number(formatEther(BigInt(auditor.currentStake))) : 0;
+  const tier = getTier(score, stakeEth);
   const tierColor = TIER_COLORS[tier] || TEXT_DIM;
+  const stakeCap = auditor ? getStakeCap(score, stakeEth) : null;
 
   // Tier progress
   const currentIdx = TIER_THRESHOLDS.findIndex(t => t.tier === tier);
@@ -123,6 +135,33 @@ export function AuditorProfile() {
   const prevMin = TIER_THRESHOLDS[currentIdx]?.min ?? 0;
   const progress = nextTier ? Math.min(1, (score - prevMin) / (nextTier.min - prevMin)) : 1;
   const remaining = nextTier ? nextTier.min - score : 0;
+
+  // Reputation breakdown (A4)
+  const l1Count = auditor ? auditor.attestationCount - (auditor.l2AttestationCount || 0) - (auditor.l3AttestationCount || 0) : 0;
+  const l2Count = auditor?.l2AttestationCount || 0;
+  const l3Count = auditor?.l3AttestationCount || 0;
+  const attPts = auditor ? auditor.attestationCount * 10 : 0;
+  const lvlPts = (l2Count * 5) + (l3Count * 15);
+  const stakePts = stakeEth <= 0.1 ? Math.floor(stakeEth / 0.01) : 10 + Math.floor((stakeEth - 0.1) / 0.05);
+  const registeredTs = auditor ? Number(auditor.timestamp) : 0;
+  const now = Math.floor(Date.now() / 1000);
+  const tenureDays = registeredTs ? Math.floor((now - registeredTs) / 86400) : 0;
+  const tenurePts = Math.min(12, Math.floor(tenureDays / 30));
+  const disputePts = auditor ? auditor.disputesLost * 20 : 0;
+  const disputesWon = auditor ? (auditor.disputesInvolved - auditor.disputesLost) : 0;
+  const winRate = auditor && auditor.disputesInvolved > 0
+    ? `${(disputesWon / auditor.disputesInvolved * 100).toFixed(0)}%`
+    : "N/A";
+  const winRateMul = auditor && auditor.disputesInvolved > 0
+    ? (0.5 + (disputesWon / auditor.disputesInvolved) * 0.6).toFixed(2)
+    : "1.00";
+  const lastAttTs = auditor?.lastAttestationAt ? Number(auditor.lastAttestationAt) : 0;
+  const daysSinceAtt = lastAttTs ? Math.floor((now - lastAttTs) / 86400) : 0;
+  const decayMul = (!lastAttTs || daysSinceAtt <= 90)
+    ? "1.00"
+    : daysSinceAtt >= 365
+      ? "0.50"
+      : (1.0 - ((daysSinceAtt - 90) / 275) * 0.5).toFixed(2);
 
   const statCards = auditor ? [
     { label: "CURRENT STAKE", value: `${formatStake(auditor.currentStake)} ETH` },
@@ -316,6 +355,65 @@ export function AuditorProfile() {
                     {t.tier} ({t.min})
                   </span>
                 ))}
+              </div>
+            </div>
+
+            {/* Stake Cap Warning */}
+            {stakeCap && (
+              <div style={{
+                background: `${AMBER}10`, border: `1px solid ${AMBER}30`, borderRadius: 10,
+                padding: "14px 20px", marginBottom: 24, animation: "fadeInUp 0.5s ease 0.16s both",
+                display: "flex", alignItems: "center", gap: 12,
+              }}>
+                <span style={{ fontSize: 16 }}>&#9888;</span>
+                <span style={{ fontSize: 12, color: AMBER }}>
+                  Score qualifies for <strong>{stakeCap.uncappedTier}</strong> but tier is capped by stake.
+                  Increase stake to {stakeCap.requiredStake} ETH to unlock.
+                </span>
+              </div>
+            )}
+
+            {/* Reputation Breakdown (A4) */}
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "20px 24px",
+              marginBottom: 40, animation: "fadeInUp 0.5s ease 0.17s both",
+            }}>
+              <h2 style={{ fontFamily: FONT_HEAD, fontSize: 14, fontWeight: 600, margin: "0 0 16px", letterSpacing: "-0.01em" }}>
+                Score Breakdown
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 40px", fontFamily: FONT, fontSize: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", color: TEXT_DIM }}>
+                  <span>Attestations ({auditor?.attestationCount || 0} &times; 10)</span>
+                  <span style={{ color: GREEN }}>+{attPts}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: TEXT_DIM }}>
+                  <span>Level Bonus ({l2Count} L2, {l3Count} L3)</span>
+                  <span style={{ color: lvlPts > 0 ? GREEN : TEXT_MUTED }}>+{lvlPts}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: TEXT_DIM }}>
+                  <span>Stake Bonus ({stakeEth.toFixed(3)} ETH)</span>
+                  <span style={{ color: stakePts > 0 ? GREEN : TEXT_MUTED }}>+{stakePts}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: TEXT_DIM }}>
+                  <span>Tenure ({tenureDays}d, cap 12)</span>
+                  <span style={{ color: tenurePts > 0 ? GREEN : TEXT_MUTED }}>+{tenurePts}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: TEXT_DIM }}>
+                  <span>Disputes Lost ({auditor?.disputesLost || 0} &times; 20)</span>
+                  <span style={{ color: disputePts > 0 ? RED : TEXT_MUTED }}>{disputePts > 0 ? `-${disputePts}` : "0"}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: TEXT_DIM }}>
+                  <span>Win Rate ({winRate})</span>
+                  <span style={{ color: TEXT }}>&times;{winRateMul}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: TEXT_DIM }}>
+                  <span>Activity Decay ({daysSinceAtt}d ago)</span>
+                  <span style={{ color: decayMul === "1.00" ? TEXT : AMBER }}>&times;{decayMul}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${BORDER}`, paddingTop: 8, marginTop: 4 }}>
+                  <span style={{ color: TEXT, fontWeight: 700 }}>Final Score</span>
+                  <span style={{ color: tierColor, fontWeight: 700 }}>{score}</span>
+                </div>
               </div>
             </div>
 

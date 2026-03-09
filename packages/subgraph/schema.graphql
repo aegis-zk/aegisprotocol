@@ -46,6 +46,9 @@ type Auditor @entity {
   initialStake: BigInt!
   currentStake: BigInt!
   attestationCount: Int!
+  l2AttestationCount: Int!
+  l3AttestationCount: Int!
+  lastAttestationAt: BigInt
   disputesInvolved: Int!
   disputesLost: Int!
   reputationScore: BigInt!

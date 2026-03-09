@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const SUBGRAPH_URL =
-  "https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.2.0";
+  "https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.3.0";
 
 // ── GraphQL helper ───────────────────────────────────────
 
@@ -60,6 +60,9 @@ export interface AuditorEntry {
   currentStake: string;
   initialStake: string;
   attestationCount: number;
+  l2AttestationCount: number;
+  l3AttestationCount: number;
+  lastAttestationAt: string | null;
   disputesInvolved: number;
   disputesLost: number;
   reputationScore: string;
@@ -170,6 +173,9 @@ const LEADERBOARD_QUERY = `{
     currentStake
     initialStake
     attestationCount
+    l2AttestationCount
+    l3AttestationCount
+    lastAttestationAt
     disputesInvolved
     disputesLost
     reputationScore
@@ -184,6 +190,9 @@ const AUDITOR_PROFILE_QUERY = `query AuditorProfile($id: ID!) {
     currentStake
     initialStake
     attestationCount
+    l2AttestationCount
+    l3AttestationCount
+    lastAttestationAt
     disputesInvolved
     disputesLost
     reputationScore

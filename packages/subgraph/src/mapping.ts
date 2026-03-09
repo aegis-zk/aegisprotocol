@@ -116,10 +116,26 @@ export function handleSkillRegistered(event: SkillRegistered): void {
   let auditor = Auditor.load(event.params.auditorCommitment);
   if (auditor != null) {
     auditor.attestationCount += 1;
+    auditor.lastAttestationAt = event.block.timestamp;
+
+    // Track L2/L3 attestation counts for level bonus scoring
+    let auditLevel = event.params.auditLevel;
+    if (auditLevel == 2) {
+      auditor.l2AttestationCount += 1;
+    } else if (auditLevel == 3) {
+      auditor.l3AttestationCount += 1;
+    }
+
     auditor.reputationScore = calculateReputation(
       auditor.attestationCount,
       auditor.currentStake,
-      auditor.disputesLost
+      auditor.disputesLost,
+      auditor.disputesInvolved,
+      auditor.timestamp,
+      auditor.lastAttestationAt!,
+      event.block.timestamp,
+      auditor.l2AttestationCount,
+      auditor.l3AttestationCount
     );
     auditor.save();
   }
@@ -149,6 +165,9 @@ export function handleAuditorRegistered(event: AuditorRegistered): void {
   auditor.initialStake = event.params.stake;
   auditor.currentStake = event.params.stake;
   auditor.attestationCount = 0;
+  auditor.l2AttestationCount = 0;
+  auditor.l3AttestationCount = 0;
+  auditor.lastAttestationAt = null;
   auditor.disputesInvolved = 0;
   auditor.disputesLost = 0;
   auditor.reputationScore = BigInt.zero();
@@ -178,10 +197,17 @@ export function handleStakeAdded(event: StakeAdded): void {
   if (auditor == null) return;
 
   auditor.currentStake = event.params.totalStake;
+  let lastAtt = auditor.lastAttestationAt !== null ? auditor.lastAttestationAt! : auditor.timestamp;
   auditor.reputationScore = calculateReputation(
     auditor.attestationCount,
     auditor.currentStake,
-    auditor.disputesLost
+    auditor.disputesLost,
+    auditor.disputesInvolved,
+    auditor.timestamp,
+    lastAtt,
+    event.block.timestamp,
+    auditor.l2AttestationCount,
+    auditor.l3AttestationCount
   );
   auditor.save();
 
@@ -227,6 +253,17 @@ export function handleDisputeOpened(event: DisputeOpened): void {
 
   dispute.save();
 
+  // Increment disputesInvolved on the auditor
+  let attestationIdForDispute = event.params.skillHash.toHexString() + "-" + dispute.attestationIndex.toString();
+  let attestationForDispute = Attestation.load(attestationIdForDispute);
+  if (attestationForDispute != null) {
+    let disputedAuditor = Auditor.load(attestationForDispute.auditor);
+    if (disputedAuditor != null) {
+      disputedAuditor.disputesInvolved += 1;
+      disputedAuditor.save();
+    }
+  }
+
   let stats = getOrCreateStats();
   stats.totalDisputes += 1;
   stats.openDisputes += 1;
@@ -259,10 +296,17 @@ export function handleDisputeResolved(event: DisputeResolved): void {
       let auditor = Auditor.load(attestation.auditor);
       if (auditor != null) {
         auditor.disputesLost += 1;
+        let lastAtt2 = auditor.lastAttestationAt !== null ? auditor.lastAttestationAt! : auditor.timestamp;
         auditor.reputationScore = calculateReputation(
           auditor.attestationCount,
           auditor.currentStake,
-          auditor.disputesLost
+          auditor.disputesLost,
+          auditor.disputesInvolved,
+          auditor.timestamp,
+          lastAtt2,
+          event.block.timestamp,
+          auditor.l2AttestationCount,
+          auditor.l3AttestationCount
         );
         auditor.save();
       }
@@ -422,10 +466,17 @@ export function handleUnstakeCompleted(event: UnstakeCompleted): void {
   let auditor = Auditor.load(event.params.auditorCommitment);
   if (auditor != null) {
     auditor.currentStake = auditor.currentStake.minus(event.params.amount);
+    let lastAtt3 = auditor.lastAttestationAt !== null ? auditor.lastAttestationAt! : auditor.timestamp;
     auditor.reputationScore = calculateReputation(
       auditor.attestationCount,
       auditor.currentStake,
-      auditor.disputesLost
+      auditor.disputesLost,
+      auditor.disputesInvolved,
+      auditor.timestamp,
+      lastAtt3,
+      event.block.timestamp,
+      auditor.l2AttestationCount,
+      auditor.l3AttestationCount
     );
     auditor.save();
   }

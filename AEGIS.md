@@ -413,10 +413,13 @@ This is the protocol layer everything else depends on.
   - [x] Test bounty edge cases (8 new tests: fee-exempt, multi-skill, dispute coexistence, large amounts, self-claim, repost-after-reclaim, unlisted skill)
   - [x] 99 total tests passing (94 unit + 5 integration)
 
-- [ ] **A4 — Reputation oracle upgrade** `Medium`
+- [x] **A4 — Reputation oracle upgrade** `Medium`
   Weighted scoring: attestation count x stake x dispute win rate x tenure
-  - [ ] Weighted `getReputationScore()` with decay factor
-  - [ ] Minimum stake threshold for reputation tiers (bronze/silver/gold)
+  - [x] Weighted `calculateReputation()` with 7-factor formula: base (att×10) + level bonus (L2×5, L3×15) + stake (diminishing above 0.1 ETH) + tenure (+1/30d, cap 12) - disputes (×20) × win rate (0.5-1.1×) × decay (90d grace, linear to 0.5× at 365d)
+  - [x] Minimum stake threshold for reputation tiers: Bronze ≥0.01, Silver ≥0.025, Gold ≥0.1, Diamond ≥0.5 ETH
+  - [x] Subgraph v0.3.0 deployed with new Auditor fields (l2/l3 counts, lastAttestationAt)
+  - [x] Reputation breakdown UI on Auditor Profile page
+  - [x] Stake-cap warning when score qualifies for higher tier
 
 ### Workstream B — Agent Templates (new repos, mostly standalone)
 
@@ -521,11 +524,12 @@ Done:      A1 (Indexer) ✅ + B1 (Consumer middleware) ✅
 
            B3 (Auditor agent playbook) ✅ — packages/agents/auditor-agent/
            B4 (Dispute agent playbook) ✅ — packages/agents/dispute-agent/
+           A4 (Reputation oracle) ✅ — subgraph v0.3.0, 7-factor weighted scoring
 
-Now:       A4 (Reputation oracle upgrade)
-           ↳ Full loop closed
+Done:      Full protocol loop closed ✅
+           ↳ All core workstream items (A1-A4, B1-B4, C1-C3) complete
 
-Next:      B1 (Discovery bot) + production deployment
+Next:      B1 (Discovery bot automation) + production hardening
 ```
 
 ### The Flywheel

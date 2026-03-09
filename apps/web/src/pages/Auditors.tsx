@@ -59,10 +59,17 @@ const TIER_REQUIREMENTS = [
   { tier: "Diamond", rep: "50+", stake: "≥ 0.5 ETH", perks: "All levels, governance votes, bonus rewards" },
 ];
 
-function getTier(score: number): string {
-  if (score >= 50) return "Diamond";
-  if (score >= 25) return "Gold";
-  if (score >= 10) return "Silver";
+const TIER_CONFIG = [
+  { tier: "Diamond", minScore: 50, minStakeEth: 0.5 },
+  { tier: "Gold",    minScore: 25, minStakeEth: 0.1 },
+  { tier: "Silver",  minScore: 10, minStakeEth: 0.025 },
+  { tier: "Bronze",  minScore: 0,  minStakeEth: 0.01 },
+];
+
+function getTier(score: number, stakeEth: number = Infinity): string {
+  for (const t of TIER_CONFIG) {
+    if (score >= t.minScore && stakeEth >= t.minStakeEth) return t.tier;
+  }
   return "Bronze";
 }
 
@@ -820,9 +827,12 @@ export function Auditors() {
   const lbAvgScore = lbAuditors.length > 0
     ? Math.round(lbAuditors.reduce((sum, a) => sum + Number(a.reputationScore), 0) / lbAuditors.length)
     : 0;
+  const getStakeEth = (a: typeof lbAuditors[0]) => {
+    try { return Number(formatEther(BigInt(a.currentStake))); } catch { return 0; }
+  };
   const lbTierCounts = useMemo(() => {
     const counts: Record<string, number> = { Bronze: 0, Silver: 0, Gold: 0, Diamond: 0 };
-    for (const a of lbAuditors) counts[getTier(Number(a.reputationScore))]++;
+    for (const a of lbAuditors) counts[getTier(Number(a.reputationScore), getStakeEth(a))]++;
     return counts;
   }, [lbAuditors]);
   const lbFiltered = useMemo(() => {
@@ -832,7 +842,7 @@ export function Auditors() {
       data = data.filter(a => a.id.toLowerCase().includes(q));
     }
     if (lbTierFilter) {
-      data = data.filter(a => getTier(Number(a.reputationScore)) === lbTierFilter);
+      data = data.filter(a => getTier(Number(a.reputationScore), getStakeEth(a)) === lbTierFilter);
     }
     return data;
   }, [lbAuditors, lbSearch, lbTierFilter]);
@@ -1476,7 +1486,7 @@ export function Auditors() {
                   lbPageData.map((auditor, i) => {
                     const globalRank = (lbCurrentPage - 1) * LB_PER_PAGE + i + 1;
                     const score = Number(auditor.reputationScore);
-                    const tier = getTier(score);
+                    const tier = getTier(score, getStakeEth(auditor));
                     const medalRank = !lbSearch && !lbTierFilter ? globalRank : null;
                     const tierColor = TIER_COLORS[tier] || TEXT_DIM;
                     return (
