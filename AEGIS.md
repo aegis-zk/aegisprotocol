@@ -1,6 +1,6 @@
 # AEGIS Protocol — Project Context
 
-Last updated: 2026-03-06
+Last updated: 2026-03-09
 
 This document captures the full state of the AEGIS Protocol project for continuity across context windows.
 
@@ -17,6 +17,7 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | GitHub | https://github.com/aegis-zk/aegisprotocol |
 | npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.5.0) |
 | npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (v0.5.0) |
+| npm Consumer Middleware | https://www.npmjs.com/package/@aegisaudit/consumer-middleware (v0.1.0) |
 | AegisRegistry (mainnet v4) | `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389) |
 | AegisRegistry (mainnet v3, deprecated) | `0xa0FF1563Ab7d5d514146F2713125098954Af1F61` (Base, block 42942701) |
 | AegisRegistry (mainnet v2, deprecated) | `0x2E993439E0241b220BF12652897342054202f57C` (Base) |
@@ -30,14 +31,14 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | Skills listed | Live — scout bot actively populating v4 contract |
 | Indexer | `@aegisaudit/indexer@0.1.0` (local, port 4200) |
 | Subgraph (Studio) | https://thegraph.com/studio/subgraph/aegis-protocol |
-| Subgraph GraphQL | `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.2.0` |
+| Subgraph GraphQL | `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.3.0` |
 
 ## Git Identity
 
 - Author: `AEGIS <aegis@aegisprotocol.tech>`
 - Git config is set locally in repo (`git config user.name "AEGIS"` / `git config user.email "aegis@aegisprotocol.tech"`)
 - History was rewritten and repo recreated to remove old identity — do NOT amend old commits
-- GitHub PAT for aegisaudit account is stored in remote URL
+- GitHub PAT for aegis-zk account is stored in remote URL
 
 ## Monorepo Structure
 
@@ -47,8 +48,9 @@ aegis/
 │   ├── sdk/            # @aegisaudit/sdk@0.5.0 — TypeScript client library (tsup, ESM+CJS)
 │   ├── mcp-server/     # @aegisaudit/mcp-server@0.5.0 — MCP tools for AI agents (tsup, ESM)
 │   ├── indexer/        # @aegisaudit/indexer@0.1.0 — Event indexer + REST API (Hono, sql.js)
-│   ├── subgraph/       # @aegisaudit/subgraph@0.1.0 — The Graph subgraph (Base L2, AssemblyScript)
+│   ├── subgraph/       # @aegisaudit/subgraph@0.3.0 — The Graph subgraph (Base L2, AssemblyScript)
 │   ├── consumer-middleware/ # @aegisaudit/consumer-middleware@0.1.0 — Pre-execution trust gate (tsup, ESM+CJS)
+│   ├── agents/         # Agent playbooks — auditor + dispute agent templates (markdown + JSON examples)
 │   ├── contracts/      # AegisRegistry.sol — Foundry (forge)
 │   ├── circuits/       # Noir ZK circuits (Barretenberg/BB.js)
 │   └── cli/            # @aegis/cli — command-line tool (commander, chalk, ora)
@@ -94,7 +96,7 @@ VERIFIER_ADDRESS=0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7 forge script script/
 | @aegisaudit/sdk | 0.5.0 |
 | @aegisaudit/mcp-server | 0.5.0 |
 | @aegisaudit/indexer | 0.1.0 |
-| @aegisaudit/subgraph | 0.1.0 |
+| @aegisaudit/subgraph | 0.3.0 |
 | @aegisaudit/consumer-middleware | 0.1.0 |
 | @aegis/web | 0.0.1 (private) |
 
@@ -226,7 +228,7 @@ Decentralized indexer on The Graph for Base L2. Primary data source for the prot
 |---|---|---|
 | Skill | bytes32 skillHash | Listed skills with parsed name + category |
 | Attestation | skillHash-index | Audit attestations per skill |
-| Auditor | bytes32 commitment | Auditor profiles with reputation score |
+| Auditor | bytes32 commitment | Auditor profiles with weighted reputation score, L2/L3 counts, decay |
 | Dispute | disputeId | Opened/resolved disputes |
 | Bounty | bytes32 skillHash | Active bounties per skill |
 | UnstakeRequest | bytes32 commitment | Pending unstake requests |
@@ -263,18 +265,37 @@ pnpm install && pnpm build     # codegen + compile WASM
 
 # Deploy to The Graph Studio
 graph auth --studio <DEPLOY_KEY>
-pnpm deploy:studio             # prompts for version label
+npx graph deploy aegis-protocol -g https://api.studio.thegraph.com/deploy/ -l v0.3.0
 ```
+
+### Reputation Formula (v0.3.0)
+
+Weighted 7-factor scoring computed in AssemblyScript with ×1000 fixed-point precision:
+
+```
+base       = attestationCount × 10
+levelBonus = l2Count × 5 + l3Count × 15
+stake      = diminishing returns above 0.1 ETH (1e16 → 5e16 divisor)
+tenure     = +1 per 30 days since registration (cap 12)
+disputes   = disputesLost × 20
+winRate    = 0.5× to 1.1× multiplier based on dispute win ratio
+decay      = 90-day grace period, linear to 0.5× at 365 days of inactivity
+
+final = (base + levelBonus + stake + tenure - disputes) × winRate × decay
+```
+
+Auditor entity fields: `reputationScore`, `attestationCount`, `currentStake`, `disputesWon`, `disputesLost`, `disputesInvolved`, `l2AttestationCount`, `l3AttestationCount`, `lastAttestationAt`, `timestamp`
 
 ### Metadata Parsing
 
 Data URIs (`data:application/json;base64,...`) are decoded inline in AssemblyScript to extract `skillName` and `category`. IPFS/HTTP URIs fall back to "Unknown Skill" / "Uncategorized" (subgraph runtime cannot make HTTP requests).
 
-## MCP Server (35 tools)
+## MCP Server (39 tools)
 
 - **Discovery**: aegis-info, wallet-status
 - **Read**: list-all-skills, list-all-auditors, get-attestations, verify-attestation, get-auditor-reputation, get-metadata-uri, list-disputes, list-resolved-disputes, get-unstake-request, get-bounty, create-agent-registration, get-erc8004-validation, get-dispute, get-active-dispute-count, get-dispute-count, is-attestation-revoked, get-auditor-profile
 - **Trust**: query-trust-profile, query-skill-trust
+- **Subgraph** (A2): check-skill, browse-unaudited, browse-bounties, audit-skill
 - **Write** (need AEGIS_PRIVATE_KEY): register-auditor, add-stake, open-dispute, initiate-unstake, complete-unstake, cancel-unstake, post-bounty, reclaim-bounty, register-agent, request-erc8004-validation, respond-to-erc8004-validation, link-skill-to-agent, resolve-dispute, revoke-attestation
 
 ## SDK (AegisClient)
@@ -322,7 +343,7 @@ const result = await gate.check('web_search');
 
 ### Data Sources
 
-1. **Subgraph (primary)** — GraphQL query to `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.2.0`
+1. **Subgraph (primary)** — GraphQL query to `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.3.0`
 2. **On-chain (fallback)** — `AegisClient.getSkillTrustScore()` via SDK RPC calls
 
 Results cached for 60s by default (configurable via `cacheTtlMs`).
@@ -349,8 +370,8 @@ All pages in `apps/web/src/pages/`:
 | DApp | `DAppPage.tsx` | Verify Skill, Register Auditor, Submit Skill, Auditor Status tabs |
 | Registry | `Registry.tsx` | Live on-chain skills (30s auto-refresh), detail panel, BaseScan links |
 | Dashboard | `Dashboard.tsx` | Protocol stats, activity feed, top auditors (subgraph-powered) |
-| Auditors | `Auditors.tsx` | Info tab + Leaderboard tab with search/filter/pagination |
-| Auditor Profile | `AuditorProfile.tsx` | Stats, tier progress, attestation history, dispute history table |
+| Auditors | `Auditors.tsx` | Info tab + Leaderboard tab with search/filter/pagination, min-stake tier gating |
+| Auditor Profile | `AuditorProfile.tsx` | Stats, tier progress, attestation history, dispute history, reputation breakdown (7-factor), stake-cap warning |
 | Bounties | `Bounties.tsx` | Bounty board: stats, filters, post form, reclaim, subgraph-powered |
 | Developers | `Developers.tsx` | SDK docs, code examples, API reference |
 | Docs | `Docs.tsx` | Protocol documentation, architecture diagrams |
@@ -433,7 +454,7 @@ These are the open-source templates anyone can fork. Each is its own repo with i
   - [x] TrustGate core with caching, policy evaluation, runtime updates
   - [x] AegisTrustError for enforce mode blocking
   - [x] Unit tests (16 passing)
-  - [ ] Publish `@aegisaudit/consumer-middleware@0.1.0` to npm
+  - [~] Publish `@aegisaudit/consumer-middleware@0.1.0` to npm — package built, needs `npm adduser` + publish
 
 - [~] **B2 — `aegis-scout-agent`** npm/GitHub monitor + auto-lister
   - [x] Scout bot running and actively listing skills on v4 contract
@@ -529,7 +550,8 @@ Done:      A1 (Indexer) ✅ + B1 (Consumer middleware) ✅
 Done:      Full protocol loop closed ✅
            ↳ All core workstream items (A1-A4, B1-B4, C1-C3) complete
 
-Next:      B1 (Discovery bot automation) + production hardening
+In flight: awesome-mcp-servers PR + Glama listing (pending review)
+Next:      B2 (Scout bot automation) + production hardening
 ```
 
 ### The Flywheel
