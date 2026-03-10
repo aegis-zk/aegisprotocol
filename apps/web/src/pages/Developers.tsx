@@ -527,7 +527,7 @@ print(f"Score: {rep.score}")
 print(f"Staked: {rep.total_stake}")
 print(f"Audits: {rep.attestation_count}")`,
   },
-  // ── Discovery (v0.2.0) ──
+  // ── Discovery (v0.5.0) ──
   {
     name: "listAllSkills",
     signature: "(options?) → Promise<SkillRegisteredEvent[]>",
@@ -999,8 +999,14 @@ const SECTIONS: SidenavSection[] = [
   { id: "method-getSkillTrustScore", label: "getSkillTrustScore()", indent: true },
   { id: "method-createTrustApiClient", label: "createTrustApiClient()", indent: true },
   { id: "method-createTrustApiMiddleware", label: "createTrustApiMiddleware()", indent: true },
+  { id: "subgraph-tools", label: "Subgraph Tools" },
+  { id: "reputation", label: "Reputation System" },
   { id: "events", label: "Contract Events" },
   { id: "errors", label: "Error Handling" },
+  { id: "consumer-middleware", label: "Consumer Middleware" },
+  { id: "consumer-install", label: "Installation", indent: true },
+  { id: "consumer-usage", label: "Usage", indent: true },
+  { id: "consumer-adapters", label: "Framework Adapters", indent: true },
 ];
 
 // ── Contract Events ──────────────────────────────────────────
@@ -1374,7 +1380,7 @@ pip install aegis-sdk[proving]`}
             </h2>
             <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Browse registered skills, auditors, and metadata on-chain. These read-only methods scan contract events and don't require a wallet.
-              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.2.0</span>
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.5.0</span>
             </p>
 
             {discoveryOps.map(m => (
@@ -1656,6 +1662,124 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             ))}
           </section>
 
+          {/* ═══ Subgraph Tools (A2) ═══ */}
+          <section id="subgraph-tools" ref={setRef("subgraph-tools")} style={{ marginTop: 56 }}>
+            <h2 style={{
+              fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700,
+              color: TEXT, marginBottom: 8,
+            }}>
+              Subgraph Tools
+            </h2>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+              Four additional MCP tools that query the AEGIS subgraph (The Graph) for indexed protocol data. These provide faster, richer responses than on-chain event scanning.
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.5.0</span>
+            </p>
+            <div style={{
+              overflowX: "auto",
+            }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {["Tool", "Description", "Returns"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["check-skill", "Query skill trust status from subgraph", "Audit level, attestation count, dispute status"],
+                    ["browse-unaudited", "List skills with no attestations", "Unaudited skill hashes with metadata"],
+                    ["browse-bounties", "List open bounties sorted by reward", "Bounty amounts, required levels, expiry"],
+                    ["audit-skill", "Full audit flow — discover, evaluate, attest", "Step-by-step audit guidance with tool calls"],
+                  ].map(([tool, desc, returns]) => (
+                    <tr key={tool} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11, fontWeight: 700 }}>{tool}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT_DIM }}>{desc}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT_MUTED, fontSize: 11 }}>{returns}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* ═══ Reputation System ═══ */}
+          <section id="reputation" ref={setRef("reputation")} style={{ marginTop: 56 }}>
+            <h2 style={{
+              fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700,
+              color: TEXT, marginBottom: 8,
+            }}>
+              Reputation System
+            </h2>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+              Auditor reputation is computed by the subgraph using a weighted 7-factor formula. Scores update automatically on every attestation, stake change, and dispute resolution.
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.3.0</span>
+            </p>
+            <div style={{
+              overflowX: "auto", marginBottom: 16,
+            }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {["Factor", "Weight", "Details"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Attestations", "count \u00d7 10", "Base score from total attestation count"],
+                    ["Level Bonus", "L2 \u00d7 5 + L3 \u00d7 15", "Higher-level audits earn more points"],
+                    ["Stake", "Diminishing above 0.1 ETH", "Encourages broad participation"],
+                    ["Tenure", "+1 per 30 days (cap 12)", "Rewards long-term auditors"],
+                    ["Disputes", "-20 per loss", "Penalizes bad attestations"],
+                    ["Win Rate", "0.5\u00d7 to 1.1\u00d7 multiplier", "Based on dispute outcomes"],
+                    ["Decay", "90-day grace, linear to 0.5\u00d7", "Inactive auditors lose score over time"],
+                  ].map(([factor, weight, details]) => (
+                    <tr key={factor} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <td style={{ padding: "8px 12px", color: TEXT, fontWeight: 700 }}>{factor}</td>
+                      <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11 }}>{weight}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT_DIM }}>{details}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12,
+              padding: "16px 20px", marginBottom: 16,
+            }}>
+              <h3 style={{ fontFamily: FONT_HEAD, fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Reputation Tiers</h3>
+              <div style={{
+                overflowX: "auto",
+              }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      {["Tier", "Min Score", "Min Stake"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Bronze", "\u2265 0", "\u2265 0.01 ETH"],
+                      ["Silver", "\u2265 10", "\u2265 0.025 ETH"],
+                      ["Gold", "\u2265 25", "\u2265 0.1 ETH"],
+                      ["Diamond", "\u2265 50", "\u2265 0.5 ETH"],
+                    ].map(([tier, score, stake]) => (
+                      <tr key={tier} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                        <td style={{ padding: "8px 12px", color: TEXT, fontWeight: 700 }}>{tier}</td>
+                        <td style={{ padding: "8px 12px", color: SYN_NUM, fontFamily: FONT_CODE, fontSize: 11 }}>{score}</td>
+                        <td style={{ padding: "8px 12px", color: SYN_NUM, fontFamily: FONT_CODE, fontSize: 11 }}>{stake}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
           {/* ═══ Contract Events ═══ */}
           <section id="events" ref={setRef("events")} style={{ marginTop: 56 }}>
             <h2 style={{
@@ -1783,6 +1907,112 @@ except AuditorNotRegistered:
               lang={lang}
               filename={lang === "ts" ? "errors.ts" : "errors.py"}
             />
+          </section>
+
+          {/* ═══ Consumer Middleware ═══ */}
+          <section id="consumer-middleware" ref={setRef("consumer-middleware")} style={{ marginTop: 56 }}>
+            <h2 style={{
+              fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700,
+              color: TEXT, marginBottom: 8,
+            }}>
+              Consumer Middleware
+            </h2>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+              The <code style={{ color: SYN_FN, background: SURFACE2, padding: "1px 4px", borderRadius: 3 }}>@aegisaudit/consumer-middleware</code> package is a pre-execution trust gate that intercepts AI agent tool calls, queries AEGIS trust data, and enforces configurable policies before allowing execution.
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.1.0</span>
+            </p>
+          </section>
+
+          <section id="consumer-install" ref={setRef("consumer-install")} style={{ marginTop: 16 }}>
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12,
+              padding: "20px 24px", marginBottom: 16,
+            }}>
+              <h3 style={{ fontFamily: FONT_HEAD, fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 12 }}>Installation</h3>
+              <div style={{
+                background: "#0D0D10", borderRadius: 8, padding: "16px 20px",
+                fontFamily: FONT_CODE, fontSize: 12, lineHeight: 1.6, overflow: "auto",
+                border: `1px solid ${BORDER}`,
+              }}>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", color: SYN_DEFAULT }}>{highlight(`npm install @aegisaudit/consumer-middleware`, lang)}</pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="consumer-usage" ref={setRef("consumer-usage")} style={{ marginTop: 16 }}>
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12,
+              padding: "20px 24px", marginBottom: 16,
+            }}>
+              <h3 style={{ fontFamily: FONT_HEAD, fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 12 }}>Usage</h3>
+              <p style={{ fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
+                Create a TrustGate with your policy, then call <code style={{ color: SYN_FN, background: SURFACE2, padding: "1px 4px", borderRadius: 3 }}>gate.check()</code> before executing any tool. The gate queries AEGIS attestation data and returns an allow/deny decision.
+              </p>
+              <div style={{
+                background: "#0D0D10", borderRadius: 8, padding: "16px 20px",
+                fontFamily: FONT_CODE, fontSize: 12, lineHeight: 1.6, overflow: "auto",
+                border: `1px solid ${BORDER}`,
+              }}>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", color: SYN_DEFAULT }}>{highlight(`import { TrustGate } from '@aegisaudit/consumer-middleware';
+
+const gate = new TrustGate({
+  policy: {
+    minAuditLevel: 2,       // 1=Functional, 2=Robust, 3=Security
+    minAttestations: 1,      // Minimum non-revoked attestations
+    blockOnDispute: true,    // Block skills with unresolved disputes
+    mode: 'enforce',         // 'enforce' | 'warn' | 'log'
+  },
+  skills: [
+    { toolName: 'web_search', skillHash: '0x...' },
+  ],
+});
+
+const result = await gate.check('web_search');
+// result: { allowed, reason, trustData }
+
+if (!result.allowed) {
+  console.warn('Blocked:', result.reason);
+}`, lang)}</pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="consumer-adapters" ref={setRef("consumer-adapters")} style={{ marginTop: 16 }}>
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12,
+              padding: "20px 24px", marginBottom: 16,
+            }}>
+              <h3 style={{ fontFamily: FONT_HEAD, fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 12 }}>Framework Adapters</h3>
+              <p style={{ fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.7, marginBottom: 16 }}>
+                Drop-in integrations for popular AI agent frameworks. Each adapter wraps the TrustGate and intercepts tool calls automatically.
+              </p>
+              <div style={{
+                overflowX: "auto", marginBottom: 16,
+              }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      {["Framework", "Import Path", "Integration"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["LangChain", "@aegisaudit/consumer-middleware/langchain", "createAegisTrustHandler(gate)"],
+                      ["CrewAI", "@aegisaudit/consumer-middleware/crewai", "createAegisTrustHook(gate)"],
+                      ["MCP", "@aegisaudit/consumer-middleware/mcp", "aegisMcpMiddleware(gate, handler)"],
+                    ].map(([fw, path, fn]) => (
+                      <tr key={fw} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                        <td style={{ padding: "8px 12px", color: TEXT, fontWeight: 700 }}>{fw}</td>
+                        <td style={{ padding: "8px 12px", color: SYN_STR, fontFamily: FONT_CODE, fontSize: 11 }}>{path}</td>
+                        <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11 }}>{fn}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </section>
 
           {/* Footer spacer */}

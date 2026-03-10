@@ -210,6 +210,9 @@ const SECTIONS: SidenavSection[] = [
   { id: "x402-trust-api", label: "x402 Trust API", indent: true },
   { id: "cli-ref", label: "CLI Reference" },
   { id: "deployment", label: "Deployment" },
+  { id: "consumer-middleware", label: "Consumer Middleware" },
+  { id: "reputation-system", label: "Reputation System" },
+  { id: "agent-playbooks", label: "Agent Playbooks" },
 ];
 
 function SidenavItem({ label, active, indent, onClick }: {
@@ -509,7 +512,7 @@ export function Docs() {
 
           {/* SDK */}
           <section id="arch-sdk" ref={setRef("arch-sdk")} style={{ marginTop: 32 }}>
-            <SubHeading>SDK <span style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>v0.2.0</span></SubHeading>
+            <SubHeading>SDK <span style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>v0.5.0</span></SubHeading>
             <Para>
               The TypeScript SDK (<InlineCode>@aegisaudit/sdk</InlineCode>) provides a high-level client for interacting with the registry. It wraps viem for chain interactions, includes a prover module for ZK proofs, and supports full discovery and event queries. Install via <InlineCode>npm install @aegisaudit/sdk</InlineCode>.
             </Para>
@@ -525,7 +528,7 @@ export function Docs() {
               ]}
             />
 
-            <Callout color={GREEN} label="Agent Capabilities (v0.2.0)">
+            <Callout color={GREEN} label="Agent Capabilities (v0.5.0)">
               The SDK provides full feature parity with the web app. AI agents can: discover all registered skills and auditors via event scanning, fetch metadata URIs, verify attestation proofs, manage auditor stake, open and resolve disputes — all programmatically via <InlineCode>npm install @aegisaudit/sdk</InlineCode>.
             </Callout>
 
@@ -958,7 +961,7 @@ fn main(
           <section id="sdk-agents" ref={setRef("sdk-agents")} style={{ marginTop: 56 }}>
             <SectionHeading>SDK for Agents</SectionHeading>
             <Para>
-              The <InlineCode>@aegisaudit/sdk</InlineCode> package (v0.2.0) gives AI agents full programmatic access to the AEGIS registry — the same capabilities available in the web app. Agents can discover skills, verify proofs, manage stake, and handle disputes without any web interface.
+              The <InlineCode>@aegisaudit/sdk</InlineCode> package (v0.5.0) gives AI agents full programmatic access to the AEGIS registry — the same capabilities available in the web app. Agents can discover skills, verify proofs, manage stake, and handle disputes without any web interface.
             </Para>
 
             <CodeBlock code={`npm install @aegisaudit/sdk`} filename="terminal" lang="bash" />
@@ -1137,7 +1140,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
           <section id="mcp-tools" ref={setRef("mcp-tools")} style={{ marginTop: 32 }}>
             <SubHeading>Available Tools</SubHeading>
             <Para>
-              The MCP server exposes 28 tools — 16 read-only and 12 write operations. Write tools require <InlineCode>AEGIS_PRIVATE_KEY</InlineCode> to be set. If no wallet is configured, calling a write tool returns setup instructions automatically.
+              The MCP server exposes 39 tools — 23 read-only, 4 subgraph-powered, and 12 write operations. Write tools require <InlineCode>AEGIS_PRIVATE_KEY</InlineCode> to be set. If no wallet is configured, calling a write tool returns setup instructions automatically.
             </Para>
             <InfoTable
               headers={["Tool", "Parameters", "Description"]}
@@ -1170,6 +1173,10 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
                 ["link-skill-to-agent", "agentId, skillHash, auditLevel", "Link AEGIS skill to ERC-8004 agent identity"],
                 ["query-trust-profile", "agentId, knownSkillHashes?", "Aggregated trust profile (AEGIS + ERC-8004, 0-100 score)"],
                 ["query-skill-trust", "skillHash", "Trust data for a single skill (attestations, disputes, level)"],
+                ["check-skill", "skillHash", "Query skill trust status via subgraph (audit level, attestation count, disputes)"],
+                ["browse-unaudited", "limit?, offset?", "List skills with no attestations from the subgraph"],
+                ["browse-bounties", "limit?, offset?", "List open bounties sorted by reward from the subgraph"],
+                ["audit-skill", "skillHash, level", "Full audit flow — discover, evaluate, generate proof, and attest"],
               ]}
             />
 
@@ -1455,6 +1462,135 @@ aegis status --skill 0x0000...0000 -n base-sepolia
 
             <Callout color={AMBER} label="Important">
               Never commit private keys or API keys to version control. Use environment variables or a <InlineCode>.env</InlineCode> file (which is gitignored by default in the monorepo).
+            </Callout>
+          </section>
+
+          {/* ═══ Consumer Middleware ═══ */}
+          <section id="consumer-middleware" ref={setRef("consumer-middleware")} style={{ marginTop: 56 }}>
+            <SectionHeading>Consumer Middleware</SectionHeading>
+            <Para>
+              The <InlineCode>@aegisaudit/consumer-middleware</InlineCode> package (v0.1.0) is a pre-execution trust gate for AI agent frameworks. It intercepts tool calls, queries AEGIS attestation data, and enforces configurable trust policies before allowing execution.
+            </Para>
+
+            <CodeBlock code={`npm install @aegisaudit/consumer-middleware`} filename="terminal" lang="bash" />
+
+            <SubHeading>TrustGate</SubHeading>
+            <Para>
+              Create a gate with your policy and map tool names to AEGIS skill hashes. The gate queries attestation data from the subgraph (with on-chain fallback) and caches results for 60 seconds.
+            </Para>
+
+            <CodeBlock code={`import { TrustGate } from '@aegisaudit/consumer-middleware';
+
+const gate = new TrustGate({
+  policy: {
+    minAuditLevel: 2,       // 1=Functional, 2=Robust, 3=Security
+    minAttestations: 1,      // Minimum non-revoked attestations
+    blockOnDispute: true,    // Block skills with unresolved disputes
+    mode: 'enforce',         // 'enforce' | 'warn' | 'log'
+  },
+  skills: [
+    { toolName: 'web_search', skillHash: '0xabc...' },
+    { toolName: 'file_read', skillHash: '0xdef...' },
+  ],
+});
+
+const result = await gate.check('web_search');
+if (!result.allowed) {
+  throw new Error(result.reason);
+}`} filename="trust-gate.ts" lang="typescript" />
+
+            <SubHeading>Framework Adapters</SubHeading>
+            <InfoTable
+              headers={["Framework", "Import Path", "Integration"]}
+              rows={[
+                ["LangChain", "@aegisaudit/consumer-middleware/langchain", "createAegisTrustHandler(gate) \u2192 callback handler"],
+                ["CrewAI", "@aegisaudit/consumer-middleware/crewai", "createAegisTrustHook(gate) \u2192 before-tool-call hook"],
+                ["MCP", "@aegisaudit/consumer-middleware/mcp", "aegisMcpMiddleware(gate, handler) \u2192 tool call wrapper"],
+              ]}
+            />
+
+            <Callout color={GREEN} label="One-Liner Integration">
+              In enforce mode, blocked tools throw <InlineCode>AegisTrustError</InlineCode> with full trust data attached. In warn mode, execution continues but logs the decision. In log mode, decisions are recorded silently.
+            </Callout>
+          </section>
+
+          {/* ═══ Reputation System ═══ */}
+          <section id="reputation-system" ref={setRef("reputation-system")} style={{ marginTop: 56 }}>
+            <SectionHeading>Reputation System</SectionHeading>
+            <Para>
+              Auditor reputation is computed by the subgraph (v0.3.0) using a weighted 7-factor formula with fixed-point arithmetic. Scores update automatically on every attestation, stake change, and dispute resolution.
+            </Para>
+
+            <InfoTable
+              headers={["Factor", "Weight", "Details"]}
+              rows={[
+                ["Attestations", "count \u00d7 10", "Base score from total attestation count"],
+                ["Level Bonus", "L2 \u00d7 5 + L3 \u00d7 15", "Higher-level audits earn more points"],
+                ["Stake", "Diminishing above 0.1 ETH", "Encourages broad participation over whale staking"],
+                ["Tenure", "+1 per 30 days (cap 12)", "Rewards long-term auditors"],
+                ["Disputes Lost", "-20 per loss", "Penalizes bad attestations"],
+                ["Win Rate", "0.5\u00d7 to 1.1\u00d7 multiplier", "Based on dispute win/loss ratio"],
+                ["Decay", "90-day grace, then linear to 0.5\u00d7", "Inactive auditors lose score over 365 days"],
+              ]}
+            />
+
+            <SubHeading>Reputation Tiers</SubHeading>
+            <Para>
+              Tiers are gated by both minimum score and minimum stake. If an auditor's score qualifies for a higher tier but their stake doesn't meet the threshold, the tier is capped and a warning is shown on the profile page.
+            </Para>
+
+            <InfoTable
+              headers={["Tier", "Min Score", "Min Stake"]}
+              rows={[
+                ["Bronze", "\u2265 0", "\u2265 0.01 ETH"],
+                ["Silver", "\u2265 10", "\u2265 0.025 ETH"],
+                ["Gold", "\u2265 25", "\u2265 0.1 ETH"],
+                ["Diamond", "\u2265 50", "\u2265 0.5 ETH"],
+              ]}
+            />
+
+            <Callout color={AMBER} label="Formula">
+              final = (attestations + levelBonus + stake + tenure - disputes) \u00d7 winRate \u00d7 decay. All math uses BigInt with \u00d71000 fixed-point precision in AssemblyScript.
+            </Callout>
+          </section>
+
+          {/* ═══ Agent Playbooks ═══ */}
+          <section id="agent-playbooks" ref={setRef("agent-playbooks")} style={{ marginTop: 56 }}>
+            <SectionHeading>Agent Playbooks</SectionHeading>
+            <Para>
+              Step-by-step guides for building autonomous agents that participate in the AEGIS ecosystem. Found in <InlineCode>packages/agents/</InlineCode> in the monorepo.
+            </Para>
+
+            <SubHeading>B3 — Auditor Agent</SubHeading>
+            <Para>
+              A 13-section playbook for building an agent that discovers unaudited skills, performs L1/L2/L3 security audits against all 14 criteria, generates ZK proofs, and submits on-chain attestations. Includes example reports for each audit level and a revenue model based on bounty collection.
+            </Para>
+            <InfoTable
+              headers={["Resource", "Path", "Description"]}
+              rows={[
+                ["Playbook", "packages/agents/auditor-agent/PLAYBOOK.md", "Full step-by-step guide (13 sections)"],
+                ["L1 Example", "packages/agents/auditor-agent/examples/example-l1-report.json", "4-criteria functional audit report"],
+                ["L2 Example", "packages/agents/auditor-agent/examples/example-l2-report.json", "9-criteria robust audit report"],
+                ["L3 Example", "packages/agents/auditor-agent/examples/example-l3-report.json", "14-criteria security audit report"],
+                ["Checklist", "packages/agents/shared/audit-checklist.md", "All 14 criteria with pass/fail criteria"],
+              ]}
+            />
+
+            <SubHeading>B4 — Dispute Agent</SubHeading>
+            <Para>
+              A 9-section playbook for building an agent that monitors attestations, detects vulnerabilities in audited skills, prepares structured evidence, and submits on-chain disputes. Revenue comes from bond returns plus 50% of slashed auditor stake.
+            </Para>
+            <InfoTable
+              headers={["Resource", "Path", "Description"]}
+              rows={[
+                ["Playbook", "packages/agents/dispute-agent/PLAYBOOK.md", "Full guide (9 sections)"],
+                ["Evidence Example", "packages/agents/dispute-agent/examples/example-dispute-evidence.json", "Structured dispute evidence with reproduction steps"],
+                ["Evidence Schema", "packages/agents/shared/evidence-schema.json", "JSON Schema for aegis/dispute-evidence@1"],
+              ]}
+            />
+
+            <Callout color={ACCENT} label="MCP-Powered">
+              Both playbooks reference the 39 MCP server tools by exact name and parameter format. Agents built with Claude, GPT, or any MCP-compatible client can follow the playbooks directly.
             </Callout>
           </section>
 
