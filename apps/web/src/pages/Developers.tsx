@@ -27,6 +27,7 @@ const SYN_FN = "#60A5FA";
 const SYN_TYPE = "#FBBF24";
 const SYN_NUM = "#F87171";
 const SYN_DEFAULT = "#A1A1AA";
+const GREEN = "#4ADE80";
 
 // ── Types ────────────────────────────────────────────────────
 type Lang = "ts" | "py";
@@ -1001,6 +1002,7 @@ const SECTIONS: SidenavSection[] = [
   { id: "method-createTrustApiMiddleware", label: "createTrustApiMiddleware()", indent: true },
   { id: "subgraph-tools", label: "Subgraph Tools" },
   { id: "reputation", label: "Reputation System" },
+  { id: "aegis-token", label: "$AEGIS Token", indent: true },
   { id: "events", label: "Contract Events" },
   { id: "errors", label: "Error Handling" },
   { id: "consumer-middleware", label: "Consumer Middleware" },
@@ -1772,6 +1774,78 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
                         <td style={{ padding: "8px 12px", color: TEXT, fontWeight: 700 }}>{tier}</td>
                         <td style={{ padding: "8px 12px", color: SYN_NUM, fontFamily: FONT_CODE, fontSize: 11 }}>{score}</td>
                         <td style={{ padding: "8px 12px", color: SYN_NUM, fontFamily: FONT_CODE, fontSize: 11 }}>{stake}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ── $AEGIS Token ── */}
+            <div id="aegis-token" ref={setRef("aegis-token")} style={{ marginTop: 32 }}>
+              <h3 style={{ fontFamily: FONT_HEAD, fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
+                $AEGIS Token
+              </h3>
+              <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+                $AEGIS is a rewards token on Base (launched via Clanker) that closes the economic loop between protocol revenue and auditor incentives. A 3{"\u2013"}5% buy/sell tax generates a revenue pool distributed as periodic airdrops, weighted by reputation score.
+              </p>
+
+              <div style={{ overflowX: "auto", marginBottom: 16 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      {["Mechanic", "Details"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Tax", "3\u20135% on every buy and sell \u2014 collected automatically by the token contract"],
+                      ["Revenue Pool", "Accumulated tax held until the next airdrop epoch"],
+                      ["Snapshot", "CLI queries subgraph, computes proportional allocations via BigInt arithmetic"],
+                      ["Weighting", "amount_i = totalPool \u00d7 reputationScore_i \u00f7 totalReputation"],
+                      ["Merkle Tree", "StandardMerkleTree of [bytes32 commitment, uint256 amount] \u2014 Solidity-compatible proofs"],
+                      ["Distribution", "v1: multisig batch transfer. Future: on-chain MerkleDistributor claim"],
+                    ].map(([mechanic, details]) => (
+                      <tr key={mechanic} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                        <td style={{ padding: "8px 12px", color: TEXT, fontWeight: 700 }}>{mechanic}</td>
+                        <td style={{ padding: "8px 12px", color: TEXT_DIM }}>{details}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{
+                background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 8,
+                padding: "12px 16px", marginBottom: 16,
+              }}>
+                <span style={{ color: GREEN, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>Incentive Loop</span>
+                <p style={{ fontSize: 12, color: TEXT_DIM, marginTop: 6, marginBottom: 0, lineHeight: 1.6 }}>
+                  Audit {"\u2192"} earn reputation {"\u2192"} receive larger $AEGIS airdrops {"\u2192"} token demand from consumers funds the next epoch. The higher your reputation, the larger your share.
+                </p>
+              </div>
+
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      {["CLI Command", "Description"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["aegis-airdrop snapshot --amount <n>", "Query subgraph, compute allocations, build Merkle tree, write JSON + CSV"],
+                      ["aegis-airdrop snapshot --no-merkle", "Generate snapshot without Merkle proofs (faster, for analysis)"],
+                      ["aegis-airdrop distribute --snapshot <path> --verify", "Load snapshot, verify all Merkle proofs against root"],
+                      ["aegis-airdrop distribute --snapshot <path> --dry-run", "Print full distribution table without sending transactions"],
+                    ].map(([cmd, desc]) => (
+                      <tr key={cmd} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                        <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11, fontWeight: 700 }}>{cmd}</td>
+                        <td style={{ padding: "8px 12px", color: TEXT_DIM }}>{desc}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -212,6 +212,7 @@ const SECTIONS: SidenavSection[] = [
   { id: "deployment", label: "Deployment" },
   { id: "consumer-middleware", label: "Consumer Middleware" },
   { id: "reputation-system", label: "Reputation System" },
+  { id: "aegis-token", label: "$AEGIS Token", indent: true },
   { id: "agent-playbooks", label: "Agent Playbooks" },
 ];
 
@@ -1552,6 +1553,39 @@ if (!result.allowed) {
             <Callout color={AMBER} label="Formula">
               final = (attestations + levelBonus + stake + tenure - disputes) \u00d7 winRate \u00d7 decay. All math uses BigInt with \u00d71000 fixed-point precision in AssemblyScript.
             </Callout>
+
+            <div id="aegis-token" ref={setRef("aegis-token")} />
+            <SubHeading>$AEGIS Token</SubHeading>
+            <Para>
+              $AEGIS is a rewards token on Base (launched via Clanker) that closes the economic loop between protocol revenue and auditor incentives. A 3{"\u2013"}5% buy/sell tax on every $AEGIS trade generates a revenue pool that is periodically distributed as airdrops to staked auditors, weighted by reputation score.
+            </Para>
+
+            <InfoTable
+              headers={["Mechanic", "Details"]}
+              rows={[
+                ["Tax", "3\u20135% on every buy and sell \u2014 collected automatically by the token contract"],
+                ["Revenue Pool", "Accumulated tax is held until the next airdrop epoch"],
+                ["Snapshot", "CLI tool queries the subgraph, computes proportional allocations using BigInt arithmetic"],
+                ["Weighting", "Each auditor receives tokens proportional to their reputation score \u00f7 total reputation"],
+                ["Merkle Tree", "Allocations are committed to an OpenZeppelin StandardMerkleTree (bytes32 commitment + uint256 amount)"],
+                ["Distribution", "v1: batch transfer via multisig. Future: on-chain MerkleDistributor claim contract"],
+              ]}
+            />
+
+            <Callout color={GREEN} label="Incentive Loop">
+              Audit {"\u2192"} earn reputation {"\u2192"} receive larger $AEGIS airdrops {"\u2192"} token demand from consumers funds the next round. The higher your reputation, the larger your share of every airdrop epoch.
+            </Callout>
+
+            <InfoTable
+              headers={["Component", "Location", "Description"]}
+              rows={[
+                ["Snapshot CLI", "packages/airdrop/", "aegis-airdrop snapshot --amount <n> \u2014 queries subgraph, builds Merkle tree, writes JSON + CSV"],
+                ["Distribute CLI", "packages/airdrop/", "aegis-airdrop distribute --snapshot <path> --verify --dry-run"],
+                ["Subgraph Query", "Paginated (1000/batch)", "Fetches all registered auditors with reputationScore > 0"],
+                ["Dust Handling", "Last auditor", "Remainder tokens from integer division go to the last auditor in sorted order"],
+                ["Output", "./snapshots/", "snapshot-{timestamp}.json + .csv with allocations, proofs, and merkle root"],
+              ]}
+            />
           </section>
 
           {/* ═══ Agent Playbooks ═══ */}
