@@ -1,0 +1,32 @@
+{
+  "name": "@aegisaudit/airdrop",
+  "version": "0.1.0",
+  "description": "Airdrop snapshot and distribution tooling for $AEGIS token",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "aegis-airdrop": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "snapshot": "node dist/index.js snapshot",
+    "distribute": "node dist/index.js distribute",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.7",
+    "chalk": "^5.4.0",
+    "commander": "^13.0.0",
+    "ora": "^8.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
