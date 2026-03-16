@@ -1009,6 +1009,7 @@ const SECTIONS: SidenavSection[] = [
   { id: "consumer-install", label: "Installation", indent: true },
   { id: "consumer-usage", label: "Usage", indent: true },
   { id: "consumer-adapters", label: "Framework Adapters", indent: true },
+  { id: "tao-integration", label: "TAO Integration" },
 ];
 
 // ── Contract Events ──────────────────────────────────────────
@@ -2086,6 +2087,96 @@ if (!result.allowed) {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </section>
+
+          {/* ═══ TAO Integration ═══ */}
+          <section id="tao-integration" ref={setRef("tao-integration")} style={{ marginTop: 56 }}>
+            <h2 style={{
+              fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700,
+              color: TEXT, marginBottom: 8,
+            }}>
+              TAO Integration
+            </h2>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+              Audit Bittensor subnet skills using the same AEGIS registry on Base. TAO skill hashes are derived client-side {"\u2014"} the contract sees a standard <code style={{ color: SYN_TYPE, fontFamily: FONT_CODE, fontSize: 11 }}>bytes32</code>.
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>BITTENSOR_RPC_URL</span>
+            </p>
+
+            <h3 style={{ fontFamily: FONT_HEAD, fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Skill Hash Derivation</h3>
+            <div style={{ overflowX: "auto", marginBottom: 16 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {["Scope", "Formula", "SDK Function"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Subnet", 'keccak256("tao:subnet:<netuid>")', "computeTaoSubnetHash(netuid)"],
+                    ["Miner", 'keccak256("tao:miner:<netuid>:<hotkey>")', "computeTaoMinerHash(netuid, hotkey)"],
+                  ].map(([scope, formula, fn]) => (
+                    <tr key={scope} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <td style={{ padding: "8px 12px", color: TEXT, fontWeight: 700 }}>{scope}</td>
+                      <td style={{ padding: "8px 12px", color: SYN_STR, fontFamily: FONT_CODE, fontSize: 11 }}>{formula}</td>
+                      <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11 }}>{fn}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 style={{ fontFamily: FONT_HEAD, fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 24 }}>MCP Discovery Tools</h3>
+            <div style={{ overflowX: "auto", marginBottom: 16 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {["Tool", "Parameters", "Description"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["aegis_tao_list_subnets", "limit?", "List all active subnets with miner counts and AEGIS skill hashes"],
+                    ["aegis_tao_browse_miners", "netuid, first?, sortBy?", "Browse miners on a subnet, flag unaudited ones"],
+                    ["aegis_tao_check_subnet", "netuid, hotkey?", "Check AEGIS attestations for a subnet or miner"],
+                  ].map(([tool, params, desc]) => (
+                    <tr key={tool} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11, fontWeight: 700 }}>{tool}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT_DIM, fontFamily: FONT_CODE, fontSize: 11 }}>{params}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT_DIM }}>{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 style={{ fontFamily: FONT_HEAD, fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 8, marginTop: 24 }}>TrustGate TAO Mapping</h3>
+            <div style={{
+              background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8,
+              padding: "16px 20px", marginBottom: 16, fontFamily: FONT_CODE, fontSize: 11,
+              color: TEXT_DIM, lineHeight: 1.8, whiteSpace: "pre",
+            }}>
+{`const gate = TrustGate.fromTaoMappings(
+  [
+    { toolName: 'text_gen', netuid: 18 },
+    { toolName: 'image_gen', netuid: 5, hotkey: '5F4tQ...' },
+  ],
+  { policy: { minAuditLevel: 2, mode: 'enforce' } },
+);`}
+            </div>
+
+            <div style={{
+              background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 8,
+              padding: "12px 16px",
+            }}>
+              <span style={{ color: GREEN, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>Same Registry</span>
+              <p style={{ fontSize: 12, color: TEXT_DIM, marginTop: 6, marginBottom: 0, lineHeight: 1.6 }}>
+                TAO attestations live in the same AegisRegistry on Base. No contract changes {"\u2014"} the <code style={{ color: SYN_TYPE, fontFamily: FONT_CODE }}>tao:</code> prefix in the hash input prevents collisions with EVM skill hashes.
+              </p>
             </div>
           </section>
 

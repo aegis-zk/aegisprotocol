@@ -71,3 +71,13 @@ export interface TrustResolver {
   /** Resolve trust data for a skill hash. Returns null if not found. */
   resolve(skillHash: Hex): Promise<ResolvedTrustData | null>;
 }
+
+/** Maps a framework tool name to a TAO subnet/miner for AEGIS trust checks. */
+export interface TaoSkillMapping {
+  /** Tool name as registered in the framework */
+  toolName: string;
+  /** Bittensor subnet ID */
+  netuid: number;
+  /** Optional miner hotkey (SS58). If omitted, maps to the subnet-level hash. */
+  hotkey?: string;
+}

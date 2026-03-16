@@ -53,6 +53,11 @@ import { registerBrowseUnaudited } from './browse-unaudited.js';
 import { registerBrowseBounties } from './browse-bounties.js';
 import { registerAuditSkill } from './audit-skill.js';
 
+// TAO (Bittensor) discovery tools
+import { registerTaoListSubnets } from './tao-list-subnets.js';
+import { registerTaoBrowseMiners } from './tao-browse-miners.js';
+import { registerTaoCheckSubnet } from './tao-check-subnet.js';
+
 /**
  * Register all AEGIS MCP tools on the given server instance.
  */
@@ -109,4 +114,9 @@ export function registerAllTools(server: McpServer): void {
   registerBrowseUnaudited(server);
   registerBrowseBounties(server);
   registerAuditSkill(server);
+
+  // TAO (Bittensor) subnet discovery
+  registerTaoListSubnets(server);
+  registerTaoBrowseMiners(server);
+  registerTaoCheckSubnet(server);
 }

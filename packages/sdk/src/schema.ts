@@ -101,8 +101,25 @@ export const L3_CRITERIA = {
   'L3.ADVERSARIAL': 'Tested against adversarial/malicious input patterns',
 } as const;
 
-/** All possible criteria IDs */
-export type CriteriaId = keyof typeof L3_CRITERIA;
+/**
+ * TAO — Bittensor Subnet Criteria (Supplementary)
+ *
+ * These are optional, supplementary criteria for auditing Bittensor subnet
+ * miners and validators. They do NOT replace L1/L2/L3 — an auditor still
+ * picks an audit level and meets those criteria, then optionally adds
+ * TAO-specific checks to the report.
+ */
+export const TAO_CRITERIA = {
+  'TAO.RESPONSE': 'Axon endpoint responds with valid output for standard queries',
+  'TAO.UPTIME': 'Endpoint demonstrates consistent availability over monitoring period',
+  'TAO.QUALITY': 'Response quality meets subnet-specific standards',
+  'TAO.WEIGHT': 'Validator weight distribution is consistent and not gaming emissions',
+  'TAO.LATENCY': 'Response latency within acceptable bounds for the subnet type',
+  'TAO.INTEGRITY': 'Responses are genuine (not copied/proxied from other miners)',
+} as const;
+
+/** All possible criteria IDs (L1/L2/L3 + TAO supplementary) */
+export type CriteriaId = keyof typeof L3_CRITERIA | keyof typeof TAO_CRITERIA;
 
 /** Map from audit level to required criteria */
 export const LEVEL_CRITERIA = {
@@ -145,6 +162,8 @@ export interface SkillInfo {
   skillUrl?: string;
   /** Categorization tags */
   tags?: string[];
+  /** Bittensor subnet-specific metadata (only for TAO skill audits) */
+  tao?: import('./tao.js').TaoSkillMetadata;
 }
 
 /** Information about the auditing environment and tools used */
@@ -296,7 +315,7 @@ export function validateAuditMetadata(metadata: unknown): ValidationResult {
 
   const requiredCriteria = LEVEL_CRITERIA[level as 1 | 2 | 3];
   const requiredIds = new Set(Object.keys(requiredCriteria));
-  const allValidIds = new Set(Object.keys(L3_CRITERIA));
+  const allValidIds = new Set([...Object.keys(L3_CRITERIA), ...Object.keys(TAO_CRITERIA)]);
   const presentIds = new Set<string>();
 
   for (const criterion of audit.criteria as CriteriaResult[]) {
@@ -442,6 +461,7 @@ function keccak256String(input: string): string {
 export function createAuditTemplate(
   level: 1 | 2 | 3,
   skillInfo: SkillInfo,
+  options?: { includeTaoCriteria?: boolean },
 ): AuditMetadata {
   const criteria = LEVEL_CRITERIA[level];
   const criteriaResults: CriteriaResult[] = Object.entries(criteria).map(
@@ -451,6 +471,17 @@ export function createAuditTemplate(
       notes: `TODO: ${description}`,
     }),
   );
+
+  // Append TAO-specific criteria when auditing Bittensor skills
+  if (options?.includeTaoCriteria) {
+    for (const [id, description] of Object.entries(TAO_CRITERIA)) {
+      criteriaResults.push({
+        id: id as CriteriaId,
+        pass: false,
+        notes: `TODO: ${description}`,
+      });
+    }
+  }
 
   return {
     schema: 'aegis/audit-metadata@1',

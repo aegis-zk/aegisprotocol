@@ -47,6 +47,7 @@ export {
   L1_CRITERIA,
   L2_CRITERIA,
   L3_CRITERIA,
+  TAO_CRITERIA,
   LEVEL_CRITERIA,
   validateAuditMetadata,
   getRequiredCriteria,
@@ -61,6 +62,23 @@ export type {
   AuditMetadata,
   ValidationResult,
 } from './schema';
+
+// TAO — Bittensor subnet integration
+export {
+  computeTaoSubnetHash,
+  computeTaoMinerHash,
+  parseTaoSkillHash,
+  listSubnets,
+  queryMetagraph,
+  buildTaoSkillInfo,
+} from './tao';
+export type {
+  TaoSubnetInfo,
+  TaoMetagraphNode,
+  TaoMetagraphData,
+  TaoAxonInfo,
+  TaoSkillMetadata,
+} from './tao';
 
 // Constants
 export {

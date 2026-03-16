@@ -1,10 +1,12 @@
-import type { Hex } from '@aegisaudit/sdk';
+import { computeTaoSubnetHash, computeTaoMinerHash, type Hex } from '@aegisaudit/sdk';
 import type {
   TrustPolicy,
   TrustGateConfig,
   TrustGateResult,
   TrustResolver,
   ResolvedTrustData,
+  SkillMapping,
+  TaoSkillMapping,
 } from './types.js';
 import { SubgraphResolver } from './resolvers/subgraph.js';
 import { OnchainResolver } from './resolvers/onchain.js';
@@ -62,6 +64,36 @@ export class TrustGate {
   private readonly cacheTtlMs: number;
   private readonly onBlock?: (result: TrustGateResult) => void;
   private readonly onWarn?: (result: TrustGateResult) => void;
+
+  /**
+   * Create a TrustGate from TAO subnet/miner mappings.
+   *
+   * Auto-computes AEGIS skill hashes from netuids and hotkeys, so consumers
+   * don't need to manually derive bytes32 hashes for Bittensor skills.
+   *
+   * @example
+   * ```ts
+   * const gate = TrustGate.fromTaoMappings(
+   *   [
+   *     { toolName: 'text_gen', netuid: 18 },
+   *     { toolName: 'image_gen', netuid: 5, hotkey: '5F4tQ...' },
+   *   ],
+   *   { policy: { minAuditLevel: 2, mode: 'enforce' } },
+   * );
+   * ```
+   */
+  static fromTaoMappings(
+    mappings: TaoSkillMapping[],
+    config: Omit<TrustGateConfig, 'skills'>,
+  ): TrustGate {
+    const skills: SkillMapping[] = mappings.map((m) => ({
+      toolName: m.toolName,
+      skillHash: m.hotkey
+        ? computeTaoMinerHash(m.netuid, m.hotkey)
+        : computeTaoSubnetHash(m.netuid),
+    }));
+    return new TrustGate({ ...config, skills });
+  }
 
   constructor(config: TrustGateConfig) {
     this.policy = { ...DEFAULT_POLICY, ...config.policy };

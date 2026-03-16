@@ -9,6 +9,7 @@ export { OnchainResolver } from './resolvers/onchain.js';
 export type {
   TrustPolicy,
   SkillMapping,
+  TaoSkillMapping,
   TrustGateConfig,
   TrustGateResult,
   ResolvedTrustData,

@@ -213,6 +213,7 @@ const SECTIONS: SidenavSection[] = [
   { id: "consumer-middleware", label: "Consumer Middleware" },
   { id: "reputation-system", label: "Reputation System" },
   { id: "aegis-token", label: "$AEGIS Token", indent: true },
+  { id: "tao-subnet-auditing", label: "TAO Subnet Auditing" },
   { id: "agent-playbooks", label: "Agent Playbooks" },
 ];
 
@@ -1586,6 +1587,56 @@ if (!result.allowed) {
                 ["Output", "./snapshots/", "snapshot-{timestamp}.json + .csv with allocations, proofs, and merkle root"],
               ]}
             />
+          </section>
+
+          {/* ═══ TAO Subnet Auditing ═══ */}
+          <section id="tao-subnet-auditing" ref={setRef("tao-subnet-auditing")} style={{ marginTop: 56 }}>
+            <SectionHeading>TAO Subnet Auditing</SectionHeading>
+            <Para>
+              AEGIS supports auditing Bittensor (TAO) subnet skills using the same on-chain registry on Base. TAO skill hashes are derived client-side from the subnet ID and optional miner hotkey {"\u2014"} the contract just sees a standard <InlineCode>bytes32</InlineCode>.
+            </Para>
+
+            <SubHeading>Skill Hash Derivation</SubHeading>
+            <Para>
+              Two levels of granularity: subnet-level audits evaluate the protocol, miner-level audits evaluate a specific endpoint.
+            </Para>
+            <InfoTable
+              headers={["Scope", "Formula", "Example"]}
+              rows={[
+                ["Subnet", 'keccak256("tao:subnet:<netuid>")', "computeTaoSubnetHash(18)"],
+                ["Miner", 'keccak256("tao:miner:<netuid>:<hotkey>")', 'computeTaoMinerHash(18, "5F4tQ...")'],
+              ]}
+            />
+
+            <SubHeading>TAO Audit Criteria</SubHeading>
+            <Para>
+              Auditors still classify their audit as L1/L2/L3, then optionally add TAO-specific supplementary checks.
+            </Para>
+            <InfoTable
+              headers={["Criteria", "Description"]}
+              rows={[
+                ["TAO.RESPONSE", "Axon endpoint responds with valid output for standard queries"],
+                ["TAO.UPTIME", "Endpoint demonstrates consistent availability over monitoring period"],
+                ["TAO.QUALITY", "Response quality meets subnet-specific standards"],
+                ["TAO.WEIGHT", "Validator weight distribution is consistent and not gaming emissions"],
+                ["TAO.LATENCY", "Response latency within acceptable bounds for the subnet type"],
+                ["TAO.INTEGRITY", "Responses are genuine (not copied/proxied from other miners)"],
+              ]}
+            />
+
+            <SubHeading>MCP Discovery Tools</SubHeading>
+            <InfoTable
+              headers={["Tool", "Description"]}
+              rows={[
+                ["aegis_tao_list_subnets", "List all active Bittensor subnets with miner counts and computed skill hashes"],
+                ["aegis_tao_browse_miners", "Browse miners on a subnet, showing which are unaudited in AEGIS"],
+                ["aegis_tao_check_subnet", "Check existing AEGIS attestations for a subnet or specific miner by netuid"],
+              ]}
+            />
+
+            <Callout color={ACCENT} label="Same Registry">
+              TAO attestations live in the same AegisRegistry on Base. Consumers verify trust with the same TrustGate middleware {"\u2014"} just pass a TAO-derived skill hash instead of an EVM one.
+            </Callout>
           </section>
 
           {/* ═══ Agent Playbooks ═══ */}
