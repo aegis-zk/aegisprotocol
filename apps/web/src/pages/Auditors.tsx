@@ -687,6 +687,7 @@ function AuditorNavBar() {
           { label: "Auditors", onClick: () => navigate("/auditors") },
           { label: "Developers", onClick: () => navigate("/developers") },
           { label: "Docs", onClick: () => navigate("/docs") },
+          { label: "Updates", onClick: () => navigate("/updates") },
         ].map(item => (
           <a key={item.label} href="#" style={{
             color: item.label === "Auditors" ? TEXT : TEXT_DIM,

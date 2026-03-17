@@ -42,6 +42,7 @@ export function DAppPage() {
     { label: "Auditors", onClick: () => navigate("/auditors") },
     { label: "Developers", onClick: () => navigate("/developers") },
     { label: "Docs", onClick: () => navigate("/docs") },
+    { label: "Updates", onClick: () => navigate("/updates") },
   ];
 
   const currentTab = TABS.find(t => t.id === activeTab)!;

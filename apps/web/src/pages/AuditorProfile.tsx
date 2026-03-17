@@ -121,6 +121,7 @@ export function AuditorProfile() {
     { label: "Auditors", onClick: () => navigate("/auditors") },
     { label: "Developers", onClick: () => navigate("/developers") },
     { label: "Docs", onClick: () => navigate("/docs") },
+    { label: "Updates", onClick: () => navigate("/updates") },
   ];
 
   const score = auditor ? Number(auditor.reputationScore) : 0;

@@ -6,6 +6,7 @@ import { Developers } from './pages/Developers';
 import { Auditors } from './pages/Auditors';
 import { Dashboard } from './pages/Dashboard';
 import { Docs } from './pages/Docs';
+import { Updates } from './pages/Updates';
 // Leaderboard is now a tab within Auditors page
 import { AuditorProfile } from './pages/AuditorProfile';
 import { DAppPage } from './pages/DAppPage';
@@ -32,6 +33,7 @@ export function App() {
         <Route path="/leaderboard" element={<Navigate to="/auditors" replace />} />
         <Route path="/auditor/:commitment" element={<AuditorProfile />} />
         <Route path="/docs" element={<Docs />} />
+        <Route path="/updates" element={<Updates />} />
       </Routes>
     </HashRouter>
   );

@@ -86,6 +86,7 @@ function NavBar() {
     { label: "Auditors", path: "/auditors" },
     { label: "Developers", path: "/developers" },
     { label: "Docs", path: "/docs" },
+    { label: "Updates", path: "/updates" },
   ];
 
   return (

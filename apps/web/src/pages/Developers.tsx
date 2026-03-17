@@ -1080,6 +1080,7 @@ function DevNavBar() {
           { label: "Auditors", onClick: () => navigate("/auditors") },
           { label: "Developers", onClick: () => navigate("/developers") },
           { label: "Docs", onClick: () => navigate("/docs") },
+          { label: "Updates", onClick: () => navigate("/updates") },
         ].map(item => (
           <a key={item.label} href="#" style={{
             color: item.label === "Developers" ? TEXT : TEXT_DIM,
