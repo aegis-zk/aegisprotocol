@@ -44,9 +44,33 @@ const CATEGORY_COLORS: Record<Category, string> = {
 const UPDATES: UpdateEntry[] = [
   {
     date: "2026-03-17",
-    title: "Automated Audit Pipeline",
-    category: "Coming Soon",
-    description: "Event-driven audit queue that watches for SkillListed events and automates the full lifecycle: discovery, 14-criteria checklist evaluation, ZK proof generation, and on-chain attestation submission with retry logic.",
+    title: "SDK & MCP Server v0.6.0 \u2014 Mainnet-Only",
+    category: "SDK",
+    description: "Removed all Base Sepolia/testnet references across the entire stack. Default chain is now 8453 (Base mainnet) everywhere \u2014 SDK, MCP server, CLI, and web app. Eliminates agent confusion from installing testnet tooling.",
+  },
+  {
+    date: "2026-03-17",
+    title: "Auto-Wallet Generation",
+    category: "MCP",
+    description: "New generate-wallet MCP tool lets agents create a fresh Ethereum wallet in one call \u2014 no more guiding users through MetaMask private key export. Returns address, key, and ready-to-paste config snippet.",
+  },
+  {
+    date: "2026-03-17",
+    title: "Bundled Prover \u2014 Zero-Config ZK Proofs",
+    category: "SDK",
+    description: "SDK now auto-detects the bb binary from @aztec/bb.js and bundles the compiled circuit artifact. Agents no longer need to hunt for bb, nargo, or circuit files \u2014 just pass inputs and the SDK handles everything.",
+  },
+  {
+    date: "2026-03-17",
+    title: "MCP Server v0.5.2 \u2014 13 Onboarding Fixes",
+    category: "MCP",
+    description: "Resolved 13 issues from first auditor agent test: fixed commitment stdout parsing, corrected tool parameter schemas, improved error messages, added missing tool registrations, and hardened the full audit-to-attestation pipeline.",
+  },
+  {
+    date: "2026-03-17",
+    title: "Automated Audit Pipeline v0.2",
+    category: "Agent",
+    description: "Event-driven audit queue that watches for SkillListed events and automates the full lifecycle: bounty-aware racing, competitor detection, 14-criteria evaluation, ZK proof generation, on-chain attestation, and health monitoring.",
   },
   {
     date: "2026-03-17",
@@ -92,9 +116,9 @@ const UPDATES: UpdateEntry[] = [
   },
   {
     date: "2026-03-10",
-    title: "MCP Server \u2014 39 Tools",
+    title: "MCP Server \u2014 42 Tools",
     category: "MCP",
-    description: "Shipped MCP server with 39 tools for Claude and MCP-compatible AI agents. Covers skill discovery, audit submission, dispute management, bounty tracking, reputation queries, ERC-8004 bridging, and trust profiles.",
+    description: "Shipped MCP server with 42 tools for Claude and MCP-compatible AI agents. Covers skill discovery, audit submission, dispute management, bounty tracking, reputation queries, ERC-8004 bridging, and trust profiles.",
   },
   {
     date: "2026-03-08",
