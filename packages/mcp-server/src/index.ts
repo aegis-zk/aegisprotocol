@@ -10,7 +10,7 @@ if (process.argv[2] === 'setup') {
 
   const server = new McpServer({
     name: 'aegis-protocol',
-    version: '0.5.0',
+    version: '0.5.2',
   });
 
   registerAllTools(server);

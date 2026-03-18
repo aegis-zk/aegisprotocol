@@ -16,7 +16,7 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | Vercel project | `jadebroccoli-2626s-projects/dist` (deploy from `apps/web/dist`) |
 | GitHub | https://github.com/aegis-zk/aegisprotocol |
 | npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.5.1) |
-| npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (v0.5.1) |
+| npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (v0.5.2) |
 | npm Consumer Middleware | https://www.npmjs.com/package/@aegisaudit/consumer-middleware (v0.1.0) |
 | AegisRegistry (mainnet v4) | `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389) |
 | AegisRegistry (mainnet v3, deprecated) | `0xa0FF1563Ab7d5d514146F2713125098954Af1F61` (Base, block 42942701) |
@@ -46,7 +46,7 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 aegis/
 ├── packages/
 │   ├── sdk/            # @aegisaudit/sdk@0.5.1 — TypeScript client library (tsup, ESM+CJS)
-│   ├── mcp-server/     # @aegisaudit/mcp-server@0.5.1 — MCP tools for AI agents (tsup, ESM)
+│   ├── mcp-server/     # @aegisaudit/mcp-server@0.5.2 — MCP tools for AI agents (tsup, ESM)
 │   ├── indexer/        # @aegisaudit/indexer@0.1.0 — Event indexer + REST API (Hono, sql.js)
 │   ├── subgraph/       # @aegisaudit/subgraph@0.3.0 — The Graph subgraph (Base L2, AssemblyScript)
 │   ├── consumer-middleware/ # @aegisaudit/consumer-middleware@0.1.0 — Pre-execution trust gate (tsup, ESM+CJS)
@@ -95,7 +95,7 @@ VERIFIER_ADDRESS=0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7 forge script script/
 | Package | Version |
 |---|---|
 | @aegisaudit/sdk | 0.5.1 |
-| @aegisaudit/mcp-server | 0.5.1 |
+| @aegisaudit/mcp-server | 0.5.2 |
 | @aegisaudit/indexer | 0.1.0 |
 | @aegisaudit/subgraph | 0.3.0 |
 | @aegisaudit/consumer-middleware | 0.1.0 |
@@ -657,8 +657,7 @@ Done:      A1 (Indexer) ✅ + B1 (Consumer middleware) ✅
 Done:      Full protocol loop closed ✅
            ↳ All core workstream items (A1-A6, B1-B4, C1-C3) complete
 
-Pending:   Publish @aegisaudit/mcp-server@0.5.2 (VK warning removal, Issue #13 pre-check)
-           Deploy ValidationRegistry to Base mainnet (unblocks Issues #9, #12 full mode)
+Pending:   Deploy ValidationRegistry to Base mainnet (unblocks Issues #9, #12 full mode)
 In flight: awesome-mcp-servers PR + Glama listing (pending review)
 Next:      B2 (Scout bot automation) + production hardening
 ```
