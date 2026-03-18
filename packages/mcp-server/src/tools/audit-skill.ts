@@ -67,7 +67,12 @@ interface SkillContextResult {
 export function registerAuditSkill(server: McpServer): void {
   server.tool(
     'aegis_audit_skill',
-    'Two-phase audit tool: (1) reads the current skill state from the subgraph — existing attestations, open disputes, and bounty info — then (2) submits an on-chain registerSkill transaction via the SDK. Requires AEGIS_PRIVATE_KEY to be set. The auditor must already be registered on-chain via register-auditor.',
+    `Two-phase audit tool: (1) reads the current skill state from the subgraph — existing attestations, open disputes, and bounty info — then (2) submits an on-chain registerSkill transaction via the SDK. Requires AEGIS_PRIVATE_KEY to be set. The auditor must already be registered on-chain via register-auditor.
+
+IMPORTANT: The attestationProof must be an UltraHonk proof generated with keccak: true (for EVM verification). Required toolchain:
+  - nargo 1.0.0-beta.18 (Noir compiler)
+  - @aztec/bb.js@3.0.0-nightly.20260102 (Barretenberg backend)
+Other versions of bb.js may produce incompatible proofs. Use generate-attestation-proof to create the proof.`,
     {
       skillHash: z
         .string()

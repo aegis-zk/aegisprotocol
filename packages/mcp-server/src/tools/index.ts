@@ -52,6 +52,8 @@ import { registerCheckSkill } from './check-skill.js';
 import { registerBrowseUnaudited } from './browse-unaudited.js';
 import { registerBrowseBounties } from './browse-bounties.js';
 import { registerAuditSkill } from './audit-skill.js';
+import { registerGenerateAttestationProof } from './generate-attestation-proof.js';
+import { registerGenerateAuditorCommitment } from './generate-auditor-commitment.js';
 
 // TAO (Bittensor) discovery tools
 import { registerTaoListSubnets } from './tao-list-subnets.js';
@@ -114,6 +116,8 @@ export function registerAllTools(server: McpServer): void {
   registerBrowseUnaudited(server);
   registerBrowseBounties(server);
   registerAuditSkill(server);
+  registerGenerateAttestationProof(server);
+  registerGenerateAuditorCommitment(server);
 
   // TAO (Bittensor) subnet discovery
   registerTaoListSubnets(server);

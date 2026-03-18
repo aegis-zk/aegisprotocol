@@ -6,7 +6,7 @@ solc_version = "0.8.28"
 optimizer = true
 optimizer_runs = 1
 ffi = false
-fs_permissions = [{ access = "read", path = "./" }]
+fs_permissions = [{ access = "read", path = "./" }, { access = "read", path = "../circuits/" }]
 
 [profile.default.fmt]
 line_length = 120

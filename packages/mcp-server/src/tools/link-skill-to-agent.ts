@@ -3,12 +3,13 @@ import { z } from 'zod';
 import { getClient, hasWallet, getWalletAddress } from '../lib/client.js';
 import { handleToolCall, serializeResult } from '../lib/serialization.js';
 import { getWalletSetupGuide } from '../lib/wallet-guide.js';
-import { AUDIT_LEVEL_SCORES } from '@aegisaudit/sdk';
+import { AUDIT_LEVEL_SCORES, ERC8004_CHAIN_ADDRESSES } from '@aegisaudit/sdk';
+import { createPublicClient, http } from 'viem';
 
 export function registerLinkSkillToAgent(server: McpServer): void {
   server.tool(
     'link-skill-to-agent',
-    'Link an AEGIS skill hash to an ERC-8004 agent identity by writing it as metadata on the IdentityRegistry. This associates the audit result with the agent NFT so consumers can discover it. Requires AEGIS_PRIVATE_KEY and ownership of the agent NFT.',
+    'Link an AEGIS skill hash to an ERC-8004 agent identity by writing it as metadata on the IdentityRegistry. This associates the audit result with the agent NFT so consumers can discover it. Requires AEGIS_PRIVATE_KEY. IMPORTANT: The wallet must be the ownerOf(agentId) — only the NFT holder can set metadata. If you get "Not authorized", the AEGIS_PRIVATE_KEY wallet does not own the specified agent NFT.',
     {
       agentId: z
         .string()
@@ -44,6 +45,44 @@ export function registerLinkSkillToAgent(server: McpServer): void {
         }
 
         const client = getClient();
+        const walletAddr = getWalletAddress();
+        const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '84532');
+
+        // Pre-check: verify the wallet owns this agent NFT
+        try {
+          const addrs = ERC8004_CHAIN_ADDRESSES[chainId];
+          if (addrs?.identityRegistry) {
+            const publicClient = createPublicClient({
+              transport: http(process.env.AEGIS_RPC_URL),
+            });
+            const nftOwner = await publicClient.readContract({
+              address: addrs.identityRegistry as `0x${string}`,
+              abi: [{ type: 'function', name: 'ownerOf', inputs: [{ name: 'tokenId', type: 'uint256' }], outputs: [{ name: '', type: 'address' }], stateMutability: 'view' }] as const,
+              functionName: 'ownerOf',
+              args: [BigInt(params.agentId)],
+            }) as string;
+
+            if (nftOwner.toLowerCase() !== walletAddr?.toLowerCase()) {
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: serializeResult({
+                      error: 'NotAgentOwner',
+                      agentId: params.agentId,
+                      nftOwner,
+                      walletAddress: walletAddr,
+                      message: `Your wallet ${walletAddr} does not own agent #${params.agentId}. Only the NFT owner (${nftOwner}) can set metadata. Use the correct AEGIS_PRIVATE_KEY or register a new agent with register-agent.`,
+                    }),
+                  },
+                ],
+              };
+            }
+          }
+        } catch {
+          // Agent may not exist — let the tx revert with a clear error
+        }
+
         const txHash = await client.linkSkillToAgent(
           BigInt(params.agentId),
           params.skillHash as `0x${string}`,
