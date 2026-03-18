@@ -1,4 +1,52 @@
-import { config, chainConfig } from "./config.js";
+import { config } from "./config.js";
+
+/**
+ * Check if a skill already has an attestation at or above the given level.
+ * Used as a pre-submission race check to avoid wasting gas.
+ */
+export async function checkAlreadyAttested(
+  skillHash: string,
+  auditLevel: number
+): Promise<boolean> {
+  try {
+    const sdk = await import("@aegisaudit/sdk");
+
+    const client = new sdk.AegisClient({
+      chainId: config.chainId,
+      rpcUrl: config.rpcUrl,
+    });
+
+    const attestations = await client.getAttestations(skillHash as `0x${string}`);
+    return attestations.some((a: any) => a.auditLevel >= auditLevel);
+  } catch {
+    // If we can't check, proceed with submission (fail-open)
+    return false;
+  }
+}
+
+/**
+ * Check if a bounty is still available for claiming.
+ */
+export async function checkBountyStillAvailable(
+  skillHash: string
+): Promise<{ available: boolean; amount: bigint }> {
+  try {
+    const sdk = await import("@aegisaudit/sdk");
+
+    const client = new sdk.AegisClient({
+      chainId: config.chainId,
+      rpcUrl: config.rpcUrl,
+    });
+
+    const bounty = await client.getBounty(skillHash as `0x${string}`);
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const available = bounty.amount > 0n && !bounty.claimed && bounty.expiresAt > now;
+
+    return { available, amount: bounty.amount };
+  } catch {
+    return { available: false, amount: 0n };
+  }
+}
 
 /**
  * Submit an attestation on-chain via the SDK's registerSkill().
@@ -13,6 +61,7 @@ export async function submitAttestation(params: {
   publicInputs: string[];
   auditorCommitment: string;
   auditLevel: 1 | 2 | 3;
+  bountyRecipient?: string;
 }): Promise<string> {
   try {
     // Dynamic import for SDK
@@ -35,6 +84,7 @@ export async function submitAttestation(params: {
       publicInputs: params.publicInputs as `0x${string}`[],
       auditorCommitment: params.auditorCommitment as `0x${string}`,
       auditLevel: params.auditLevel,
+      ...(params.bountyRecipient ? { bountyRecipient: params.bountyRecipient as `0x${string}` } : {}),
     });
 
     console.log(`[submit] Transaction sent: ${txHash}`);

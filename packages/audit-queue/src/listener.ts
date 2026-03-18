@@ -1,9 +1,16 @@
 import { createPublicClient, http, parseEventLogs } from "viem";
 import { base, baseSepolia } from "viem/chains";
 import { config, chainConfig } from "./config.js";
-import { getLastSyncedBlock, setLastSyncedBlock, insertTask, taskExists } from "./db/index.js";
+import {
+  getLastSyncedBlock,
+  setLastSyncedBlock,
+  insertTask,
+  taskExists,
+  upsertBounty,
+  markCompetitorAttested,
+} from "./db/index.js";
 
-// ── SkillListed Event ABI ───────────────────────────────────
+// ── Event ABIs ──────────────────────────────────────────────
 
 const SKILL_LISTED_EVENT = [
   {
@@ -13,6 +20,31 @@ const SKILL_LISTED_EVENT = [
       { name: "skillHash", type: "bytes32" as const, indexed: true },
       { name: "publisher", type: "address" as const, indexed: true },
       { name: "metadataURI", type: "string" as const, indexed: false },
+    ],
+  },
+] as const;
+
+const BOUNTY_POSTED_EVENT = [
+  {
+    type: "event" as const,
+    name: "BountyPosted" as const,
+    inputs: [
+      { name: "skillHash", type: "bytes32" as const, indexed: true },
+      { name: "amount", type: "uint256" as const, indexed: false },
+      { name: "requiredLevel", type: "uint8" as const, indexed: false },
+      { name: "expiresAt", type: "uint256" as const, indexed: false },
+    ],
+  },
+] as const;
+
+const SKILL_REGISTERED_EVENT = [
+  {
+    type: "event" as const,
+    name: "SkillRegistered" as const,
+    inputs: [
+      { name: "skillHash", type: "bytes32" as const, indexed: true },
+      { name: "auditLevel", type: "uint8" as const, indexed: false },
+      { name: "auditorCommitment", type: "bytes32" as const, indexed: false },
     ],
   },
 ] as const;
@@ -32,32 +64,84 @@ async function processBlockRange(
   fromBlock: bigint,
   toBlock: bigint
 ): Promise<number> {
-  const logs = await client.getLogs({
-    address: chainConfig.registryAddress,
-    fromBlock,
-    toBlock,
-    // Filter only SkillListed events
-    event: SKILL_LISTED_EVENT[0],
-  });
-
-  if (logs.length === 0) return 0;
-
-  const decoded = parseEventLogs({
-    abi: SKILL_LISTED_EVENT,
-    logs,
-  });
+  // Fetch all three event types in parallel
+  const [skillLogs, bountyLogs, registeredLogs] = await Promise.all([
+    client.getLogs({
+      address: chainConfig.registryAddress,
+      fromBlock,
+      toBlock,
+      event: SKILL_LISTED_EVENT[0],
+    }),
+    client.getLogs({
+      address: chainConfig.registryAddress,
+      fromBlock,
+      toBlock,
+      event: BOUNTY_POSTED_EVENT[0],
+    }),
+    client.getLogs({
+      address: chainConfig.registryAddress,
+      fromBlock,
+      toBlock,
+      event: SKILL_REGISTERED_EVENT[0],
+    }),
+  ]);
 
   let count = 0;
-  for (const log of decoded) {
-    const { skillHash, publisher, metadataURI } = log.args as {
-      skillHash: string;
-      publisher: string;
-      metadataURI: string;
-    };
 
-    if (!taskExists(skillHash)) {
-      insertTask(skillHash, publisher, metadataURI, config.preferredAuditLevel);
-      count++;
+  // 1. Process SkillListed — insert new tasks
+  if (skillLogs.length > 0) {
+    const decoded = parseEventLogs({ abi: SKILL_LISTED_EVENT, logs: skillLogs });
+    for (const log of decoded) {
+      const { skillHash, publisher, metadataURI } = log.args as {
+        skillHash: string;
+        publisher: string;
+        metadataURI: string;
+      };
+
+      if (!taskExists(skillHash)) {
+        insertTask(skillHash, publisher, metadataURI, config.preferredAuditLevel);
+        count++;
+      }
+    }
+  }
+
+  // 2. Process BountyPosted — update bounty info on tasks
+  if (bountyLogs.length > 0) {
+    const decoded = parseEventLogs({ abi: BOUNTY_POSTED_EVENT, logs: bountyLogs });
+    for (const log of decoded) {
+      const { skillHash, amount, requiredLevel, expiresAt } = log.args as {
+        skillHash: string;
+        amount: bigint;
+        requiredLevel: number;
+        expiresAt: bigint;
+      };
+
+      // Skip dust bounties
+      if (BigInt(config.minBountyWei) > 0n && amount < BigInt(config.minBountyWei)) continue;
+
+      upsertBounty(
+        skillHash,
+        amount.toString(),
+        requiredLevel,
+        new Date(Number(expiresAt) * 1000).toISOString()
+      );
+    }
+  }
+
+  // 3. Process SkillRegistered — mark competitor attestations
+  if (registeredLogs.length > 0) {
+    const decoded = parseEventLogs({ abi: SKILL_REGISTERED_EVENT, logs: registeredLogs });
+    for (const log of decoded) {
+      const { skillHash, auditLevel, auditorCommitment } = log.args as {
+        skillHash: string;
+        auditLevel: number;
+        auditorCommitment: string;
+      };
+
+      // Skip our own attestations
+      if (auditorCommitment.toLowerCase() === config.auditorCommitment.toLowerCase()) continue;
+
+      markCompetitorAttested(skillHash, auditLevel);
     }
   }
 

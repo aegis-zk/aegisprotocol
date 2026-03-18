@@ -7,6 +7,7 @@ export type TaskState =
   | "proof-generating" // Generating ZK proof via nargo + bb
   | "submitting"     // Sending registerSkill() tx on-chain
   | "verified"       // Attestation confirmed on-chain
+  | "skipped"        // Already attested by competitor — no action needed
   | "failed";        // Error — will retry with backoff
 
 // ── Audit Task ──────────────────────────────────────────────
@@ -23,6 +24,9 @@ export interface AuditTask {
   proofHex: string | null;
   publicInputs: string | null; // JSON stringified array
   txHash: string | null;
+  bountyAmount: string | null;       // wei string, NULL = no bounty
+  bountyRequiredLevel: number | null; // 1/2/3 or NULL
+  bountyExpiresAt: string | null;    // ISO timestamp or NULL
   discoveredAt: string;      // ISO timestamp
   claimedAt: string | null;
   completedAt: string | null;

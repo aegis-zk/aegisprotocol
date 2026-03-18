@@ -1,7 +1,7 @@
 {
   "name": "@aegisaudit/audit-queue",
-  "version": "0.1.0",
-  "description": "Automated audit pipeline for AEGIS Protocol — watches for new skills, runs checklist audits, generates ZK proofs, submits on-chain attestations",
+  "version": "0.2.0",
+  "description": "Automated audit pipeline for AEGIS Protocol — bounty-aware racing, event-driven queue, ZK proof generation, on-chain attestation submission",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,6 +20,7 @@
     "viem": "^2.21.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0"
   },

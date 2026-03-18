@@ -7,10 +7,6 @@ import type { AuditTask, AuditResult, ChecklistResult } from "./types.js";
  * L1 (Functional): L1.EXEC, L1.OUTPUT, L1.DEPS, L1.DOCS
  * L2 (Robust):     + L2.EDGE, L2.ERROR, L2.VALIDATE, L2.RESOURCE, L2.IDEMPOTENT
  * L3 (Security):   + L3.INJECTION, L3.EXFIL, L3.SANDBOX, L3.SUPPLY, L3.ADVERSARIAL
- *
- * NOTE: v0.1 uses static analysis stubs. Each check function will be
- * progressively enhanced with real analysis (sandboxed execution,
- * dependency scanning, prompt injection testing, etc.)
  */
 export async function runAudit(
   task: AuditTask,
@@ -69,7 +65,7 @@ export async function runAudit(
         : `L${level} audit failed — ${criteria.filter(c => !c.passed).length}/${criteria.length} criteria failed`,
     },
     environment: {
-      tools: ["@aegisaudit/audit-queue@0.1.0"],
+      tools: ["@aegisaudit/audit-queue@0.2.0"],
       runtime: `node@${process.version}`,
       platform: `${process.platform}-${process.arch}`,
     },
@@ -114,10 +110,8 @@ function sha256(data: string): string {
 }
 
 // ── L1 Checks (Functional) ─────────────────────────────────
-// v0.1: Static analysis stubs — check metadata structure
 
 async function checkL1Exec(source: string, _task: AuditTask): Promise<ChecklistResult> {
-  // Check that source parses as valid JSON metadata
   try {
     JSON.parse(source);
     return { criterionId: "L1.EXEC", passed: true, notes: "Metadata parses as valid JSON" };
@@ -127,7 +121,6 @@ async function checkL1Exec(source: string, _task: AuditTask): Promise<ChecklistR
 }
 
 async function checkL1Output(source: string, _task: AuditTask): Promise<ChecklistResult> {
-  // Check for output schema/format declarations
   const hasOutput = source.includes("output") || source.includes("return") || source.includes("response");
   return {
     criterionId: "L1.OUTPUT",
@@ -137,7 +130,6 @@ async function checkL1Output(source: string, _task: AuditTask): Promise<Checklis
 }
 
 async function checkL1Deps(source: string, _task: AuditTask): Promise<ChecklistResult> {
-  // Check for dependency declarations
   const hasDeps = source.includes("dependencies") || source.includes("import") || source.includes("require");
   return {
     criterionId: "L1.DEPS",
@@ -147,7 +139,6 @@ async function checkL1Deps(source: string, _task: AuditTask): Promise<ChecklistR
 }
 
 async function checkL1Docs(source: string, _task: AuditTask): Promise<ChecklistResult> {
-  // Check for documentation indicators
   const hasDoc = source.includes("description") || source.includes("README") || source.includes("/**");
   return {
     criterionId: "L1.DOCS",
@@ -158,8 +149,24 @@ async function checkL1Docs(source: string, _task: AuditTask): Promise<ChecklistR
 
 // ── L2 Checks (Robust) ─────────────────────────────────────
 
-async function checkL2Edge(_source: string, _task: AuditTask): Promise<ChecklistResult> {
-  return { criterionId: "L2.EDGE", passed: true, notes: "Static check — edge case analysis pending" };
+async function checkL2Edge(source: string, _task: AuditTask): Promise<ChecklistResult> {
+  // Check for defensive patterns that handle edge cases
+  const patterns = [
+    { name: "type guards", regex: /typeof\s+\w+\s*[!=]==|instanceof\s+\w+/ },
+    { name: "nullish handling", regex: /\?\?|\?\.|!= ?null|!== ?null|!== ?undefined/ },
+    { name: "boundary checks", regex: /\.length\s*[><=]|\.size\s*[><=]|Math\.(min|max|clamp)|>= ?0|< ?0/ },
+    { name: "empty checks", regex: /\.length\s*===?\s*0|\.trim\(\)|isEmpty|isBlank/ },
+  ];
+
+  const found = patterns.filter(p => p.regex.test(source));
+
+  return {
+    criterionId: "L2.EDGE",
+    passed: found.length >= 2,
+    notes: found.length >= 2
+      ? `Edge case handling: ${found.map(p => p.name).join(", ")}`
+      : `Insufficient edge case handling (${found.length}/2 patterns). Found: ${found.map(p => p.name).join(", ") || "none"}`,
+  };
 }
 
 async function checkL2Error(source: string, _task: AuditTask): Promise<ChecklistResult> {
@@ -171,22 +178,54 @@ async function checkL2Error(source: string, _task: AuditTask): Promise<Checklist
   };
 }
 
-async function checkL2Validate(_source: string, _task: AuditTask): Promise<ChecklistResult> {
-  return { criterionId: "L2.VALIDATE", passed: true, notes: "Static check — validation analysis pending" };
+async function checkL2Validate(source: string, _task: AuditTask): Promise<ChecklistResult> {
+  // Check for input validation patterns
+  const patterns = [
+    { name: "schema validation", regex: /zod|joi|yup|ajv|superstruct|valibot|z\.object|Joi\.object|yup\.object/ },
+    { name: "assertions", regex: /assert\(|invariant\(|expect\(|throw new (TypeError|RangeError|ValidationError)/ },
+    { name: "type narrowing", regex: /is[A-Z]\w+\(|as\s+\w+|:\s*(string|number|boolean)\b/ },
+    { name: "param validation", regex: /if\s*\(\s*!?\w+\s*\)\s*throw|if\s*\(\s*typeof\s+\w+\s*!==/ },
+  ];
+
+  const found = patterns.filter(p => p.regex.test(source));
+
+  return {
+    criterionId: "L2.VALIDATE",
+    passed: found.length >= 1,
+    notes: found.length >= 1
+      ? `Input validation: ${found.map(p => p.name).join(", ")}`
+      : "No input validation patterns detected",
+  };
 }
 
-async function checkL2Resource(_source: string, _task: AuditTask): Promise<ChecklistResult> {
-  return { criterionId: "L2.RESOURCE", passed: true, notes: "Static check — resource analysis pending" };
+async function checkL2Resource(source: string, _task: AuditTask): Promise<ChecklistResult> {
+  // Check for resource limit awareness
+  const patterns = [
+    { name: "timeouts", regex: /AbortController|AbortSignal|setTimeout|\.timeout\b|signal:/ },
+    { name: "size limits", regex: /maxSize|maxLength|MAX_|limit|quota|\.slice\(0,\s*\d+\)/ },
+    { name: "streaming", regex: /ReadableStream|createReadStream|pipe\(|\.on\(['"]data|async\s*\*|for\s+await/ },
+    { name: "pagination", regex: /page|offset|cursor|limit|nextToken|hasMore|startAfter/ },
+  ];
+
+  const found = patterns.filter(p => p.regex.test(source));
+
+  return {
+    criterionId: "L2.RESOURCE",
+    passed: found.length >= 1,
+    notes: found.length >= 1
+      ? `Resource awareness: ${found.map(p => p.name).join(", ")}`
+      : "No resource limit patterns detected — may load unbounded data",
+  };
 }
 
 async function checkL2Idempotent(_source: string, _task: AuditTask): Promise<ChecklistResult> {
-  return { criterionId: "L2.IDEMPOTENT", passed: true, notes: "Static check — idempotency analysis pending" };
+  // Requires dynamic analysis — stub for v0.3
+  return { criterionId: "L2.IDEMPOTENT", passed: true, notes: "Static check — idempotency analysis pending (v0.3)" };
 }
 
 // ── L3 Checks (Security) ───────────────────────────────────
 
 async function checkL3Injection(source: string, _task: AuditTask): Promise<ChecklistResult> {
-  // Basic static check for common injection patterns
   const suspicious = ["eval(", "exec(", "Function(", "setTimeout(\"", "setInterval(\""];
   const found = suspicious.filter(p => source.includes(p));
   return {
@@ -199,7 +238,6 @@ async function checkL3Injection(source: string, _task: AuditTask): Promise<Check
 }
 
 async function checkL3Exfil(source: string, _task: AuditTask): Promise<ChecklistResult> {
-  // Check for potential data exfiltration
   const exfilPatterns = ["fetch(", "XMLHttpRequest", "navigator.sendBeacon", "WebSocket"];
   const found = exfilPatterns.filter(p => source.includes(p));
   return {
@@ -224,7 +262,6 @@ async function checkL3Sandbox(source: string, _task: AuditTask): Promise<Checkli
 }
 
 async function checkL3Supply(source: string, _task: AuditTask): Promise<ChecklistResult> {
-  // Check for suspicious dependency patterns
   const risky = ["postinstall", "preinstall", "install script"];
   const found = risky.filter(p => source.toLowerCase().includes(p));
   return {
@@ -236,6 +273,35 @@ async function checkL3Supply(source: string, _task: AuditTask): Promise<Checklis
   };
 }
 
-async function checkL3Adversarial(_source: string, _task: AuditTask): Promise<ChecklistResult> {
-  return { criterionId: "L3.ADVERSARIAL", passed: true, notes: "Static check — adversarial testing pending" };
+async function checkL3Adversarial(source: string, _task: AuditTask): Promise<ChecklistResult> {
+  const sourceLower = source.toLowerCase();
+
+  // Check if skill handles user/LLM input
+  const handlesInput = /prompt|user.?input|message|query|request\.body|args|params/i.test(source);
+
+  if (!handlesInput) {
+    return {
+      criterionId: "L3.ADVERSARIAL",
+      passed: true,
+      notes: "Skill does not appear to handle user input directly",
+    };
+  }
+
+  // If it handles input, check for defensive patterns
+  const defenses = [
+    { name: "input sanitization", regex: /sanitize|escape|encode|strip|clean|purify|DOMPurify/ },
+    { name: "rate limiting", regex: /rate.?limit|throttle|debounce|cooldown|backoff/ },
+    { name: "prompt boundary", regex: /system.?message|system.?prompt|\[INST\]|<\|system\|>|role:\s*['"]system/ },
+    { name: "length limits", regex: /max.?length|maxTokens|max_tokens|truncate|\.slice\(|\.substring\(/ },
+  ];
+
+  const found = defenses.filter(p => p.regex.test(source));
+
+  return {
+    criterionId: "L3.ADVERSARIAL",
+    passed: found.length >= 1,
+    notes: found.length >= 1
+      ? `Input defenses: ${found.map(p => p.name).join(", ")}`
+      : "Handles user input but no sanitization or defensive patterns found",
+  };
 }
