@@ -3,92 +3,158 @@
 [![npm](https://img.shields.io/npm/v/@aegisaudit/sdk?color=FF3366)](https://www.npmjs.com/package/@aegisaudit/sdk)
 [![license](https://img.shields.io/badge/license-MIT-blue)](../../LICENSE)
 
-TypeScript SDK for the AEGIS Protocol — query and interact with on-chain ZK skill attestations on Base.
+On-chain ZK skill attestations for AI agents on Base. One package — SDK library + MCP server + ZK prover.
 
-## Install
+## Use as MCP Server (AI Agents)
+
+### Auto-setup
+
+```bash
+npx @aegisaudit/sdk setup
+```
+
+Detects Claude Desktop, Claude Code, and Cursor — injects the config automatically.
+
+### Manual config
+
+**Claude Desktop** — `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "aegis-protocol": {
+      "command": "npx",
+      "args": ["-y", "@aegisaudit/sdk"]
+    }
+  }
+}
+```
+
+**Claude Code:**
+
+```bash
+claude mcp add aegis-protocol -- npx -y @aegisaudit/sdk
+```
+
+**Cursor** — `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "aegis-protocol": {
+      "command": "npx",
+      "args": ["-y", "@aegisaudit/sdk"]
+    }
+  }
+}
+```
+
+### Connect a wallet
+
+Write operations (auditing, staking, disputes) need a wallet with Base ETH (~$0.50).
+
+**Option A** — Call the `generate-wallet` tool. It creates a wallet and gives you the config snippet.
+
+**Option B** — Provide your own key:
+
+```json
+{
+  "mcpServers": {
+    "aegis-protocol": {
+      "command": "npx",
+      "args": ["-y", "@aegisaudit/sdk"],
+      "env": {
+        "AEGIS_PRIVATE_KEY": "0x..."
+      }
+    }
+  }
+}
+```
+
+### Tools (45)
+
+**Discovery:** `aegis-info`, `wallet-status`, `generate-wallet`
+
+**Read:** `list-all-skills`, `list-all-auditors`, `get-attestations`, `verify-attestation`, `get-auditor-reputation`, `get-metadata-uri`, `list-disputes`, `list-resolved-disputes`, `get-bounty`, `get-auditor-profile`, `get-dispute`, `get-active-dispute-count`, `get-dispute-count`, `is-attestation-revoked`, `get-unstake-request`
+
+**Trust:** `query-trust-profile`, `query-skill-trust`
+
+**ZK Proving:** `generate-attestation-proof`, `generate-auditor-commitment`
+
+**Subgraph:** `check-skill`, `browse-unaudited`, `browse-bounties`, `audit-skill`
+
+**Write (need AEGIS_PRIVATE_KEY):** `register-auditor`, `add-stake`, `open-dispute`, `resolve-dispute`, `revoke-attestation`, `initiate-unstake`, `complete-unstake`, `cancel-unstake`, `post-bounty`, `reclaim-bounty`, `register-agent`, `link-skill-to-agent`, `request-erc8004-validation`, `respond-to-erc8004-validation`, `create-agent-registration`, `get-erc8004-validation`
+
+**TAO/Bittensor:** `tao-list-subnets`, `tao-browse-miners`, `tao-check-subnet`
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `AEGIS_CHAIN_ID` | `8453` | Base mainnet |
+| `AEGIS_RPC_URL` | Public RPC | Custom RPC endpoint |
+| `AEGIS_PRIVATE_KEY` | — | Wallet key for write operations |
+
+## Use as Library
 
 ```bash
 npm install @aegisaudit/sdk
 ```
 
-## Quick Start
-
 ```typescript
 import { AegisClient } from '@aegisaudit/sdk';
 
-// Create a read-only client (no wallet needed)
-const client = new AegisClient({ chainId: 84532 });
+const client = new AegisClient({ chainId: 8453 });
 
 // List all registered skills
 const skills = await client.listAllSkills();
-console.log(`${skills.length} skills registered`);
 
 // Get attestations for a skill
 const attestations = await client.getAttestations(skills[0].skillHash);
 
 // Verify a ZK proof on-chain
 const valid = await client.verify(skills[0].skillHash, 0);
-console.log('Proof valid:', valid);
-
-// Get skill metadata
-const uri = await client.getMetadataURI(skills[0].skillHash);
 ```
 
-## How to Use AEGIS
+### Read operations
 
-AEGIS is a **trust verification layer**, not a skill execution runtime. It answers the question: *"Has this AI agent skill been audited, and can I trust the audit?"*
+| Method | Description |
+|---|---|
+| `listAllSkills()` | All registered skills |
+| `listAllAuditors()` | All registered auditors |
+| `getAttestations(skillHash)` | Attestations for a skill |
+| `verify(skillHash, index)` | Verify ZK proof on-chain |
+| `getAuditorReputation(commitment)` | Auditor reputation data |
+| `getMetadataURI(skillHash)` | Skill metadata URI |
+| `listDisputes()` | Open disputes |
+| `listResolvedDisputes()` | Resolved disputes |
+| `getBounty(skillHash)` | Bounty details |
+| `getAuditorProfile(commitment)` | Full auditor profile |
+| `getTrustProfile(agentId)` | Aggregated trust profile |
+| `getSkillTrustScore(skillHash)` | Skill trust score |
 
-### What AEGIS does
+### Write operations (need wallet)
 
-- Tells you if a skill has been audited (attestation exists)
-- Verifies the ZK proof on-chain (is the audit legitimate?)
-- Shows the audit level and how much ETH the auditor staked (skin in the game)
+| Method | Description |
+|---|---|
+| `registerSkill(params)` | Register skill with ZK attestation |
+| `registerAuditor(commitment, stake)` | Register as auditor (stake ETH) |
+| `addStake(commitment, amount)` | Add stake |
+| `openDispute(skillHash, index, evidence, bond)` | Dispute an attestation |
+| `postBounty(skillHash, level, amount)` | Post audit bounty |
 
-### What AEGIS does NOT do
-
-- Execute or run skills
-- Host skill code or definitions
-- Provide APIs for the skills themselves
-
-### Integration Pattern (Manual)
-
-If you're building an agent that wants to run a third-party skill safely:
+### ZK prover
 
 ```typescript
-import { AegisClient } from '@aegisaudit/sdk';
+import { buildProverToml, generateAttestationViaCLI } from '@aegisaudit/sdk';
 
-const aegis = new AegisClient({ chainId: 84532 });
-
-// 1. Look up the skill on the registry
-const skills = await aegis.listAllSkills();
-const skill = skills.find(s => s.skillHash === TARGET_SKILL_HASH);
-
-if (!skill) {
-  throw new Error('Skill not registered on AEGIS — no audit exists');
-}
-
-// 2. Check the attestation
-const attestations = await aegis.getAttestations(skill.skillHash);
-const att = attestations[0];
-
-console.log(`Audit level: ${att.auditLevel}`);      // 1, 2, or 3
-console.log(`Auditor stake: ${att.stakeAmount} wei`); // ETH at risk
-
-// 3. Verify the ZK proof on-chain
-const proofValid = await aegis.verify(skill.skillHash, 0);
-
-if (!proofValid) {
-  throw new Error('ZK proof verification failed — do not trust this audit');
-}
-
-// 4. Now you can trust the audit → go execute the skill
-//    Get the skill code from the skill publisher (not from AEGIS)
-//    e.g., fetch from the publisher's API, npm package, or IPFS
+const toml = buildProverToml({ skillHash, criteriaHash, auditLevel, auditorCommitment, auditorPrivateKey });
+const { proof, publicInputs } = await generateAttestationViaCLI({ proverToml: toml });
 ```
 
-### Integration Pattern (Middleware — Recommended)
+### Pre-execution trust gate
 
-For production agents, use `@aegisaudit/consumer-middleware` to **automatically** gate every tool call. It intercepts tool execution, checks AEGIS trust, and blocks untrusted tools — no manual verification code needed.
+For production agents, use `@aegisaudit/consumer-middleware` to automatically block untrusted tool calls:
 
 ```bash
 npm install @aegisaudit/consumer-middleware
@@ -96,136 +162,23 @@ npm install @aegisaudit/consumer-middleware
 
 ```typescript
 import { TrustGate } from '@aegisaudit/consumer-middleware';
-import { createAegisTrustHandler } from '@aegisaudit/consumer-middleware/langchain';
 
 const gate = new TrustGate({
-  policy: {
-    minAuditLevel: 2,      // Require L2+ audits
-    blockOnDispute: true,   // Block disputed skills
-    mode: 'enforce',        // Hard block on failure
-  },
-  skills: [
-    { toolName: 'web_search', skillHash: '0x...' },
-  ],
+  policy: { minAuditLevel: 2, blockOnDispute: true, mode: 'enforce' },
+  skills: [{ toolName: 'web_search', skillHash: '0x...' }],
 });
 
-// LangChain: attach as a callback
-const agent = new AgentExecutor({
-  callbacks: [createAegisTrustHandler(gate)],
-});
-
-// Also supports CrewAI, MCP, and custom agent loops.
+const result = await gate.check('web_search');
+// { allowed: true/false, reason, trustData }
 ```
 
-See the [consumer middleware documentation](https://www.npmjs.com/package/@aegisaudit/consumer-middleware) for full setup guides for every framework.
-
-### Audit Levels
-
-| Level | Meaning |
-|---|---|
-| 1 | Basic — code review only |
-| 2 | Standard — code review + input validation |
-| 3 | Comprehensive — full security audit with fuzzing |
-
-Higher level = more thorough audit. The auditor's staked ETH gets slashed if the audit is disputed and found fraudulent.
-
-## API Reference
-
-### `new AegisClient(config)`
-
-Create a client instance.
-
-```typescript
-const client = new AegisClient({
-  chainId: 84532,           // Base Sepolia (default registry auto-resolved)
-  rpcUrl: 'https://...',    // Optional custom RPC
-  registryAddress: '0x...',  // Optional override
-});
-```
-
-### Read Operations
-
-These work without a wallet.
-
-| Method | Description |
-|---|---|
-| `listAllSkills(options?)` | List all registered skills from on-chain events |
-| `listAllAuditors(options?)` | List all registered auditors |
-| `getAttestations(skillHash)` | Get all attestations for a specific skill |
-| `verify(skillHash, index)` | Verify an attestation's ZK proof on-chain |
-| `getAuditorReputation(commitment)` | Get an auditor's reputation data |
-| `getMetadataURI(skillHash)` | Get the metadata URI for a skill |
-| `listDisputes(options?)` | List opened disputes |
-| `listResolvedDisputes(options?)` | List resolved disputes |
-
-### Write Operations
-
-These require a wallet via `client.setWallet(walletClient)`.
-
-| Method | Description |
-|---|---|
-| `registerSkill(params)` | Register a skill with a verified attestation |
-| `registerAuditor(commitment, stake)` | Register as an auditor by staking ETH |
-| `addStake(commitment, amount)` | Add stake to an existing auditor registration |
-| `openDispute(skillHash, index, evidence, bond)` | Dispute a skill attestation |
-
-### Prover
-
-Generate ZK attestation proofs locally.
-
-```typescript
-import { generateAttestation, loadProofFromFiles } from '@aegisaudit/sdk';
-
-// Generate a proof in-process (requires WASM)
-const result = await generateAttestation({
-  skillHash: '0x...',
-  auditorSecret: '0x...',
-  score: 85,
-  metadataHash: '0x...',
-});
-
-// Or load a pre-generated proof from files
-const proof = await loadProofFromFiles('./proof', './vkey');
-```
-
-### IPFS Metadata
-
-```typescript
-import { fetchMetadata, uploadMetadata } from '@aegisaudit/sdk';
-
-const metadata = await fetchMetadata('ipfs://Qm...');
-```
-
-### Constants
-
-```typescript
-import {
-  CHAIN_CONFIG,         // { base, baseSepolia } chain configs
-  REGISTRY_ADDRESSES,   // Registry contract addresses per chain
-  DEPLOYMENT_BLOCKS,    // Block numbers for event scanning
-  MIN_AUDITOR_STAKE,    // 0.01 ETH
-  MIN_DISPUTE_BOND,     // 0.005 ETH
-  REGISTRATION_FEE,     // 0.001 ETH
-} from '@aegisaudit/sdk';
-```
-
-## Configuration
-
-The `AegisConfig` type:
-
-```typescript
-interface AegisConfig {
-  chainId: number;           // 84532 (Base Sepolia) or 8453 (Base)
-  rpcUrl?: string;           // Custom RPC URL (defaults to public RPC)
-  registryAddress?: Address; // Override registry address
-}
-```
+Supports LangChain, CrewAI, and MCP adapters.
 
 ## Links
 
 - [AEGIS Protocol](https://aegisprotocol.tech)
 - [GitHub](https://github.com/aegis-zk/aegisprotocol)
-- [MCP Server](https://www.npmjs.com/package/@aegisaudit/mcp-server)
+- [Consumer Middleware](https://www.npmjs.com/package/@aegisaudit/consumer-middleware)
 
 ## License
 

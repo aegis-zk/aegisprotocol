@@ -43,6 +43,12 @@ const CATEGORY_COLORS: Record<Category, string> = {
 
 const UPDATES: UpdateEntry[] = [
   {
+    date: "2026-03-18",
+    title: "SDK v0.7.0 \u2014 Single Package",
+    category: "SDK",
+    description: "Merged MCP server into the SDK. One install gives agents everything: library, 45 MCP tools, and ZK prover. npx @aegisaudit/sdk setup auto-configures Claude Desktop, Claude Code, and Cursor. @aegisaudit/mcp-server is deprecated.",
+  },
+  {
     date: "2026-03-17",
     title: "SDK & MCP Server v0.6.0 \u2014 Mainnet-Only",
     category: "SDK",

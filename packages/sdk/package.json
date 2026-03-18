@@ -1,11 +1,14 @@
 {
   "name": "@aegisaudit/sdk",
-  "version": "0.6.0",
-  "description": "TypeScript SDK for the AEGIS Protocol — query and interact with on-chain ZK skill attestations on Base",
+  "version": "0.7.0",
+  "description": "AEGIS Protocol SDK + MCP server — on-chain ZK skill attestations for AI agents on Base",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "aegis-mcp-server": "./dist/mcp/server.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -30,6 +33,8 @@
     "base",
     "blockchain",
     "zero-knowledge",
+    "mcp",
+    "model-context-protocol",
     "erc-8004",
     "x402"
   ],
@@ -48,8 +53,10 @@
   },
   "dependencies": {
     "@aztec/bb.js": "3.0.0-nightly.20260102",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@noir-lang/noir_js": "1.0.0-beta.18",
-    "viem": "^2.21.0"
+    "viem": "^2.21.0",
+    "zod": "^3.23.0"
   },
   "peerDependencies": {
     "@x402/fetch": ">=0.1.0",

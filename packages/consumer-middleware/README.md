@@ -169,7 +169,7 @@ server.setRequestHandler(
 
 #### Connecting to the AEGIS MCP Server
 
-If your agent connects to the AEGIS MCP server (`@aegisaudit/mcp-server`), you can use the MCP tools to discover skill hashes, then configure the middleware:
+If your agent connects to the AEGIS MCP server (`@aegisaudit/sdk`), you can use the MCP tools to discover skill hashes, then configure the middleware:
 
 ```typescript
 // Step 1: Use the AEGIS MCP tools to discover skills
@@ -502,7 +502,7 @@ Higher levels require more auditor stake (ETH at risk), providing stronger econo
 
 - [AEGIS Protocol](https://aegisprotocol.tech)
 - [SDK Documentation](https://www.npmjs.com/package/@aegisaudit/sdk)
-- [MCP Server](https://www.npmjs.com/package/@aegisaudit/mcp-server)
+- [MCP Server](https://www.npmjs.com/package/@aegisaudit/sdk)
 - [GitHub](https://github.com/aegis-zk/aegisprotocol)
 
 ## License

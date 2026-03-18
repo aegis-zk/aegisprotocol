@@ -1,6 +1,6 @@
 # AEGIS Protocol — Project Context
 
-Last updated: 2026-03-17
+Last updated: 2026-03-18
 
 This document captures the full state of the AEGIS Protocol project for continuity across context windows.
 
@@ -15,18 +15,17 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | Website | https://aegisprotocol.tech |
 | Vercel project | `jadebroccoli-2626s-projects/dist` (deploy from `apps/web/dist`) |
 | GitHub | https://github.com/aegis-zk/aegisprotocol |
-| npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.5.1) |
-| npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (v0.5.2) |
+| npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.7.0 — includes MCP server) |
+| npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (deprecated — merged into SDK) |
 | npm Consumer Middleware | https://www.npmjs.com/package/@aegisaudit/consumer-middleware (v0.1.0) |
 | AegisRegistry (mainnet v4) | `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389) |
 | AegisRegistry (mainnet v3, deprecated) | `0xa0FF1563Ab7d5d514146F2713125098954Af1F61` (Base, block 42942701) |
 | AegisRegistry (mainnet v2, deprecated) | `0x2E993439E0241b220BF12652897342054202f57C` (Base) |
 | AegisRegistry (mainnet v1, deprecated) | `0xBED52D8CEe2690900e21e5ffcb988DFF728D7E1D` (Base) |
 | HonkVerifier (mainnet) | `0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7` (Base) |
-| AegisRegistry (testnet) | `0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba` (Base Sepolia) |
-| HonkVerifier (testnet) | `0x6c58dE61157AA10E62174c37DFBe63094e334cE6` (Base Sepolia) |
+| AegisRegistry (testnet, deprecated) | `0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba` (Base Sepolia — removed in v0.6.0) |
+| HonkVerifier (testnet, deprecated) | `0x6c58dE61157AA10E62174c37DFBe63094e334cE6` (Base Sepolia — removed in v0.6.0) |
 | Deployer wallet (mainnet) | `0x20bABe2d87B225445C4398029DFfE9DfEF275170` |
-| Deployer wallet (testnet) | `0x51C8Df6ce7b35EF9b13d5fC040CF81AC74c984e3` |
 | Scout bot wallet | `0x4145aF7351Cbc65e3B031C081bfD5377D18E31ad` (fee-exempt on v4) |
 | Skills listed | Live — scout bot actively populating v4 contract |
 | Indexer | `@aegisaudit/indexer@0.1.0` (local, port 4200) |
@@ -45,8 +44,8 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 ```
 aegis/
 ├── packages/
-│   ├── sdk/            # @aegisaudit/sdk@0.5.1 — TypeScript client library (tsup, ESM+CJS)
-│   ├── mcp-server/     # @aegisaudit/mcp-server@0.5.2 — MCP tools for AI agents (tsup, ESM)
+│   ├── sdk/            # @aegisaudit/sdk@0.7.0 — SDK + MCP server + ZK prover (tsup, ESM+CJS)
+│   ├── mcp-server/     # (deprecated — merged into sdk in v0.7.0)
 │   ├── indexer/        # @aegisaudit/indexer@0.1.0 — Event indexer + REST API (Hono, sql.js)
 │   ├── subgraph/       # @aegisaudit/subgraph@0.3.0 — The Graph subgraph (Base L2, AssemblyScript)
 │   ├── consumer-middleware/ # @aegisaudit/consumer-middleware@0.1.0 — Pre-execution trust gate (tsup, ESM+CJS)
@@ -71,16 +70,14 @@ pnpm build   # uses turborepo
 
 # Build individual packages
 cd packages/sdk && pnpm build
-cd packages/mcp-server && pnpm build
 cd packages/indexer && pnpm build
 cd apps/web && pnpm build
 
 # Deploy to Vercel (from pre-built dist)
 npx vercel --cwd "C:/Projects/Aegis/apps/web/dist" --prod --yes
 
-# Publish to npm
+# Publish to npm (SDK includes MCP server)
 cd packages/sdk && npm publish --access public
-cd packages/mcp-server && npm publish --access public
 
 # Run indexer locally
 cd packages/indexer && pnpm start  # http://localhost:4200
@@ -94,8 +91,8 @@ VERIFIER_ADDRESS=0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7 forge script script/
 
 | Package | Version |
 |---|---|
-| @aegisaudit/sdk | 0.5.1 |
-| @aegisaudit/mcp-server | 0.5.2 |
+| @aegisaudit/sdk | 0.7.0 (includes MCP server) |
+| @aegisaudit/mcp-server | deprecated (merged into SDK) |
 | @aegisaudit/indexer | 0.1.0 |
 | @aegisaudit/subgraph | 0.3.0 |
 | @aegisaudit/consumer-middleware | 0.1.0 |
@@ -104,8 +101,8 @@ VERIFIER_ADDRESS=0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7 forge script script/
 
 When bumping versions:
 - Update `package.json` version field
-- For MCP server: also update `version` string in `src/index.ts` (McpServer constructor)
-- For MCP server npm publish: replace `workspace:*` with actual SDK version (e.g., `^0.5.0`)
+- For SDK: also update `version` string in `src/mcp/server.ts` (McpServer constructor)
+- For SDK: tsup `onSuccess` hook copies `../circuits/target/attestation.json` to `dist/` — ensure circuit artifact exists before build
 - Publish with `npm publish --access public`
 - Commit the version bump
 
@@ -292,16 +289,35 @@ Auditor entity fields: `reputationScore`, `attestationCount`, `currentStake`, `d
 
 Data URIs (`data:application/json;base64,...`) are decoded inline in AssemblyScript to extract `skillName` and `category`. IPFS/HTTP URIs fall back to "Unknown Skill" / "Uncategorized" (subgraph runtime cannot make HTTP requests).
 
-## MCP Server (41 tools)
+## MCP Server (45 tools, bundled in SDK since v0.7.0)
 
-- **Discovery**: aegis-info, wallet-status
+- **Discovery**: aegis-info, wallet-status, generate-wallet
 - **Read**: list-all-skills, list-all-auditors, get-attestations, verify-attestation, get-auditor-reputation, get-metadata-uri, list-disputes, list-resolved-disputes, get-unstake-request, get-bounty, create-agent-registration, get-erc8004-validation, get-dispute, get-active-dispute-count, get-dispute-count, is-attestation-revoked, get-auditor-profile
 - **Trust**: query-trust-profile, query-skill-trust
-- **ZK Proving** (v0.5.1): generate-attestation-proof, generate-auditor-commitment
-- **Subgraph** (A2): check-skill, browse-unaudited, browse-bounties, audit-skill
+- **ZK Proving**: generate-attestation-proof, generate-auditor-commitment
+- **Subgraph**: check-skill, browse-unaudited, browse-bounties, audit-skill
 - **Write** (need AEGIS_PRIVATE_KEY): register-auditor, add-stake, open-dispute, initiate-unstake, complete-unstake, cancel-unstake, post-bounty, reclaim-bounty, register-agent, request-erc8004-validation, respond-to-erc8004-validation, link-skill-to-agent, resolve-dispute, revoke-attestation
+- **TAO/Bittensor**: tao-list-subnets, tao-browse-miners, tao-check-subnet
 
-### New in v0.5.1
+### New in v0.7.0 (2026-03-18)
+
+**Package consolidation.** MCP server merged into `@aegisaudit/sdk`. Agents install one package: `npm install @aegisaudit/sdk`. The SDK provides both the library API and the MCP server binary (`aegis-mcp-server`). `@aegisaudit/mcp-server` is deprecated.
+
+**Agent config updated.** MCP config now uses `npx -y @aegisaudit/sdk` instead of `npx -y @aegisaudit/mcp-server`. Setup command: `npx @aegisaudit/sdk setup`.
+
+**New README.** Dead-simple agent-first README with MCP setup instructions first, library usage second.
+
+### v0.6.0 changes (2026-03-17)
+
+**Mainnet-only.** All testnet/Base Sepolia (chain 84532) references removed across the entire codebase. Default chain is 8453 (Base mainnet). Agents no longer get confused installing testnet tooling.
+
+**Auto-wallet generation.** New `generate-wallet` tool creates a fresh wallet via `viem/accounts` (`generatePrivateKey()` + `privateKeyToAccount()`). Returns address, private key, config snippet, and next steps. Agents no longer need users to export MetaMask keys.
+
+**Bundled prover dependencies.** `findBbBinary()` auto-detects the `bb` binary from `node_modules/@aztec/bb.js/build/{platform}/bb`, then falls back to PATH and `$HOME/.bb/bb`. `findCircuitArtifact()` finds the bundled `attestation.json` from SDK dist (copied via tsup `onSuccess` hook) or monorepo fallback. The `circuitsDir` parameter on `generateAttestationViaCLI()` is now optional.
+
+**Wallet guide rewritten.** Option A (recommended) = call `generate-wallet` tool. Option B = provide existing private key. All faucet links and testnet references removed.
+
+### v0.5.1 changes (preserved)
 
 - **`generate-attestation-proof`** — Wraps `buildProverToml()` + `generateAttestationViaCLI()` from the SDK. Accepts circuit inputs (skillHash, criteriaHash, auditLevel, auditorCommitment, auditorPrivateKey) and returns proof hex + publicInputs for `registerSkill()`. Requires nargo 1.0.0-beta.18 + bb 3.0.0-nightly.20260102 in WSL on Windows.
 - **`generate-auditor-commitment`** — Computes `pedersen_hash([auditorPrivateKey])` via a temporary Noir project. Returns the correct commitment for `registerAuditor()`. Warns that keccak256 will produce the wrong commitment.
@@ -309,7 +325,17 @@ Data URIs (`data:application/json;base64,...`) are decoded inline in AssemblyScr
 - Structured error handling across attestation tools (`AttestationNotFound`, `AttestationIndexOutOfBounds`)
 - `register-auditor` auto-adjusts stake to account for 5% protocol fee
 
-## SDK (AegisClient)
+## SDK (AegisClient) — v0.6.0
+
+### v0.6.0 changes
+
+- **Mainnet-only**: Removed `baseSepolia` chain config, `REGISTRY_ADDRESSES[84532]`, `DEPLOYMENT_BLOCKS[84532]`, all ERC-8004 testnet addresses
+- **`findBbBinary()`**: Auto-detects bb from `node_modules/@aztec/bb.js/build/{arch}-{os}/bb` → PATH → `$HOME/.bb/bb`
+- **`findCircuitArtifact(circuitsDir?)`**: Finds bundled `attestation.json` in SDK dist or monorepo
+- **`generateAttestationViaCLI()`**: `circuitsDir` now optional — auto-resolves via `findCircuitArtifact()` and creates temp dir with bundled circuit
+- **Circuit artifact bundling**: `attestation.json` (118KB) copied to SDK `dist/` via tsup `onSuccess` hook
+- **Exports**: `findBbBinary`, `findCircuitArtifact` added to public API
+- **Trust/x402**: Removed testnet facilitator URL conditionals, hardcoded `https://x402.org/facilitator` and `network: 'base'`
 
 **Read:**
 - `listAllSkills()`, `listAllAuditors()`, `getAttestations()`, `verify()`, `getAuditorReputation()`
@@ -396,7 +422,7 @@ Event Listener → SQLite Queue → Audit Runner → ZK Prover → On-chain Subm
 
 | Variable | Description |
 |---|---|
-| `CHAIN_ID` | 8453 (Base) or 84532 (Base Sepolia) |
+| `CHAIN_ID` | 8453 (Base mainnet only) |
 | `RPC_URL` | RPC endpoint |
 | `PRIVATE_KEY` | Auditor wallet private key |
 | `AUDITOR_COMMITMENT` | Pedersen hash of private key |
@@ -409,6 +435,50 @@ Event Listener → SQLite Queue → Audit Runner → ZK Prover → On-chain Subm
 `pending` → `in_progress` → `proving` → `submitting` → `completed`
                                                       → `failed`
                                                       → `skipped` (competitor attested first)
+
+---
+
+## v0.6.0 Agent Onboarding Flow (2026-03-17)
+
+The v0.6.0 release eliminates the main friction points for AI agents:
+
+```
+Before (v0.5.x):                          After (v0.6.0):
+1. Install MCP server                     1. Install MCP server
+2. Defaults to testnet (84532)            2. Defaults to mainnet (8453)
+3. Export MetaMask private key             3. Call generate-wallet tool
+4. Edit JSON config manually               4. Send ~$0.50 ETH to address
+5. Find & install nargo                    5. Call generate-attestation-proof
+6. Find & install bb CLI                      (bb + circuit auto-resolved)
+7. Find circuit files in monorepo
+8. Pass circuitsDir to every proof call
+```
+
+**Key new SDK exports**: `findBbBinary()`, `findCircuitArtifact()`, `generatePrivateKey` (re-export from viem)
+
+**Key new MCP tools**: `generate-wallet` (wallet creation), updated `wallet-status` (mentions generate-wallet)
+
+**Files changed in v0.6.0** (~30 files across SDK, MCP server, CLI, web app, indexer, audit-queue):
+- `packages/sdk/src/constants.ts` — Removed baseSepolia config
+- `packages/sdk/src/registry.ts` — Removed baseSepolia from CHAINS
+- `packages/sdk/src/prover.ts` — Added findBbBinary(), findCircuitArtifact(), optional circuitsDir
+- `packages/sdk/src/erc8004-constants.ts` — Removed testnet addresses
+- `packages/sdk/src/erc8004.ts` — Simplified error messages
+- `packages/sdk/src/trust-server.ts` — Hardcoded mainnet facilitator
+- `packages/sdk/src/x402.ts` — Hardcoded mainnet facilitator
+- `packages/sdk/tsup.config.ts` — onSuccess hook copies attestation.json to dist
+- `packages/mcp-server/src/tools/generate-wallet.ts` — NEW: wallet generation tool
+- `packages/mcp-server/src/setup.ts` — Default chain 8453
+- `packages/mcp-server/src/lib/client.ts` — Removed baseSepolia
+- `packages/mcp-server/src/lib/wallet-guide.ts` — Rewritten for generate-wallet
+- `packages/mcp-server/src/tools/*.ts` (16 files) — Default chain 8453
+- `packages/cli/src/commands/*.ts` (5 files) — Default network 'base'
+- `packages/cli/src/utils/config.ts` — Default network 'base'
+- `apps/web/src/config.ts` — Removed 84532
+- `apps/web/src/wagmi.ts` — Removed baseSepolia
+- `apps/web/src/components/TxStatus.tsx` — Removed 84532 explorer
+- `apps/web/src/pages/Developers.tsx` — Removed testnet references
+- `apps/web/src/pages/Docs.tsx` — Removed testnet references
 
 ---
 
@@ -480,6 +550,10 @@ CSS diamond logo preferred over PNG images.
 8. **IdentityRegistry uses ownerOf, not roles** — `setMetadata()` checks `ownerOf(agentId)`, no `METADATA_SETTER_ROLE` exists
 9. **ZK toolchain pinned** — nargo 1.0.0-beta.18 + bb 3.0.0-nightly.20260102, other versions may produce incompatible proofs
 10. **WSL required on Windows** — nargo and bb run in WSL; use `MSYS_NO_PATHCONV=1` to prevent Git Bash path conversion
+11. **Mainnet only (v0.6.0)** — All testnet/Base Sepolia removed. Chain 8453 is the only supported chain. Do NOT re-add testnet support.
+12. **WASM vs CLI proof format** — bb.js WASM produces 8032-byte proofs, CLI `bb prove --verifier_target evm` produces 9024-byte proofs. Only CLI format verifies on-chain. The bb binary is bundled inside `@aztec/bb.js` npm at `build/{platform}/bb`.
+13. **bb auto-detection** — `findBbBinary()` resolves from npm package first, then PATH, then `$HOME/.bb/bb`. Agents should NOT manually install bb.
+14. **Package consolidation done (A8, v0.7.0)** — MCP server merged into SDK. `@aegisaudit/sdk` is the single package. `@aegisaudit/mcp-server` is deprecated. Agent config uses `npx -y @aegisaudit/sdk`.
 
 ---
 
@@ -561,6 +635,30 @@ These are the open-source templates anyone can fork. Each is its own repo with i
   - [x] On-chain verifier confirmed working (Issue #6 false alarm — verified on mainnet)
   - [x] Subgraph confirmed indexing bounties (Issue #11 false alarm)
   - [x] SDK + MCP server published to npm as v0.5.1
+
+- [x] **A7 — Agent onboarding overhaul (v0.6.0)** `High` ✅ Done
+  Eliminate friction for AI agents setting up and using AEGIS tools
+  - [x] Remove all testnet/Base Sepolia (84532) references — SDK, MCP server, CLI, web app, indexer, audit-queue (~30 files)
+  - [x] Default chain changed from 84532 to 8453 everywhere
+  - [x] New `generate-wallet` MCP tool — one-call wallet creation via `viem/accounts`
+  - [x] `findBbBinary()` — auto-detect bb from `@aztec/bb.js` npm package
+  - [x] `findCircuitArtifact()` — bundled `attestation.json` in SDK dist via tsup hook
+  - [x] `circuitsDir` parameter now optional on `generateAttestationViaCLI()`
+  - [x] Wallet guide rewritten (generate-wallet first, no faucet links)
+  - [x] MCP server README rewritten (42 tools documented, mainnet config)
+  - [x] Published `@aegisaudit/sdk@0.6.0` + `@aegisaudit/mcp-server@0.6.0` to npm
+  - [x] Frontend verified — no testnet references, all pages rendering correctly
+
+- [x] **A8 — Package consolidation (v0.7.0)** `High` ✅ Done
+  Merge MCP server into SDK so `npm install @aegisaudit/sdk` gives agents everything
+  - [x] Move `packages/mcp-server/src/` into SDK as `src/mcp/`
+  - [x] Add `@modelcontextprotocol/sdk` + `zod` as SDK dependencies
+  - [x] Add `bin` entry to SDK package.json for MCP server executable
+  - [x] Update `setup.ts` to reference `@aegisaudit/sdk` instead of `@aegisaudit/mcp-server`
+  - [x] Write dead-simple agent-friendly README
+  - [x] Deprecate `@aegisaudit/mcp-server` npm package (point to SDK)
+  - [x] Update all references across codebase (agents, web, docs, consumer-middleware)
+  - [ ] Possibly: remote prover service (plan in memory, deferred)
 
 - [~] **B2 — `aegis-scout-agent`** npm/GitHub monitor + auto-lister
   - [x] Scout bot running and actively listing skills on v4 contract
@@ -656,10 +754,13 @@ Done:      A1 (Indexer) ✅ + B1 (Consumer middleware) ✅
 
 Done:      Full protocol loop closed ✅
            ↳ All core workstream items (A1-A6, B1-B4, C1-C3) complete
+           A7 (v0.6.0 agent onboarding) ✅ — mainnet-only, auto-wallet, bundled prover
+           A8 (v0.7.0 package consolidation) ✅ — MCP server merged into SDK, single package
 
 Pending:   Deploy ValidationRegistry to Base mainnet (unblocks Issues #9, #12 full mode)
 In flight: awesome-mcp-servers PR + Glama listing (pending review)
-Next:      B2 (Scout bot automation) + production hardening
+Next:      Publish @aegisaudit/sdk@0.7.0 to npm + deprecate @aegisaudit/mcp-server
+           ↳ Remote prover service (deferred — plan saved in memory)
 ```
 
 ### The Flywheel

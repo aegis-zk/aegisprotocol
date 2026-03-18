@@ -1,7 +1,8 @@
 {
   "name": "@aegisaudit/mcp-server",
   "version": "0.6.0",
-  "description": "MCP server for the AEGIS Protocol — exposes on-chain ZK skill attestation queries as MCP tools",
+  "description": "DEPRECATED — merged into @aegisaudit/sdk. Use npm install @aegisaudit/sdk instead.",
+  "deprecated": "Merged into @aegisaudit/sdk — use npx -y @aegisaudit/sdk instead",
   "type": "module",
   "bin": {
     "aegis-mcp-server": "./dist/index.js"

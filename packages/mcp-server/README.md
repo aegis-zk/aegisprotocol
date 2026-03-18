@@ -1,5 +1,15 @@
 # @aegisaudit/mcp-server
 
+> **DEPRECATED** — This package has been merged into [`@aegisaudit/sdk`](https://www.npmjs.com/package/@aegisaudit/sdk).
+>
+> Use `npx -y @aegisaudit/sdk` instead of `npx -y @aegisaudit/mcp-server`.
+>
+> ```bash
+> npm install @aegisaudit/sdk
+> ```
+
+---
+
 [![npm](https://img.shields.io/npm/v/@aegisaudit/mcp-server?color=FF3366)](https://www.npmjs.com/package/@aegisaudit/mcp-server)
 [![license](https://img.shields.io/badge/license-MIT-blue)](../../LICENSE)
 
@@ -10,7 +20,7 @@ Works with **Claude Desktop**, **Claude Code**, **Cursor**, and any MCP-compatib
 ## Quick Start
 
 ```bash
-npx @aegisaudit/mcp-server
+npx @aegisaudit/sdk
 ```
 
 ## Add to Your AI Client

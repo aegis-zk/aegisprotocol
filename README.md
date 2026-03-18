@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@aegisaudit/sdk"><img src="https://img.shields.io/npm/v/@aegisaudit/sdk?label=sdk&color=FF3366" alt="SDK version" /></a>
-  <a href="https://www.npmjs.com/package/@aegisaudit/mcp-server"><img src="https://img.shields.io/npm/v/@aegisaudit/mcp-server?label=mcp-server&color=FF3366" alt="MCP Server version" /></a>
+  <a href="https://www.npmjs.com/package/@aegisaudit/sdk"><img src="https://img.shields.io/npm/v/@aegisaudit/sdk?label=mcp-server&color=FF3366" alt="MCP Server version" /></a>
   <a href="https://aegisprotocol.tech"><img src="https://img.shields.io/badge/website-aegisprotocol.tech-FF3366" alt="Website" /></a>
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
 </p>
@@ -64,7 +64,7 @@ See the [SDK README](packages/sdk#how-to-use-aegis) for a full integration guide
 aegis/
 ├── packages/
 │   ├── sdk/            # @aegisaudit/sdk — TypeScript client library
-│   ├── mcp-server/     # @aegisaudit/mcp-server — MCP tools for AI agents
+│   ├── mcp-server/     # @aegisaudit/sdk — MCP tools for AI agents
 │   ├── contracts/      # Solidity smart contracts (Foundry)
 │   ├── circuits/       # Noir ZK circuits (Barretenberg)
 │   └── cli/            # Command-line interface
@@ -89,7 +89,7 @@ Requires **Node.js 20+** and **pnpm 9+**.
 | Package | Description | npm |
 |---|---|---|
 | [`@aegisaudit/sdk`](packages/sdk) | TypeScript SDK for querying and interacting with the AEGIS Registry | [![npm](https://img.shields.io/npm/v/@aegisaudit/sdk?color=FF3366)](https://www.npmjs.com/package/@aegisaudit/sdk) |
-| [`@aegisaudit/mcp-server`](packages/mcp-server) | MCP server exposing AEGIS as tools for Claude, Cursor, and other AI agents | [![npm](https://img.shields.io/npm/v/@aegisaudit/mcp-server?color=FF3366)](https://www.npmjs.com/package/@aegisaudit/mcp-server) |
+| [`@aegisaudit/sdk`](packages/mcp-server) | MCP server exposing AEGIS as tools for Claude, Cursor, and other AI agents | [![npm](https://img.shields.io/npm/v/@aegisaudit/sdk?color=FF3366)](https://www.npmjs.com/package/@aegisaudit/sdk) |
 
 ## Deployed Contracts
 
@@ -112,7 +112,7 @@ Requires **Node.js 20+** and **pnpm 9+**.
 
 - **Website** — [aegisprotocol.tech](https://aegisprotocol.tech)
 - **SDK** — [npmjs.com/package/@aegisaudit/sdk](https://www.npmjs.com/package/@aegisaudit/sdk)
-- **MCP Server** — [npmjs.com/package/@aegisaudit/mcp-server](https://www.npmjs.com/package/@aegisaudit/mcp-server)
+- **MCP Server** — [npmjs.com/package/@aegisaudit/sdk](https://www.npmjs.com/package/@aegisaudit/sdk)
 - **GitHub** — [github.com/aegis-zk/aegisprotocol](https://github.com/aegis-zk/aegisprotocol)
 
 ## License

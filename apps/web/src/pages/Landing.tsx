@@ -149,19 +149,12 @@ function QuickStartWindow() {
     });
   };
   const lines: { prefix: string; cmd: string; comment: string | null; spaceBefore?: boolean }[] = [
-    { prefix: "", cmd: "", comment: "# Install the MCP server for Claude, Cursor, etc.", spaceBefore: false },
-    { prefix: "$", cmd: "npx @aegisaudit/mcp-server setup", comment: null },
+    { prefix: "", cmd: "", comment: "# One package. SDK + MCP server + ZK prover.", spaceBefore: false },
+    { prefix: "$", cmd: "npx @aegisaudit/sdk setup", comment: null },
     { prefix: "", cmd: "", comment: "" },
-    { prefix: "", cmd: "", comment: "# ◆ AEGIS Protocol — MCP Server Setup", spaceBefore: true },
     { prefix: "", cmd: '//   ✓ Claude Desktop — configured', comment: null },
     { prefix: "", cmd: '//   ✓ Cursor — configured', comment: null },
-    { prefix: "", cmd: '//   Done! Restart your AI client.', comment: null },
-    { prefix: "", cmd: "", comment: "" },
-    { prefix: "", cmd: "", comment: "# Or use the SDK directly in your agent", spaceBefore: true },
-    { prefix: "$", cmd: "npm install @aegisaudit/sdk", comment: null },
-    { prefix: ">", cmd: 'import { AegisClient } from "@aegisaudit/sdk";', comment: null },
-    { prefix: ">", cmd: "const aegis = new AegisClient({ chainId: 8453 });", comment: null },
-    { prefix: ">", cmd: "const skills = await aegis.listAllSkills();", comment: null },
+    { prefix: "", cmd: '//   Done! 45 tools ready.', comment: null },
   ];
   return (
     <div style={{
@@ -224,8 +217,9 @@ function QuickStartWindow() {
                 </span>
                 {isInstall ? (
                   <span>
-                    <span style={{ color: "#A1A1AA" }}>npm install </span>
+                    <span style={{ color: "#A1A1AA" }}>{line.cmd.replace(/@aegisaudit\/sdk.*/, "")}</span>
                     <span style={{ color: "#4ADE80", fontWeight: 700 }}>@aegisaudit/sdk</span>
+                    {line.cmd.includes("setup") && <span style={{ color: "#A1A1AA" }}> setup</span>}
                   </span>
                 ) : (
                   <span style={{ color: "#A1A1AA" }}>

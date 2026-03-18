@@ -51,7 +51,7 @@ The AEGIS MCP server must be configured with a funded wallet:
   "mcpServers": {
     "aegis": {
       "command": "npx",
-      "args": ["-y", "@aegisaudit/mcp-server@latest"],
+      "args": ["-y", "@aegisaudit/sdk@latest"],
       "env": {
         "AEGIS_PRIVATE_KEY": "0x<your-private-key>"
       }

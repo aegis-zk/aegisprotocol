@@ -1081,7 +1081,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
           <section id="mcp-server" ref={setRef("mcp-server")} style={{ marginTop: 56 }}>
             <SectionHeading>MCP Server</SectionHeading>
             <Para>
-              The <InlineCode>@aegisaudit/mcp-server</InlineCode> package exposes all read-only AEGIS SDK methods as <strong style={{ color: TEXT }}>Model Context Protocol (MCP)</strong> tools. Any MCP-compatible AI client — Claude Desktop, Claude Code, Cursor, Windsurf, or custom agents — can discover skills, verify ZK attestations, and query auditor reputation with zero setup.
+              The <InlineCode>@aegisaudit/sdk</InlineCode> package exposes all read-only AEGIS SDK methods as <strong style={{ color: TEXT }}>Model Context Protocol (MCP)</strong> tools. Any MCP-compatible AI client — Claude Desktop, Claude Code, Cursor, Windsurf, or custom agents — can discover skills, verify ZK attestations, and query auditor reputation with zero setup.
             </Para>
 
             <Callout color={GREEN} label="Zero Config">
@@ -1095,7 +1095,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
               One command auto-detects Claude Desktop and Cursor on your machine and configures them:
             </Para>
 
-            <CodeBlock code={`npx @aegisaudit/mcp-server setup
+            <CodeBlock code={`npx @aegisaudit/sdk setup
 
 # ◆ AEGIS Protocol — MCP Server Setup
 #   ✓ Claude Desktop — configured
@@ -1104,7 +1104,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
 
             <Callout color={PURPLE} label="Claude Code">
               For Claude Code, use the built-in MCP command instead:<br/><br/>
-              <InlineCode>claude mcp add aegis-protocol -- npx -y @aegisaudit/mcp-server</InlineCode>
+              <InlineCode>claude mcp add aegis-protocol -- npx -y @aegisaudit/sdk</InlineCode>
             </Callout>
 
             <SubHeading>Manual Configuration</SubHeading>
@@ -1116,7 +1116,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
   "mcpServers": {
     "aegis-protocol": {
       "command": "npx",
-      "args": ["-y", "@aegisaudit/mcp-server"],
+      "args": ["-y", "@aegisaudit/sdk"],
       "env": {
         "AEGIS_CHAIN_ID": "8453"
       }

@@ -47,7 +47,7 @@ Monitor attestations → Re-evaluate skill against claimed criteria
   "mcpServers": {
     "aegis": {
       "command": "npx",
-      "args": ["-y", "@aegisaudit/mcp-server@latest"],
+      "args": ["-y", "@aegisaudit/sdk@latest"],
       "env": {
         "AEGIS_PRIVATE_KEY": "0x<your-private-key>"
       }

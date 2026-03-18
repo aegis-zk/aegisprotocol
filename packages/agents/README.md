@@ -1,6 +1,6 @@
 # AEGIS Agent Playbooks
 
-Structured, step-by-step playbooks for AI agents to autonomously audit MCP tool skills and open disputes on the AEGIS Protocol. These are not code libraries — they are markdown templates designed to be followed by an AI agent with the [AEGIS MCP server](https://www.npmjs.com/package/@aegisaudit/mcp-server) connected.
+Structured, step-by-step playbooks for AI agents to autonomously audit MCP tool skills and open disputes on the AEGIS Protocol. These are not code libraries — they are markdown templates designed to be followed by an AI agent with the [AEGIS MCP server](https://www.npmjs.com/package/@aegisaudit/sdk) connected.
 
 ## Playbooks
 
@@ -24,7 +24,7 @@ Structured, step-by-step playbooks for AI agents to autonomously audit MCP tool 
      "mcpServers": {
        "aegis": {
          "command": "npx",
-         "args": ["-y", "@aegisaudit/mcp-server@latest"],
+         "args": ["-y", "@aegisaudit/sdk@latest"],
          "env": {
            "AEGIS_PRIVATE_KEY": "0x..."
          }
@@ -63,5 +63,5 @@ The MCP server handles all blockchain interaction — the agent never needs to c
 
 - [AEGIS Protocol](https://aegisprotocol.tech)
 - [SDK Documentation](https://www.npmjs.com/package/@aegisaudit/sdk)
-- [MCP Server](https://www.npmjs.com/package/@aegisaudit/mcp-server)
+- [MCP Server](https://www.npmjs.com/package/@aegisaudit/sdk)
 - [GitHub](https://github.com/aegis-zk/aegisprotocol)
