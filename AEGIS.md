@@ -1,6 +1,6 @@
 # AEGIS Protocol — Project Context
 
-Last updated: 2026-03-09
+Last updated: 2026-03-17
 
 This document captures the full state of the AEGIS Protocol project for continuity across context windows.
 
@@ -15,8 +15,8 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | Website | https://aegisprotocol.tech |
 | Vercel project | `jadebroccoli-2626s-projects/dist` (deploy from `apps/web/dist`) |
 | GitHub | https://github.com/aegis-zk/aegisprotocol |
-| npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.5.0) |
-| npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (v0.5.0) |
+| npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.5.1) |
+| npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (v0.5.1) |
 | npm Consumer Middleware | https://www.npmjs.com/package/@aegisaudit/consumer-middleware (v0.1.0) |
 | AegisRegistry (mainnet v4) | `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389) |
 | AegisRegistry (mainnet v3, deprecated) | `0xa0FF1563Ab7d5d514146F2713125098954Af1F61` (Base, block 42942701) |
@@ -45,11 +45,12 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 ```
 aegis/
 ├── packages/
-│   ├── sdk/            # @aegisaudit/sdk@0.5.0 — TypeScript client library (tsup, ESM+CJS)
-│   ├── mcp-server/     # @aegisaudit/mcp-server@0.5.0 — MCP tools for AI agents (tsup, ESM)
+│   ├── sdk/            # @aegisaudit/sdk@0.5.1 — TypeScript client library (tsup, ESM+CJS)
+│   ├── mcp-server/     # @aegisaudit/mcp-server@0.5.1 — MCP tools for AI agents (tsup, ESM)
 │   ├── indexer/        # @aegisaudit/indexer@0.1.0 — Event indexer + REST API (Hono, sql.js)
 │   ├── subgraph/       # @aegisaudit/subgraph@0.3.0 — The Graph subgraph (Base L2, AssemblyScript)
 │   ├── consumer-middleware/ # @aegisaudit/consumer-middleware@0.1.0 — Pre-execution trust gate (tsup, ESM+CJS)
+│   ├── audit-queue/    # @aegisaudit/audit-queue@0.2.0 — Automated audit pipeline (bounty-aware, race-safe)
 │   ├── agents/         # Agent playbooks — auditor + dispute agent templates (markdown + JSON examples)
 │   ├── contracts/      # AegisRegistry.sol — Foundry (forge)
 │   ├── circuits/       # Noir ZK circuits (Barretenberg/BB.js)
@@ -93,11 +94,12 @@ VERIFIER_ADDRESS=0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7 forge script script/
 
 | Package | Version |
 |---|---|
-| @aegisaudit/sdk | 0.5.0 |
-| @aegisaudit/mcp-server | 0.5.0 |
+| @aegisaudit/sdk | 0.5.1 |
+| @aegisaudit/mcp-server | 0.5.1 |
 | @aegisaudit/indexer | 0.1.0 |
 | @aegisaudit/subgraph | 0.3.0 |
 | @aegisaudit/consumer-middleware | 0.1.0 |
+| @aegisaudit/audit-queue | 0.2.0 |
 | @aegis/web | 0.0.1 (private) |
 
 When bumping versions:
@@ -290,13 +292,22 @@ Auditor entity fields: `reputationScore`, `attestationCount`, `currentStake`, `d
 
 Data URIs (`data:application/json;base64,...`) are decoded inline in AssemblyScript to extract `skillName` and `category`. IPFS/HTTP URIs fall back to "Unknown Skill" / "Uncategorized" (subgraph runtime cannot make HTTP requests).
 
-## MCP Server (39 tools)
+## MCP Server (41 tools)
 
 - **Discovery**: aegis-info, wallet-status
 - **Read**: list-all-skills, list-all-auditors, get-attestations, verify-attestation, get-auditor-reputation, get-metadata-uri, list-disputes, list-resolved-disputes, get-unstake-request, get-bounty, create-agent-registration, get-erc8004-validation, get-dispute, get-active-dispute-count, get-dispute-count, is-attestation-revoked, get-auditor-profile
 - **Trust**: query-trust-profile, query-skill-trust
+- **ZK Proving** (v0.5.1): generate-attestation-proof, generate-auditor-commitment
 - **Subgraph** (A2): check-skill, browse-unaudited, browse-bounties, audit-skill
 - **Write** (need AEGIS_PRIVATE_KEY): register-auditor, add-stake, open-dispute, initiate-unstake, complete-unstake, cancel-unstake, post-bounty, reclaim-bounty, register-agent, request-erc8004-validation, respond-to-erc8004-validation, link-skill-to-agent, resolve-dispute, revoke-attestation
+
+### New in v0.5.1
+
+- **`generate-attestation-proof`** — Wraps `buildProverToml()` + `generateAttestationViaCLI()` from the SDK. Accepts circuit inputs (skillHash, criteriaHash, auditLevel, auditorCommitment, auditorPrivateKey) and returns proof hex + publicInputs for `registerSkill()`. Requires nargo 1.0.0-beta.18 + bb 3.0.0-nightly.20260102 in WSL on Windows.
+- **`generate-auditor-commitment`** — Computes `pedersen_hash([auditorPrivateKey])` via a temporary Noir project. Returns the correct commitment for `registerAuditor()`. Warns that keccak256 will produce the wrong commitment.
+- **`link-skill-to-agent`** — Updated with `ownerOf(agentId)` pre-check. Returns `NotAgentOwner` error with both addresses if wallet doesn't own the agent NFT.
+- Structured error handling across attestation tools (`AttestationNotFound`, `AttestationIndexOutOfBounds`)
+- `register-auditor` auto-adjusts stake to account for 5% protocol fee
 
 ## SDK (AegisClient)
 
@@ -360,6 +371,75 @@ Results cached for 60s by default (configurable via `cacheTtlMs`).
 
 `AegisTrustError` extends `Error` with a `result: TrustGateResult` property containing `toolName`, `skillHash`, `reason`, and `trustData`.
 
+## Audit Queue (packages/audit-queue) v0.2.0
+
+Automated audit pipeline: listens for on-chain events, queues skills, runs audit checklists, generates ZK proofs, and submits attestations. Designed for the "auditor agents race to claim bounties" model.
+
+### Architecture
+
+```
+Event Listener → SQLite Queue → Audit Runner → ZK Prover → On-chain Submitter
+     ↑                                                           ↓
+     └── Competitor Detection (skip if already attested) ←───────┘
+```
+
+### Key Features (v0.2)
+
+- **Bounty-aware prioritization** — Highest bounty tasks claimed first (not FIFO)
+- **Competitor detection** — Monitors `SkillRegistered` events; skips tasks already attested by other auditors
+- **Race-safe submission** — Pre-submission check via `checkAlreadyAttested()` to avoid wasted gas
+- **L2/L3 static heuristics** — Real checks for type guards, schema validation, resource limits, adversarial patterns
+- **Health endpoint** — `GET /health` (status + uptime) and `GET /stats` (queue metrics) on configurable port (default 9090)
+- **Bounty claiming** — Passes `bountyRecipient` to `registerSkill()` when bounty exists
+
+### Config (env vars)
+
+| Variable | Description |
+|---|---|
+| `CHAIN_ID` | 8453 (Base) or 84532 (Base Sepolia) |
+| `RPC_URL` | RPC endpoint |
+| `PRIVATE_KEY` | Auditor wallet private key |
+| `AUDITOR_COMMITMENT` | Pedersen hash of private key |
+| `DB_PATH` | SQLite database path |
+| `HEALTH_PORT` | Health endpoint port (default 9090) |
+| `MIN_BOUNTY_WEI` | Minimum bounty to pursue (optional) |
+
+### Task States
+
+`pending` → `in_progress` → `proving` → `submitting` → `completed`
+                                                      → `failed`
+                                                      → `skipped` (competitor attested first)
+
+---
+
+## Issues Resolution (v0.5.1 — 2026-03-17)
+
+13 issues from onboarding test resolved. Full details in `ISSUES-RESOLVED.md`.
+
+| # | Issue | Status |
+|---|---|---|
+| 1 | `list-all-skills` misses SkillListed events | Fixed — rewrote to query subgraph |
+| 2 | npm package has stale registry address | Fixed — SDK/MCP bumped to 0.5.1 |
+| 3 | No proof generation MCP tool | Fixed — new `generate-attestation-proof` tool |
+| 4 | `register-auditor` rejects 0.01 ETH | Fixed — auto-adjusts for 5% fee |
+| 5 | bb.js version compatibility unclear | Fixed — explicit version requirements in tool descriptions |
+| 6 | On-chain verifier VK mismatch (20 vs 4 inputs) | **False alarm** — verifier works correctly (20 - 16 pairing points = 4 user inputs) |
+| 7 | Auditor commitment must be Pedersen hash | Fixed — new `generate-auditor-commitment` tool |
+| 8 | `is-attestation-revoked` false for non-existent | Fixed — existence check added |
+| 9 | ERC-8004 ValidationRegistry not on mainnet | Fixed — conditional warning added |
+| 10 | Inconsistent error handling across tools | Fixed — structured errors (`AttestationNotFound`, `AttestationIndexOutOfBounds`) |
+| 11 | Subgraph doesn't index bounties | **False alarm** — subgraph working correctly (283 skills, 1 active bounty) |
+| 12 | `query-trust-profile` crashes on mainnet | Fixed — graceful fallback to AEGIS-only data |
+| 13 | `link-skill-to-agent` "Not authorized" | Fixed — `ownerOf(agentId)` pre-check (no roles on IdentityRegistry) |
+
+### Key Findings
+
+- **Verifier (Issue #6)**: The deployed HonkVerifier at `0xefc3...` is identical to regenerated source. `NUMBER_OF_PUBLIC_INPUTS = 20` includes `PAIRING_POINTS_SIZE = 16` subtracted internally, so `verify(proof, publicInputs)` expects exactly 4 user-supplied inputs. Fresh proof verified successfully on mainnet via Forge script.
+- **Subgraph (Issue #11)**: Live subgraph v0.2.0 is synced and correctly indexes all bounty events. Tester likely queried wrong version.
+- **IdentityRegistry (Issue #13)**: Uses `ownerOf(agentId)` for `setMetadata()` authorization — no AccessControl roles exist. Even contract owner gets "Not authorized" unless they hold the NFT.
+
+---
+
 ## Website Pages
 
 All pages in `apps/web/src/pages/`:
@@ -396,6 +476,10 @@ CSS diamond logo preferred over PNG images.
 4. **Deployer wallet key exposed** — transfer ownership post-deploy
 5. **Contract redeployment OK during MVP** — v4 deployed with fee exemption whitelist
 6. **Scout bot is fee-exempt** — `0x4145aF7351Cbc65e3B031C081bfD5377D18E31ad` can list skills with `msg.value = 0`
+7. **HonkVerifier is correct** — `NUMBER_OF_PUBLIC_INPUTS = 20` includes 16 pairing points subtracted internally; `verify()` expects exactly 4 user inputs. No redeployment needed.
+8. **IdentityRegistry uses ownerOf, not roles** — `setMetadata()` checks `ownerOf(agentId)`, no `METADATA_SETTER_ROLE` exists
+9. **ZK toolchain pinned** — nargo 1.0.0-beta.18 + bb 3.0.0-nightly.20260102, other versions may produce incompatible proofs
+10. **WSL required on Windows** — nargo and bb run in WSL; use `MSYS_NO_PATHCONV=1` to prevent Git Bash path conversion
 
 ---
 
@@ -455,6 +539,28 @@ These are the open-source templates anyone can fork. Each is its own repo with i
   - [x] AegisTrustError for enforce mode blocking
   - [x] Unit tests (16 passing)
   - [~] Publish `@aegisaudit/consumer-middleware@0.1.0` to npm — package built, needs `npm adduser` + publish
+
+- [x] **A5 — Audit queue v0.2** `High` ✅ Done
+  Automated audit pipeline with bounty-aware racing and competitor detection
+  - [x] Bounty-priority task claiming (highest bounty first, not FIFO)
+  - [x] Competitor detection via `SkillRegistered` event monitoring
+  - [x] Race-safe submission with pre-submission `checkAlreadyAttested()` check
+  - [x] L2/L3 static heuristic checks (type guards, schema validation, resource limits, adversarial patterns)
+  - [x] Health HTTP server (`GET /health`, `GET /stats`) on configurable port
+  - [x] Bounty claiming with `bountyRecipient` passthrough
+  - [x] SQLite schema migration (bounty columns + priority index)
+  - [x] `skipped` task state for already-attested skills
+
+- [x] **A6 — Onboarding issue fixes (v0.5.1)** `High` ✅ Done
+  13 issues from onboarding test — 10 code fixes, 2 false alarms, 1 auth model clarification
+  - [x] 2 new MCP tools: `generate-attestation-proof`, `generate-auditor-commitment`
+  - [x] Structured error handling across attestation tools
+  - [x] `register-auditor` fee auto-adjustment
+  - [x] `link-skill-to-agent` ownerOf pre-check
+  - [x] `query-trust-profile` graceful fallback
+  - [x] On-chain verifier confirmed working (Issue #6 false alarm — verified on mainnet)
+  - [x] Subgraph confirmed indexing bounties (Issue #11 false alarm)
+  - [x] SDK + MCP server published to npm as v0.5.1
 
 - [~] **B2 — `aegis-scout-agent`** npm/GitHub monitor + auto-lister
   - [x] Scout bot running and actively listing skills on v4 contract
@@ -542,14 +648,17 @@ Done:      A1 (Indexer) ✅ + B1 (Consumer middleware) ✅
            A2 (MCP expansion) ✅ — @aegisaudit/mcp-server@0.5.0 published
            A3 (Bounty testing) ✅ — 99 tests passing
            C3 (Bounty UI) ✅ — /bounties page live
-
            B3 (Auditor agent playbook) ✅ — packages/agents/auditor-agent/
            B4 (Dispute agent playbook) ✅ — packages/agents/dispute-agent/
            A4 (Reputation oracle) ✅ — subgraph v0.3.0, 7-factor weighted scoring
+           A5 (Audit queue v0.2) ✅ — bounty-aware racing, competitor detection, health endpoint
+           A6 (Onboarding fixes v0.5.1) ✅ — 13 issues resolved, SDK+MCP published
 
 Done:      Full protocol loop closed ✅
-           ↳ All core workstream items (A1-A4, B1-B4, C1-C3) complete
+           ↳ All core workstream items (A1-A6, B1-B4, C1-C3) complete
 
+Pending:   Publish @aegisaudit/mcp-server@0.5.2 (VK warning removal, Issue #13 pre-check)
+           Deploy ValidationRegistry to Base mainnet (unblocks Issues #9, #12 full mode)
 In flight: awesome-mcp-servers PR + Glama listing (pending review)
 Next:      B2 (Scout bot automation) + production hardening
 ```
