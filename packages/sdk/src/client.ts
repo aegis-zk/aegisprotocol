@@ -91,7 +91,7 @@ import {
  * ```ts
  * import { AegisClient } from '@aegisaudit/sdk';
  *
- * const client = new AegisClient({ chainId: 84532 });
+ * const client = new AegisClient({ chainId: 8453 });
  *
  * // Discover all registered skills
  * const skills = await client.listAllSkills();

@@ -28,7 +28,7 @@ export function registerLinkSkillToAgent(server: McpServer): void {
     (params) =>
       handleToolCall(async () => {
         if (!hasWallet()) {
-          const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '84532');
+          const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '8453');
           return {
             isError: true,
             content: [
@@ -46,7 +46,7 @@ export function registerLinkSkillToAgent(server: McpServer): void {
 
         const client = getClient();
         const walletAddr = getWalletAddress();
-        const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '84532');
+        const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '8453');
 
         // Pre-check: verify the wallet owns this agent NFT
         try {

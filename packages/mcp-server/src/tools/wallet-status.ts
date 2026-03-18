@@ -12,13 +12,11 @@ export function registerWalletStatus(server: McpServer): void {
       handleToolCall(async () => {
         const connected = hasWallet();
         const address = getWalletAddress();
-        const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '84532');
+        const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '8453');
         const networkName =
           chainId === 8453
-            ? 'Base Mainnet'
-            : chainId === 84532
-              ? 'Base Sepolia'
-              : `Chain ${chainId}`;
+            ? 'Base'
+            : `Chain ${chainId}`;
 
         if (!connected || !address) {
           return {
@@ -30,7 +28,7 @@ export function registerWalletStatus(server: McpServer): void {
                     connected: false,
                     network: { name: networkName, chainId },
                     writeOperationsAvailable: false,
-                    action: 'Walk the user through wallet setup using the guide below. They need to add their private key to the MCP server config file and restart this client.',
+                    action: 'Call `generate-wallet` to create a new wallet, or add an existing key to your MCP config. Then restart this client.',
                     walletSetupGuide: getWalletSetupGuide(chainId),
                   },
                   null,

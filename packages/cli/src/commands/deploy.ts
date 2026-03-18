@@ -9,7 +9,7 @@ import { truncateHex } from '../utils/format.js';
  */
 export const deployCmd = new Command('deploy')
   .description('Deploy AEGIS contracts to a network (wraps forge script)')
-  .option('-n, --network <network>', 'Network: base-sepolia or base', 'base-sepolia')
+  .option('-n, --network <network>', 'Network: base', 'base')
   .option('--rpc <url>', 'Custom RPC URL')
   .option('--private-key <key>', 'Deployer private key (hex)')
   .option('--verify', 'Verify contracts on Basescan after deployment')
@@ -20,8 +20,8 @@ export const deployCmd = new Command('deploy')
       const rpc =
         opts.rpc ??
         process.env.AEGIS_RPC_URL ??
-        (opts.network === 'base' ? process.env.BASE_RPC_URL : process.env.BASE_SEPOLIA_RPC_URL) ??
-        (opts.network === 'base' ? 'https://mainnet.base.org' : 'https://sepolia.base.org');
+        process.env.BASE_RPC_URL ??
+        'https://mainnet.base.org';
 
       const privateKey = opts.privateKey ?? process.env.AEGIS_PRIVATE_KEY;
       if (!privateKey) {
@@ -32,7 +32,7 @@ export const deployCmd = new Command('deploy')
       }
 
       console.log(chalk.bold('\n  AEGIS — Deploy Contracts\n'));
-      console.log(`  Network:  ${opts.network ?? 'base-sepolia'}`);
+      console.log(`  Network:  ${opts.network ?? 'base'}`);
       console.log(`  RPC:      ${rpc}`);
       console.log(`  Verify:   ${opts.verify ? 'yes' : 'no'}\n`);
 

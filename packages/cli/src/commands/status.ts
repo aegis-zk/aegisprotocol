@@ -52,7 +52,7 @@ export const statusCmd = new Command('status')
   .description('Query auditor reputation or skill attestation status')
   .option('--auditor <commitment>', 'Auditor commitment hash (bytes32)')
   .option('--skill <hash>', 'Skill hash (bytes32)')
-  .option('-n, --network <network>', 'Network: base-sepolia or base', 'base-sepolia')
+  .option('-n, --network <network>', 'Network: base', 'base')
   .option('--rpc <url>', 'Custom RPC URL')
   .option('--registry <address>', 'AegisRegistry contract address')
   .action(async (opts) => {

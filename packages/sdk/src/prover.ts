@@ -159,11 +159,109 @@ export async function generateAttestation(
   }
 }
 
+// ─── Binary & artifact resolution ─────────────────────────────────────
+
+/**
+ * Locate the `bb` (Barretenberg) binary.
+ *
+ * Resolution order:
+ * 1. `@aztec/bb.js` npm package — `build/{arch}-{os}/bb` relative to its package root
+ * 2. `bb` on PATH (via `which` / `where` on Windows)
+ * 3. `$HOME/.bb/bb`
+ *
+ * On Windows (`process.platform === 'win32'`) the npm-bundled binary is a Linux
+ * ELF — the returned path is still valid for WSL-based invocation.
+ */
+export function findBbBinary(): string {
+  const arch = process.arch === 'x64' ? 'amd64' : 'arm64';
+  const os = process.platform === 'darwin' ? 'macos' : 'linux';
+
+  // 1. Try to resolve from @aztec/bb.js npm package
+  try {
+    let bbPkgJsonPath: string | undefined;
+    try {
+      // ESM path — import.meta.resolve
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      bbPkgJsonPath = (import.meta as any).resolve
+        ? new URL((import.meta as any).resolve('@aztec/bb.js/package.json')).pathname
+        : undefined;
+    } catch {
+      /* ignore */
+    }
+    if (!bbPkgJsonPath) {
+      // CJS fallback
+      const { createRequire } = require('module') as typeof import('module');
+      bbPkgJsonPath = createRequire(import.meta.url).resolve('@aztec/bb.js/package.json');
+    }
+    if (bbPkgJsonPath) {
+      const { dirname, join } = require('path') as typeof import('path');
+      const candidate = join(dirname(bbPkgJsonPath), 'build', `${arch}-${os}`, 'bb');
+      const { existsSync } = require('fs') as typeof import('fs');
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  } catch {
+    /* package not installed — continue */
+  }
+
+  // 2. Try PATH lookup
+  try {
+    const { execSync } = require('child_process') as typeof import('child_process');
+    const cmd = process.platform === 'win32' ? 'where bb' : 'which bb';
+    const result = execSync(cmd, { encoding: 'utf-8', timeout: 5_000 }).trim().split('\n')[0];
+    if (result) return result;
+  } catch {
+    /* not on PATH */
+  }
+
+  // 3. Fallback to $HOME/.bb/bb
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
+  const { join } = require('path') as typeof import('path');
+  return join(home, '.bb', 'bb');
+}
+
+/**
+ * Locate the compiled circuit artifact (`attestation.json`).
+ *
+ * Resolution order:
+ * 1. Explicit `circuitsDir` (caller-provided) — `{circuitsDir}/target/attestation.json`
+ * 2. Bundled with the SDK dist — `{sdkDist}/attestation.json`
+ * 3. Relative to the SDK package — `../../circuits/target/attestation.json`
+ */
+export function findCircuitArtifact(circuitsDir?: string): string {
+  const { join, dirname } = require('path') as typeof import('path');
+  const { existsSync } = require('fs') as typeof import('fs');
+
+  // 1. Explicit circuitsDir
+  if (circuitsDir) {
+    return join(circuitsDir, 'target', 'attestation.json');
+  }
+
+  // 2. Bundled with SDK dist (copied by tsup onSuccess)
+  const sdkDist = dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+  const bundled = join(sdkDist, 'attestation.json');
+  if (existsSync(bundled)) {
+    return bundled;
+  }
+
+  // 3. Relative to SDK package (monorepo layout)
+  const fromPkg = join(sdkDist, '..', '..', 'circuits', 'target', 'attestation.json');
+  if (existsSync(fromPkg)) {
+    return fromPkg;
+  }
+
+  throw new Error(
+    'Could not find attestation.json circuit artifact. ' +
+      'Either pass circuitsDir to CLIProveOptions, or ensure the circuit is compiled at packages/circuits/target/attestation.json',
+  );
+}
+
 // ─── CLI-based proof generation ───────────────────────────────────────
 
 export interface CLIProveOptions {
-  /** Path to the circuits package directory (containing Nargo.toml) */
-  circuitsDir: string;
+  /** Path to the circuits package directory (containing Nargo.toml). Optional — if omitted, the SDK will use the bundled circuit artifact. */
+  circuitsDir?: string;
   /** If true, run nargo/bb via WSL (required on Windows). Default: auto-detect. */
   useWSL?: boolean;
   /** WSL distribution name. Default: 'Ubuntu' */
@@ -204,13 +302,40 @@ export async function generateAttestationViaCLI(
   options: CLIProveOptions,
 ): Promise<ProofResult> {
   const { execSync } = await import('child_process');
-  const { readFileSync, writeFileSync } = await import('fs');
-  const { join } = await import('path');
+  const { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } = await import('fs');
+  const { join, dirname } = await import('path');
 
   const isWindows = process.platform === 'win32';
   const useWSL = options.useWSL ?? isWindows;
   const distro = options.wslDistro ?? 'Ubuntu';
-  const circuitsDir = options.circuitsDir;
+
+  // Resolve the bb binary path
+  const bbPath = findBbBinary();
+
+  // Resolve circuitsDir — use provided value, or set up a temp workspace from the bundled artifact
+  let circuitsDir: string;
+  let isTempDir = false;
+
+  if (options.circuitsDir) {
+    circuitsDir = options.circuitsDir;
+  } else {
+    // Create a temp directory with the bundled circuit artifact
+    const { tmpdir } = await import('os');
+    circuitsDir = join(tmpdir(), `aegis-prove-${Date.now()}`);
+    isTempDir = true;
+    mkdirSync(join(circuitsDir, 'target'), { recursive: true });
+
+    // Copy the bundled circuit artifact
+    const artifactPath = findCircuitArtifact();
+    copyFileSync(artifactPath, join(circuitsDir, 'target', 'attestation.json'));
+
+    // Write a minimal Nargo.toml so nargo execute works
+    writeFileSync(
+      join(circuitsDir, 'Nargo.toml'),
+      '[package]\nname = "attestation"\ntype = "bin"\nauthors = [""]\n\n[dependencies]\n',
+      'utf-8',
+    );
+  }
 
   // Write Prover.toml if provided
   if (options.proverToml) {
@@ -241,15 +366,27 @@ export async function generateAttestationViaCLI(
   // Step 1: Generate witness
   run('nargo execute');
 
-  // Step 2: Generate proof
-  run('bb prove -b ./target/attestation.json -w ./target/attestation.gz -o ./target --verifier_target evm');
+  // Step 2: Generate proof — use resolved bb binary path
+  run(`${bbPath} prove -b ./target/attestation.json -w ./target/attestation.gz -o ./target --verifier_target evm`);
 
   // Step 3: Read proof and public inputs
   const targetDir = join(circuitsDir, 'target');
-  return loadProofFromFiles(
+  const result = await loadProofFromFiles(
     join(targetDir, 'proof'),
     join(targetDir, 'public_inputs'),
   );
+
+  // Clean up temp directory
+  if (isTempDir) {
+    try {
+      const { rmSync } = await import('fs');
+      rmSync(circuitsDir, { recursive: true, force: true });
+    } catch {
+      /* best-effort cleanup */
+    }
+  }
+
+  return result;
 }
 
 /**

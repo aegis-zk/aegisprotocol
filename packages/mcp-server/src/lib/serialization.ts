@@ -32,7 +32,7 @@ export async function handleToolCall(
           text: JSON.stringify({
             error: message,
             hint: message.includes('No registry address')
-              ? 'Set AEGIS_CHAIN_ID to a supported chain (84532 for Base Sepolia) or provide AEGIS_REGISTRY.'
+              ? 'Set AEGIS_CHAIN_ID to a supported chain (8453 for Base) or provide AEGIS_REGISTRY.'
               : message.includes('execution reverted')
                 ? 'The on-chain call reverted. The skill hash or attestation index may not exist.'
                 : undefined,

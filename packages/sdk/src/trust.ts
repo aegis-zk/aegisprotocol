@@ -210,7 +210,7 @@ export async function buildSkillTrustScore(
  *
  * @param publicClient - A viem PublicClient for on-chain reads
  * @param registryAddress - AegisRegistry contract address
- * @param chainId - Chain ID (8453 for Base, 84532 for Base Sepolia)
+ * @param chainId - Chain ID (8453 for Base)
  * @param agentId - The ERC-8004 agent identity ID
  * @param options.knownSkillHashes - Skip skill scan by providing known linked skill hashes
  */

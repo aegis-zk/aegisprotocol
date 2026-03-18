@@ -18,7 +18,7 @@
  *
  * const trustRouter = await createTrustApiMiddleware({
  *   paymentAddress: '0xYourAddress...',
- *   chainId: 84532,
+ *   chainId: 8453,
  *   pricing: {
  *     profileQuery: '0.10',  // 10 cents USDC
  *     skillQuery: '0.05',    // 5 cents
@@ -119,7 +119,7 @@ export async function createTrustApiMiddleware(
   const usdcAddress = USDC_ADDRESSES[chainId];
   if (!usdcAddress) {
     throw new Error(
-      `USDC not available on chain ${chainId}. Supported: 8453 (Base), 84532 (Base Sepolia).`,
+      `USDC not available on chain ${chainId}. Supported: 8453 (Base).`,
     );
   }
 
@@ -130,10 +130,7 @@ export async function createTrustApiMiddleware(
   });
 
   // Resolve x402 facilitator URL
-  const facilitatorUrl =
-    chainId === 84532
-      ? 'https://x402.org/facilitator/testnet'
-      : 'https://x402.org/facilitator';
+  const facilitatorUrl = 'https://x402.org/facilitator';
 
   // Helper to build x402 payment details for an endpoint
   function makePaymentDetails(
@@ -144,7 +141,7 @@ export async function createTrustApiMiddleware(
     const amountAtomic = String(Math.floor(parseFloat(price) * 1e6));
     return {
       scheme: 'exact',
-      network: chainId === 84532 ? 'base-sepolia' : 'base',
+      network: 'base',
       maxAmountRequired: amountAtomic,
       resource,
       description,

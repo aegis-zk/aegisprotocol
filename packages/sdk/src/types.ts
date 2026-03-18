@@ -41,7 +41,7 @@ export interface BountyInfo {
 }
 
 export interface AegisConfig {
-  /** Target chain ID (8453 for Base, 84532 for Base Sepolia) */
+  /** Target chain ID (8453 for Base) */
   chainId: number;
   /** AegisRegistry contract address (optional — auto-resolved from built-in addresses for supported chains) */
   registryAddress?: Address;
@@ -453,7 +453,7 @@ export interface TrustApiPricing {
 export interface TrustApiConfig {
   /** Wallet address to receive USDC payments */
   paymentAddress: Address;
-  /** Chain ID (8453 for Base, 84532 for Base Sepolia) */
+  /** Chain ID (8453 for Base) */
   chainId: number;
   /** Optional custom RPC URL */
   rpcUrl?: string;

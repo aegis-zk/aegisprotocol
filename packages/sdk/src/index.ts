@@ -35,6 +35,8 @@ export {
   generateAttestationViaCLI,
   loadProofFromFiles,
   buildProverToml,
+  findBbBinary,
+  findCircuitArtifact,
 } from './prover';
 export type { ProofResult, ProveAttestationParams, CLIProveOptions } from './prover';
 

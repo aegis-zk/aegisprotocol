@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 // Read tools
 import { registerAegisInfo } from './aegis-info.js';
 import { registerWalletStatus } from './wallet-status.js';
+import { registerGenerateWallet } from './generate-wallet.js';
 import { registerGetAttestations } from './get-attestations.js';
 import { registerVerifyAttestation } from './verify-attestation.js';
 import { registerGetAuditorReputation } from './get-auditor-reputation.js';
@@ -67,6 +68,7 @@ export function registerAllTools(server: McpServer): void {
   // Discovery & info
   registerAegisInfo(server);
   registerWalletStatus(server);
+  registerGenerateWallet(server);
 
   // Read operations
   registerListAllSkills(server);

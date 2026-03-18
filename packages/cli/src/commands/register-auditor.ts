@@ -11,7 +11,7 @@ export const registerAuditorCmd = new Command('register-auditor')
   .description('Register as an anonymous auditor by staking ETH')
   .requiredOption('-c, --commitment <hex>', 'Auditor commitment hash (bytes32)')
   .option('-s, --stake <eth>', 'Stake amount in ETH (min 0.01)', '0.01')
-  .option('-n, --network <network>', 'Network: base-sepolia or base', 'base-sepolia')
+  .option('-n, --network <network>', 'Network: base', 'base')
   .option('--rpc <url>', 'Custom RPC URL')
   .option('--registry <address>', 'AegisRegistry contract address')
   .option('--private-key <key>', 'Wallet private key (hex)')
@@ -33,7 +33,7 @@ export const registerAuditorCmd = new Command('register-auditor')
       const commitment = opts.commitment as Hex;
       console.log(`  Commitment: ${commitment}`);
       console.log(`  Stake: ${fmtEth(stakeAmount)}`);
-      console.log(`  Network: ${opts.network ?? 'base-sepolia'}\n`);
+      console.log(`  Network: ${opts.network ?? 'base'}\n`);
 
       const spinner = ora('Submitting registration transaction...').start();
 

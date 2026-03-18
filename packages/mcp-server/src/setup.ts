@@ -13,7 +13,7 @@ const YELLOW = '\x1b[33m';
 const SERVER_ENTRY = {
   command: 'npx',
   args: ['-y', '@aegisaudit/mcp-server'],
-  env: { AEGIS_CHAIN_ID: '84532' },
+  env: { AEGIS_CHAIN_ID: '8453' },
 };
 
 interface Target {
@@ -111,8 +111,7 @@ export function runSetup(): void {
 
   if (configured > 0) {
     console.log(`  ${GREEN}${BOLD}Done!${RESET} Restart your AI client to load the AEGIS tools.`);
-    console.log(`  ${DIM}The server connects to Base Sepolia by default.${RESET}`);
-    console.log(`  ${DIM}Set AEGIS_CHAIN_ID=8453 in the config for Base Mainnet.${RESET}`);
+    console.log(`  ${DIM}The server connects to Base Mainnet by default.${RESET}`);
   } else {
     console.log(`  ${YELLOW}No supported AI clients detected.${RESET}`);
     console.log(`  ${DIM}You can manually add the following to your MCP config:${RESET}`);

@@ -14,7 +14,7 @@ const env = (key: string, fallback?: string): string => {
 const privateKey = env("AEGIS_PRIVATE_KEY") as `0x${string}`;
 
 export const config = {
-  /** Chain ID (8453 = Base, 84532 = Base Sepolia) */
+  /** Chain ID (8453 = Base) */
   chainId: Number(env("CHAIN_ID", "8453")),
 
   /** RPC endpoint */

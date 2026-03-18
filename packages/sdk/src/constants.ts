@@ -5,10 +5,6 @@ export const CHAIN_CONFIG = {
     chainId: 8453,
     rpcUrl: 'https://mainnet.base.org',
   },
-  baseSepolia: {
-    chainId: 84532,
-    rpcUrl: 'https://sepolia.base.org',
-  },
 } as const;
 
 /**
@@ -16,9 +12,7 @@ export const CHAIN_CONFIG = {
  * Updated after each deployment.
  */
 export const REGISTRY_ADDRESSES: Record<number, Address> = {
-  // Base Sepolia
-  84532: '0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba',
-  // Base Mainnet (v3 — disputes, revocation, auditor profiles)
+  // Base Mainnet (v4 — disputes, revocation, auditor profiles, bounties)
   8453: '0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd',
 };
 
@@ -36,7 +30,6 @@ export const LISTING_FEE = BigInt('1000000000000000'); // 0.001 ETH (same as reg
  * Event queries default to starting from these blocks.
  */
 export const DEPLOYMENT_BLOCKS: Record<number, bigint> = {
-  84532: 38210000n, // Base Sepolia deployment (Feb 27 2026)
   8453: 42983389n, // Base Mainnet deployment v4 (Mar 5 2026)
 };
 

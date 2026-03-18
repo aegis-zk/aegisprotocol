@@ -6,8 +6,6 @@ import type { Address } from 'viem';
 export const REGISTRY_ADDRESS: Record<number, Address> = {
   // Base Mainnet
   8453: '0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd' as Address,
-  // Base Sepolia
-  84532: '0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba' as Address,
   // Anvil local (override via env)
   31337: (import.meta.env.VITE_REGISTRY_ADDRESS ?? '0x0000000000000000000000000000000000000000') as Address,
 };

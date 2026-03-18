@@ -9,15 +9,13 @@ export function registerAegisInfo(server: McpServer): void {
     "Get an overview of the AEGIS Protocol and this MCP server's capabilities. Returns protocol description, network configuration, wallet status, wallet setup instructions, and a list of all available tools. IMPORTANT: If the wallet is not connected, guide the user through setup using the walletSetupGuide included in the response.",
     {},
     async () => {
-      const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '84532');
+      const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '8453');
       const registryAddress =
         process.env.AEGIS_REGISTRY ?? REGISTRY_ADDRESSES[chainId] ?? 'unknown';
       const networkName =
         chainId === 8453
-          ? 'Base Mainnet'
-          : chainId === 84532
-            ? 'Base Sepolia'
-            : `Chain ${chainId}`;
+          ? 'Base'
+          : `Chain ${chainId}`;
 
       const walletConnected = hasWallet();
       const walletAddress = getWalletAddress();

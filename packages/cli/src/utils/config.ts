@@ -18,16 +18,13 @@ export function resolveConfig(opts: {
   registry?: string;
   privateKey?: string;
 }): CLIConfig {
-  const network = opts.network ?? process.env.AEGIS_NETWORK ?? 'base-sepolia';
-  const chainConfig =
-    network === 'base'
-      ? CHAIN_CONFIG.base
-      : CHAIN_CONFIG.baseSepolia;
+  const network = opts.network ?? process.env.AEGIS_NETWORK ?? 'base';
+  const chainConfig = CHAIN_CONFIG.base;
 
   const rpcUrl =
     opts.rpc ??
     process.env.AEGIS_RPC_URL ??
-    (network === 'base' ? process.env.BASE_RPC_URL : process.env.BASE_SEPOLIA_RPC_URL) ??
+    process.env.BASE_RPC_URL ??
     chainConfig.rpcUrl;
 
   const registryAddress =

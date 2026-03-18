@@ -100,19 +100,17 @@ export function createAuditPaymentConfig(
   const chainId = config.chainId ?? 8453;
   const usdcAddress = USDC_ADDRESSES[chainId];
   if (!usdcAddress) {
-    throw new Error(`USDC not available on chain ${chainId}. Supported: 8453 (Base), 84532 (Base Sepolia).`);
+    throw new Error(`USDC not available on chain ${chainId}. Supported: 8453 (Base).`);
   }
 
   // Convert USDC amount to 6-decimal string (e.g., "5.00" → "5000000")
   const amountAtomicStr = String(Math.floor(parseFloat(config.priceUsdc) * 1e6));
 
   return {
-    facilitatorUrl: chainId === 84532
-      ? 'https://x402.org/facilitator/testnet'
-      : 'https://x402.org/facilitator',
+    facilitatorUrl: 'https://x402.org/facilitator',
     paymentDetails: {
       scheme: 'exact',
-      network: chainId === 84532 ? 'base-sepolia' : 'base',
+      network: 'base',
       maxAmountRequired: amountAtomicStr,
       resource: '/api/audit',
       description: config.description ?? `AEGIS audit (levels: ${config.supportedLevels.join(', ')})`,

@@ -1085,7 +1085,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
             </Para>
 
             <Callout color={GREEN} label="Zero Config">
-              The MCP server auto-resolves the registry address for known chains. Point it at Base Sepolia (chain 84532) or Base Mainnet (chain 8453) and start querying immediately — no contract addresses or ABIs needed.
+              The MCP server auto-resolves the registry address for Base (chain 8453). Start querying immediately — no contract addresses or ABIs needed.
             </Callout>
           </section>
 
@@ -1128,7 +1128,7 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
             <InfoTable
               headers={["Variable", "Default", "Description"]}
               rows={[
-                ["AEGIS_CHAIN_ID", "8453", "Target chain — 8453 (Base Mainnet) or 84532 (Base Sepolia)"],
+                ["AEGIS_CHAIN_ID", "8453", "Target chain — 8453 (Base)"],
                 ["AEGIS_RPC_URL", "Auto", "Custom RPC endpoint (defaults to public Base RPC)"],
                 ["AEGIS_REGISTRY", "Auto", "Registry contract address (auto-resolved for known chains)"],
                 ["AEGIS_PRIVATE_KEY", "—", "Wallet private key for write operations (register, stake, dispute). Optional — read tools work without it."],
@@ -1321,7 +1321,7 @@ const profiles = await trustApi.batchProfiles([1n, 2n, 3n]);`} filename="trust-c
           <section id="cli-ref" ref={setRef("cli-ref")} style={{ marginTop: 56 }}>
             <SectionHeading>CLI Reference</SectionHeading>
             <Para>
-              The AEGIS CLI (<InlineCode>@aegisaudit/cli</InlineCode>) wraps the SDK into 5 terminal commands. All commands support <InlineCode>--network</InlineCode> (base-sepolia | base), <InlineCode>--rpc</InlineCode>, and <InlineCode>--registry</InlineCode> flags.
+              The AEGIS CLI (<InlineCode>@aegisaudit/cli</InlineCode>) wraps the SDK into 5 terminal commands. All commands support <InlineCode>--network</InlineCode>, <InlineCode>--rpc</InlineCode>, and <InlineCode>--registry</InlineCode> flags.
             </Para>
 
             {[
@@ -1370,7 +1370,7 @@ const profiles = await trustApi.batchProfiles([1n, 2n, 3n]);`} filename="trust-c
               {
                 name: "deploy",
                 desc: "Deploy AEGIS contracts (wraps forge script)",
-                usage: "aegis deploy -n base-sepolia --private-key <key> --verify",
+                usage: "aegis deploy -n base --private-key <key> --verify",
                 flags: [
                   ["--verify", "boolean", "Verify contracts on Basescan after deploy"],
                   ["--contracts-dir <path>", "string", "Path to contracts package (default: ./packages/contracts)"],
@@ -1421,12 +1421,11 @@ const profiles = await trustApi.batchProfiles([1n, 2n, 3n]);`} filename="trust-c
             <InfoTable
               headers={["Network", "Chain ID", "RPC URL", "Explorer"]}
               rows={[
-                ["Base Mainnet", "8453", "https://mainnet.base.org", "https://basescan.org"],
-                ["Base Sepolia", "84532", "https://sepolia.base.org", "https://sepolia.basescan.org"],
+                ["Base", "8453", "https://mainnet.base.org", "https://basescan.org"],
               ]}
             />
 
-            <SubHeading>Current Deployment (Base Sepolia)</SubHeading>
+            <SubHeading>Current Deployment (Base)</SubHeading>
             <InfoTable
               headers={["Contract", "Address"]}
               rows={[
@@ -1440,13 +1439,13 @@ const profiles = await trustApi.batchProfiles([1n, 2n, 3n]);`} filename="trust-c
 cd packages/contracts
 forge build
 
-# 2. Deploy to Base Sepolia
-aegis deploy -n base-sepolia \\
+# 2. Deploy to Base
+aegis deploy -n base \\
   --private-key 0x... \\
   --verify
 
 # 3. Verify deployment
-aegis status --skill 0x0000...0000 -n base-sepolia
+aegis status --skill 0x0000...0000 -n base
 
 # Output:
 # ✓ UltraHonkVerifier deployed at 0x6c58...

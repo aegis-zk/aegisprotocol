@@ -12,11 +12,6 @@ export interface Erc8004Addresses {
 
 /** ERC-8004 deployed contract addresses per chain */
 export const ERC8004_ADDRESSES: Record<string, Erc8004Addresses> = {
-  baseSepolia: {
-    identityRegistry: '0x8004A818BFB912233c491871b3d84c89A494BD9e',
-    reputationRegistry: '0x8004B663056A597Dffe9eCcC1965A193B7388713',
-    validationRegistry: '0x8004Cb1BF31DAf7788923b405b754f57acEB4272',
-  },
   base: {
     identityRegistry: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
     reputationRegistry: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63',
@@ -26,7 +21,6 @@ export const ERC8004_ADDRESSES: Record<string, Erc8004Addresses> = {
 
 /** Chain ID → ERC-8004 addresses lookup */
 export const ERC8004_CHAIN_ADDRESSES: Record<number, Erc8004Addresses> = {
-  84532: ERC8004_ADDRESSES.baseSepolia,
   8453: ERC8004_ADDRESSES.base,
 };
 
@@ -57,5 +51,4 @@ export const AEGIS_REPUTATION_TAG = 'audit-quality';
 /** USDC contract addresses on Base chains */
 export const USDC_ADDRESSES: Record<number, Address> = {
   8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',   // Base Mainnet
-  84532: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',  // Base Sepolia
 };

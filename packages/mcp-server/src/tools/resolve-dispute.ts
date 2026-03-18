@@ -21,7 +21,7 @@ export function registerResolveDispute(server: McpServer): void {
     (params) =>
       handleToolCall(async () => {
         if (!hasWallet()) {
-          const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '84532');
+          const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '8453');
           return {
             isError: true,
             content: [

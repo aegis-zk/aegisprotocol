@@ -943,7 +943,7 @@ const profiles = await api.batchProfiles([1n, 2n, 3n]);`,
     returnType: "Promise<Express.Router>",
     params: [
       { name: "config.paymentAddress", type: "Address", required: true, description: "Wallet address to receive USDC payments" },
-      { name: "config.chainId", type: "number", required: true, description: "Chain ID (8453 or 84532)" },
+      { name: "config.chainId", type: "number", required: true, description: "Chain ID (8453 for Base)" },
       { name: "config.pricing", type: "TrustApiPricing", required: true, description: "USDC prices: { profileQuery, skillQuery, batchQuery }" },
     ],
     tsExample: `import express from 'express';
@@ -1331,7 +1331,7 @@ pip install aegis-sdk[proving]`}
             <ConfigTable
               headers={["Option", "Type", "Default", "Description"]}
               rows={[
-                ["chainId", "number", "—", "Target chain ID (8453 = Base, 84532 = Base Sepolia)"],
+                ["chainId", "number", "—", "Target chain ID (8453 = Base)"],
                 ["registryAddress", "Address (0x...)", "Auto-resolved", "Deployed AegisRegistry address (auto-resolved for known chains)"],
                 ["rpcUrl", "string", "Public RPC", "Custom RPC URL (defaults to public Base RPC)"],
               ]}

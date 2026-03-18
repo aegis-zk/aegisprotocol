@@ -9,7 +9,6 @@ interface TxStatusProps {
 }
 
 const EXPLORER: Record<number, string> = {
-  84532: 'https://sepolia.basescan.org',
   8453: 'https://basescan.org',
 };
 

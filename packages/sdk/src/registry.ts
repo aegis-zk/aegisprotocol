@@ -10,7 +10,7 @@ import {
   type Chain,
   type Account,
 } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import abi from './abi/AegisRegistry.json' with { type: 'json' };
 import type {
   AegisConfig,
@@ -37,7 +37,6 @@ import { REGISTRATION_FEE, LISTING_FEE, DEPLOYMENT_BLOCKS, MAX_LOG_RANGE } from 
 
 const CHAINS: Record<number, Chain> = {
   8453: base,
-  84532: baseSepolia,
 };
 
 export function createReadClient(config: AegisConfig): PublicClient {

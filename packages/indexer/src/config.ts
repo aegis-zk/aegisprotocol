@@ -17,7 +17,7 @@ export const config = {
   /** Server port */
   port: Number(env('PORT', '4200')),
 
-  /** Chain ID (8453 = Base, 84532 = Base Sepolia) */
+  /** Chain ID (8453 = Base) */
   chainId: Number(env('CHAIN_ID', '8453')),
 
   /** RPC endpoint — defaults to public Base RPC */

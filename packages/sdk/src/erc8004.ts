@@ -177,7 +177,7 @@ export function resolveErc8004Addresses(chainId: number): Erc8004Addresses {
   const addrs = ERC8004_CHAIN_ADDRESSES[chainId];
   if (!addrs) {
     throw new Error(
-      `ERC-8004 contracts not available on chain ${chainId}. Supported: 84532 (Base Sepolia), 8453 (Base).`,
+      `ERC-8004 contracts not available on chain ${chainId}. Supported: 8453 (Base).`,
     );
   }
   return addrs;
@@ -186,7 +186,7 @@ export function resolveErc8004Addresses(chainId: number): Erc8004Addresses {
 function requireValidationRegistry(addrs: Erc8004Addresses): Address {
   if (!addrs.validationRegistry) {
     throw new Error(
-      'ValidationRegistry is not yet deployed on this chain. Use Base Sepolia (84532) for testing.',
+      'ValidationRegistry is not yet deployed on this chain.',
     );
   }
   return addrs.validationRegistry;

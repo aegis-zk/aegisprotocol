@@ -16,7 +16,7 @@ export function registerRegisterAgent(server: McpServer): void {
     (params) =>
       handleToolCall(async () => {
         if (!hasWallet()) {
-          const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '84532');
+          const chainId = Number(process.env.AEGIS_CHAIN_ID ?? '8453');
           return {
             isError: true,
             content: [
@@ -45,9 +45,6 @@ export function registerRegisterAgent(server: McpServer): void {
                 agentURI: params.agentURI,
                 walletAddress: getWalletAddress(),
                 note: 'Agent registered in ERC-8004 IdentityRegistry. An ERC-721 NFT has been minted representing this agent identity.',
-                ...(Number(process.env.AEGIS_CHAIN_ID ?? '84532') === 8453 ? {
-                  mainnetWarning: 'The ValidationRegistry is not yet deployed on Base Mainnet. Agent registration (NFT minting) works, but validation tools (request-erc8004-validation, get-erc8004-validation, query-trust-profile) will fail until deployed. link-skill-to-agent may also fail due to IdentityRegistry permissions.',
-                } : {}),
               }),
             },
           ],

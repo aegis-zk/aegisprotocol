@@ -3,30 +3,21 @@
 [![npm](https://img.shields.io/npm/v/@aegisaudit/mcp-server?color=FF3366)](https://www.npmjs.com/package/@aegisaudit/mcp-server)
 [![license](https://img.shields.io/badge/license-MIT-blue)](../../LICENSE)
 
-MCP server for the AEGIS Protocol — exposes on-chain ZK skill attestation queries as tools for AI agents.
+MCP server for AEGIS Protocol — AI agents audit skills and submit ZK attestations on Base.
 
 Works with **Claude Desktop**, **Claude Code**, **Cursor**, and any MCP-compatible client.
 
-## Install
-
-```bash
-npm install -g @aegisaudit/mcp-server
-```
-
-Or run directly:
+## Quick Start
 
 ```bash
 npx @aegisaudit/mcp-server
 ```
 
-## Configuration
+## Add to Your AI Client
 
 ### Claude Desktop
 
-Add to your Claude Desktop config file:
-
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -47,7 +38,7 @@ claude mcp add aegis-protocol -- npx -y @aegisaudit/mcp-server
 
 ### Cursor
 
-Add to `.cursor/mcp.json` in your project:
+Add to `.cursor/mcp.json`:
 
 ```json
 {
@@ -60,55 +51,15 @@ Add to `.cursor/mcp.json` in your project:
 }
 ```
 
-### Interactive Setup
+## Connect a Wallet
 
-Run the built-in installer to auto-configure your MCP client:
+Write operations (auditing, staking, disputes) need a wallet with Base ETH (~$0.50 is enough).
 
-```bash
-npx @aegisaudit/mcp-server setup
-```
+**Option A — Generate a new wallet:**
 
-## Available Tools
+Ask your AI agent to call the `generate-wallet` tool. It creates a fresh wallet and gives you the config snippet.
 
-### Discovery
-
-| Tool | Description |
-|---|---|
-| `aegis-info` | Get protocol information, contract addresses, and setup guidance |
-| `wallet-status` | Check wallet connection and auditor registration status |
-
-### Read Operations
-
-| Tool | Description |
-|---|---|
-| `list-all-skills` | List all skills registered on the AEGIS Registry |
-| `list-all-auditors` | List all registered auditors |
-| `get-attestations` | Get attestations for a specific skill by hash |
-| `verify-attestation` | Verify a ZK proof on-chain for a given attestation |
-| `get-auditor-reputation` | Query an auditor's reputation and stake |
-| `get-metadata-uri` | Get the metadata URI for a registered skill |
-| `list-disputes` | List open disputes (optionally filtered by skill) |
-| `list-resolved-disputes` | List resolved disputes |
-
-### Write Operations
-
-These require `AEGIS_PRIVATE_KEY` to be set.
-
-| Tool | Description |
-|---|---|
-| `register-auditor` | Register as an auditor by staking ETH |
-| `add-stake` | Add more stake to your auditor registration |
-| `open-dispute` | Open a dispute against a skill attestation |
-
-## Environment Variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `AEGIS_CHAIN_ID` | `84532` | Chain ID (84532 = Base Sepolia) |
-| `AEGIS_RPC_URL` | Public RPC | Custom RPC endpoint |
-| `AEGIS_PRIVATE_KEY` | — | Private key for write operations |
-
-Example with a custom RPC and wallet:
+**Option B — Use your own key:**
 
 ```json
 {
@@ -117,8 +68,6 @@ Example with a custom RPC and wallet:
       "command": "npx",
       "args": ["-y", "@aegisaudit/mcp-server"],
       "env": {
-        "AEGIS_CHAIN_ID": "84532",
-        "AEGIS_RPC_URL": "https://base-sepolia.g.alchemy.com/v2/YOUR_KEY",
         "AEGIS_PRIVATE_KEY": "0x..."
       }
     }
@@ -126,55 +75,92 @@ Example with a custom RPC and wallet:
 }
 ```
 
-## Wallet Setup
+## Tools (42)
 
-Write operations (registering as an auditor, staking, opening disputes) require a wallet with Base Sepolia ETH.
+### Discovery
 
-1. Export a private key from your wallet
-2. Set `AEGIS_PRIVATE_KEY` in your MCP config
-3. Get testnet ETH from the [Base Sepolia Faucet](https://www.alchemy.com/faucets/base-sepolia)
+| Tool | Description |
+|---|---|
+| `aegis-info` | Protocol info, contract addresses, setup guidance |
+| `wallet-status` | Wallet connection and auditor registration status |
+| `generate-wallet` | Generate a fresh wallet for AEGIS operations |
 
-The server will guide you through setup if no wallet is configured — just ask your AI agent to check your `wallet-status`.
+### Read
 
-## Trust-Gating Agent Tool Calls
+| Tool | Description |
+|---|---|
+| `list-all-skills` | All skills on the AEGIS Registry |
+| `list-all-auditors` | All registered auditors |
+| `get-attestations` | Attestations for a skill by hash |
+| `verify-attestation` | Verify a ZK proof on-chain |
+| `get-auditor-reputation` | Auditor reputation and stake |
+| `get-metadata-uri` | Metadata URI for a skill |
+| `list-disputes` | Open disputes |
+| `list-resolved-disputes` | Resolved disputes |
+| `get-bounty` | Bounty details for a skill |
+| `get-auditor-profile` | Full auditor profile |
+| `get-dispute` | Dispute details by ID |
+| `get-active-dispute-count` | Active disputes for an auditor |
+| `get-dispute-count` | Total dispute count |
+| `is-attestation-revoked` | Check revocation status |
+| `get-unstake-request` | Pending unstake request |
 
-If your agent uses tools that correspond to AEGIS-registered skills, use `@aegisaudit/consumer-middleware` to automatically verify trust before execution:
+### Trust
 
-```bash
-npm install @aegisaudit/consumer-middleware
-```
+| Tool | Description |
+|---|---|
+| `query-trust-profile` | Aggregated trust profile for an agent |
+| `query-skill-trust` | Trust data for a single skill |
 
-```typescript
-import { TrustGate } from '@aegisaudit/consumer-middleware';
-import { aegisMcpMiddleware } from '@aegisaudit/consumer-middleware/mcp';
+### ZK Proving
 
-// Configure trust policy
-const gate = new TrustGate({
-  policy: {
-    minAuditLevel: 2,      // Require L2+ audited skills
-    blockOnDispute: true,   // Block skills with open disputes
-    mode: 'enforce',        // Hard block on failure
-  },
-  skills: [
-    { toolName: 'query-database', skillHash: '0x...' },
-    { toolName: 'send-email',     skillHash: '0x...' },
-  ],
-});
+| Tool | Description |
+|---|---|
+| `generate-attestation-proof` | Generate ZK proof for on-chain submission |
+| `generate-auditor-commitment` | Compute Pedersen hash for auditor registration |
 
-// Wrap your MCP tool handler
-server.setRequestHandler(CallToolRequestSchema,
-  aegisMcpMiddleware(gate, originalHandler)
-);
-```
+### Subgraph
 
-The middleware queries the AEGIS subgraph (with on-chain fallback) and blocks tools that don't meet your policy. See the [consumer middleware docs](https://www.npmjs.com/package/@aegisaudit/consumer-middleware) for LangChain, CrewAI, and custom agent loop examples.
+| Tool | Description |
+|---|---|
+| `check-skill` | Skill details from subgraph |
+| `browse-unaudited` | Unaudited skills awaiting audit |
+| `browse-bounties` | Skills with active bounties |
+| `audit-skill` | Submit audit attestation on-chain |
+
+### Write (need AEGIS_PRIVATE_KEY)
+
+| Tool | Description |
+|---|---|
+| `register-auditor` | Register as auditor (stake ETH) |
+| `add-stake` | Add stake to registration |
+| `open-dispute` | Dispute a skill attestation |
+| `resolve-dispute` | Resolve a dispute (owner only) |
+| `revoke-attestation` | Revoke an attestation (owner only) |
+| `initiate-unstake` | Start unstake cooldown |
+| `complete-unstake` | Complete unstake after cooldown |
+| `cancel-unstake` | Cancel pending unstake |
+| `post-bounty` | Post bounty for a skill audit |
+| `reclaim-bounty` | Reclaim expired bounty |
+| `register-agent` | Register ERC-8004 agent |
+| `link-skill-to-agent` | Link skill to agent metadata |
+| `request-erc8004-validation` | Request ERC-8004 validation |
+| `respond-to-erc8004-validation` | Respond to validation request |
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `AEGIS_CHAIN_ID` | `8453` | Base mainnet |
+| `AEGIS_RPC_URL` | Public RPC | Custom RPC endpoint |
+| `AEGIS_PRIVATE_KEY` | — | Wallet key for write operations |
+| `AEGIS_PROVER_URL` | — | Remote prover URL (optional, for proof generation without local toolchain) |
 
 ## Links
 
 - [AEGIS Protocol](https://aegisprotocol.tech)
 - [GitHub](https://github.com/aegis-zk/aegisprotocol)
 - [SDK](https://www.npmjs.com/package/@aegisaudit/sdk)
-- [Consumer Middleware](https://www.npmjs.com/package/@aegisaudit/consumer-middleware)
 
 ## License
 

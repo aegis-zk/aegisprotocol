@@ -45,7 +45,7 @@ export const verifyCmd = new Command('verify')
   .requiredOption('-s, --skill <hash>', 'Skill hash (bytes32)')
   .option('-i, --index <n>', 'Attestation index (default: 0)', '0')
   .option('--info', 'Show attestation details without re-verifying the proof')
-  .option('-n, --network <network>', 'Network: base-sepolia or base', 'base-sepolia')
+  .option('-n, --network <network>', 'Network: base', 'base')
   .option('--rpc <url>', 'Custom RPC URL')
   .option('--registry <address>', 'AegisRegistry contract address')
   .action(async (opts) => {
@@ -59,7 +59,7 @@ export const verifyCmd = new Command('verify')
       console.log(chalk.bold('\n  AEGIS — Verify Attestation\n'));
       console.log(`  Skill: ${truncateHex(skillHash)}`);
       console.log(`  Index: ${index}`);
-      console.log(`  Network: ${opts.network ?? 'base-sepolia'}\n`);
+      console.log(`  Network: ${opts.network ?? 'base'}\n`);
 
       // Fetch attestation details
       const spinner = ora('Fetching attestation...').start();
