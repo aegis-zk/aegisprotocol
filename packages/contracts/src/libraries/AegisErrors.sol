@@ -90,4 +90,10 @@ library AegisErrors {
 
     /// @notice Dispute ID does not exist
     error DisputeNotFound();
+
+    /// @notice Cannot refer yourself
+    error SelfReferral();
+
+    /// @notice No referral earnings to withdraw
+    error NoReferralEarnings();
 }

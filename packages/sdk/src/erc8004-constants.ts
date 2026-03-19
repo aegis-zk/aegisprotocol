@@ -7,7 +7,7 @@ import type { Address } from './types';
 export interface Erc8004Addresses {
   identityRegistry: Address;
   reputationRegistry: Address;
-  validationRegistry: Address | null; // null if not yet deployed
+  validationRegistry: Address | null;
 }
 
 /** ERC-8004 deployed contract addresses per chain */
@@ -15,7 +15,7 @@ export const ERC8004_ADDRESSES: Record<string, Erc8004Addresses> = {
   base: {
     identityRegistry: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
     reputationRegistry: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63',
-    validationRegistry: null, // not yet deployed on mainnet
+    validationRegistry: '0x17CDbc4dbbEb0053EF9a6c1b3e0d1DA1FC5D76b3',
   },
 };
 

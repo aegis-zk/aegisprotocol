@@ -185,6 +185,22 @@ export async function handleEvent(log: DecodedLog, client: PublicClient): Promis
       q.reclaimBounty(log.args.skillHash as string);
       break;
 
+    case 'ReferralReward':
+      q.insertReferral({
+        referrer: log.args.referrer as string,
+        referee: log.args.referee as string,
+        skillHash: log.args.skillHash as string,
+        amount: (log.args.amount as bigint).toString(),
+        blockNumber,
+        txHash,
+        logIndex,
+      });
+      break;
+
+    case 'ReferralWithdrawn':
+      // Log-only — no state to update (earnings already tracked on-chain)
+      break;
+
     default:
       console.warn(`[sync] Unknown event: ${log.eventName}`);
   }

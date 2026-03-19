@@ -59,6 +59,8 @@ import {
   isAttestationRevoked as _isAttestationRevoked,
   revokeAttestation as _revokeAttestation,
   getAuditorProfile as _getAuditorProfile,
+  getReferralEarnings as _getReferralEarnings,
+  withdrawReferralEarnings as _withdrawReferralEarnings,
 } from './registry';
 import { REGISTRY_ADDRESSES } from './constants';
 import {
@@ -473,6 +475,16 @@ export class AegisClient {
   /** Get bounty details for a skill */
   async getBounty(skillHash: Hex): Promise<BountyInfo> {
     return _getBounty(this.publicClient, this.config.registryAddress, skillHash);
+  }
+
+  /** Get accumulated referral earnings for an address (in wei) */
+  async getReferralEarnings(account: Address): Promise<bigint> {
+    return _getReferralEarnings(this.publicClient, this.config.registryAddress, account);
+  }
+
+  /** Withdraw accumulated referral earnings to the caller's wallet */
+  async withdrawReferralEarnings(): Promise<Hex> {
+    return _withdrawReferralEarnings(this.requireWallet(), this.config.registryAddress);
   }
 
   /**

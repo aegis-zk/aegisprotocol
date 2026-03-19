@@ -124,6 +124,27 @@ CREATE TABLE IF NOT EXISTS bounties (
   posted_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- ── Referrals ──────────────────────────────────────────────
+-- Populated from ReferralReward events. Tracks fee splits
+-- paid to referrers who brought new agents to the platform.
+
+CREATE TABLE IF NOT EXISTS referrals (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  referrer      TEXT NOT NULL,
+  referee       TEXT NOT NULL,
+  skill_hash    TEXT NOT NULL,
+  amount        TEXT NOT NULL,
+  block_number  TEXT NOT NULL,
+  tx_hash       TEXT NOT NULL,
+  log_index     INTEGER NOT NULL,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer
+  ON referrals (referrer);
+CREATE INDEX IF NOT EXISTS idx_referrals_referee
+  ON referrals (referee);
+
 -- ── Event log ────────────────────────────────────────────
 -- Raw event log for audit trail and reprocessing.
 

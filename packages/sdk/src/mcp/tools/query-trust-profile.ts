@@ -6,7 +6,7 @@ import { serializeResult, handleToolCall } from '../lib/serialization.js';
 export function registerQueryTrustProfile(server: McpServer): void {
   server.tool(
     'query-trust-profile',
-    'Get an aggregated trust profile for an AI agent. Combines AEGIS Registry attestations with ERC-8004 validation and reputation data. Degrades gracefully on mainnet where ValidationRegistry is not yet deployed — returns AEGIS-only attestation data with a note about missing validation scores.',
+    'Get an aggregated trust profile for an AI agent. Combines AEGIS Registry attestations with ERC-8004 validation and reputation data from the ValidationRegistry on Base.',
     {
       agentId: z
         .string()

@@ -43,6 +43,30 @@ const CATEGORY_COLORS: Record<Category, string> = {
 
 const UPDATES: UpdateEntry[] = [
   {
+    date: "2026-03-19",
+    title: "AegisRegistry v5 \u2014 Referral Rewards",
+    category: "Protocol",
+    description: "Deployed AegisRegistry v5 to Base with a full referral rewards system. Agents who bring new agents earn 50% of registration fees (0.0005 ETH per referral). Self-referral prevention, pull-pattern withdrawals, and protocol-funded rewards for fee-exempt addresses. Indexer watches both v4 and v5 contracts for unified data.",
+  },
+  {
+    date: "2026-03-19",
+    title: "ERC-8004 ValidationRegistry \u2014 Live on Base",
+    category: "Protocol",
+    description: "Deployed the ERC-8004 ValidationRegistry to Base mainnet. The full trust pipeline is now live: agents request validation, AEGIS responds with ZK-verified audit scores (L1\u219233, L2\u219266, L3\u2192100), and any ERC-8004 consumer can query trust data. All three ERC-8004 registries now operational.",
+  },
+  {
+    date: "2026-03-19",
+    title: "SDK v0.8.0 \u2014 Referrals & Trust-Gated Monetization",
+    category: "SDK",
+    description: "SDK updated with referrer support on listSkill() and registerSkill(), plus getReferralEarnings() and withdrawReferralEarnings() methods. ValidationRegistry address now set in erc8004-constants. Dual-contract indexing merges v4 + v5 data seamlessly.",
+  },
+  {
+    date: "2026-03-19",
+    title: "Referral Links \u2014 Frontend",
+    category: "Frontend",
+    description: "Register page now parses ?ref=0xADDRESS from URL query params and passes the referrer to the contract call. Shows a referral banner when a ref param is present. Share your link and earn 50% of every registration fee.",
+  },
+  {
     date: "2026-03-18",
     title: "SDK v0.7.0 \u2014 Single Package",
     category: "SDK",

@@ -357,8 +357,16 @@ export function Registry() {
     setPage(1);
   }
 
+  const [showUnknown, setShowUnknown] = useState(false);
+
   const filtered = useMemo(() => {
     let data = [...skills];
+
+    // Hide "Unknown Skill" entries by default — these have unresolvable metadata
+    if (!showUnknown) {
+      data = data.filter(a => a.name !== "Unknown Skill");
+    }
+
     if (search) {
       const q = search.toLowerCase();
       data = data.filter(a =>
@@ -381,19 +389,22 @@ export function Registry() {
       return ((av as number) - (bv as number)) * dir;
     });
     return data;
-  }, [skills, search, levelFilter, statusFilter, auditFilter, sortKey, sortDir]);
+  }, [skills, search, levelFilter, statusFilter, auditFilter, sortKey, sortDir, showUnknown]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, totalPages);
   const pageData = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
+  const unknownCount = skills.filter(a => a.name === "Unknown Skill").length;
+  const visibleSkills = showUnknown ? skills : skills.filter(a => a.name !== "Unknown Skill");
+
   const levelCounts = { 1: 0, 2: 0, 3: 0 };
   const statusCounts: Record<string, number> = { active: 0, disputed: 0, expired: 0, revoked: 0 };
   const auditCounts: Record<string, number> = { unaudited: 0, in_review: 0, attested: 0 };
-  skills.forEach(a => { levelCounts[a.level as 1 | 2 | 3]++; statusCounts[a.status]++; auditCounts[a.auditStatus]++; });
+  visibleSkills.forEach(a => { levelCounts[a.level as 1 | 2 | 3]++; statusCounts[a.status]++; auditCounts[a.auditStatus]++; });
 
-  const totalStake = skills.reduce((s, a) => s + a.stake, 0);
-  const totalVerifications = skills.reduce((s, a) => s + a.verifications, 0);
+  const totalStake = visibleSkills.reduce((s, a) => s + a.stake, 0);
+  const totalVerifications = visibleSkills.reduce((s, a) => s + a.verifications, 0);
 
   return (
     <>
@@ -502,7 +513,7 @@ export function Registry() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ADE80", animation: "pulse 2s infinite" }} />
               <span style={{ fontSize: 12, color: TEXT_MUTED }}>
-                {loading ? "Syncing\u2026" : `${skills.length} skills indexed`}
+                {loading ? "Syncing\u2026" : `${visibleSkills.length} skills indexed`}
               </span>
             </div>
           </div>
@@ -543,7 +554,7 @@ export function Registry() {
 
           {/* Stats Row */}
           <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-            <StatCard label="Total Skills" value={String(skills.length)} sub={`${auditCounts.attested} attested`} />
+            <StatCard label="Verified Skills" value={String(visibleSkills.length)} sub={`${auditCounts.attested} attested${unknownCount > 0 ? ` · ${unknownCount} unknown hidden` : ""}`} />
             <StatCard label="Total Staked" value={`${totalStake.toFixed(2)}`} sub="ETH bonded" accent />
             <StatCard label="Verifications" value={totalVerifications.toLocaleString()} sub="all-time queries" />
             <StatCard label="Active Disputes" value={String(statusCounts.disputed)} sub="under review" />
@@ -552,7 +563,7 @@ export function Registry() {
           {/* Filter Bar */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontSize: 11, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 4 }}>Level</span>
-            <FilterChip label="All" count={skills.length} active={levelFilter === null} onClick={() => { setLevelFilter(null); setPage(1); }} />
+            <FilterChip label="All" count={visibleSkills.length} active={levelFilter === null} onClick={() => { setLevelFilter(null); setPage(1); }} />
             <FilterChip label="L1 Basic" count={levelCounts[1]} active={levelFilter === 1} onClick={() => toggleLevel(1)} />
             <FilterChip label="L2 Standard" count={levelCounts[2]} active={levelFilter === 2} onClick={() => toggleLevel(2)} />
             <FilterChip label="L3 Comprehensive" count={levelCounts[3]} active={levelFilter === 3} onClick={() => toggleLevel(3)} />
@@ -570,6 +581,11 @@ export function Registry() {
             <FilterChip label="All" active={auditFilter === null} onClick={() => { setAuditFilter(null); setPage(1); }} />
             <FilterChip label="Unaudited" count={auditCounts.unaudited} active={auditFilter === "unaudited"} onClick={() => toggleAudit("unaudited")} />
             <FilterChip label="Attested" count={auditCounts.attested} active={auditFilter === "attested"} onClick={() => toggleAudit("attested")} />
+
+            {unknownCount > 0 && (<>
+              <div style={{ width: 1, height: 20, background: BORDER, margin: "0 8px" }} />
+              <FilterChip label="Show Unknown" count={unknownCount} active={showUnknown} onClick={() => { setShowUnknown(v => !v); setPage(1); }} />
+            </>)}
           </div>
         </div>
 

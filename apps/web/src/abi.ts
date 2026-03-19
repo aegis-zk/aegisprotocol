@@ -24,6 +24,7 @@ export const registryAbi = [
       { name: 'auditorCommitment', type: 'bytes32' },
       { name: 'auditLevel', type: 'uint8' },
       { name: 'bountyRecipient', type: 'address' },
+      { name: 'referrer', type: 'address' },
     ],
     outputs: [],
     stateMutability: 'payable',
@@ -194,6 +195,51 @@ export const registryAbi = [
     inputs: [
       { name: 'skillHash', type: 'bytes32', indexed: true },
       { name: 'publisher', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
+  // Skill listing
+  {
+    type: 'function',
+    name: 'listSkill',
+    inputs: [
+      { name: 'skillHash', type: 'bytes32' },
+      { name: 'metadataURI', type: 'string' },
+      { name: 'referrer', type: 'address' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  // Referral functions
+  {
+    type: 'function',
+    name: 'getReferralEarnings',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: 'earnings', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'withdrawReferralEarnings',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    name: 'ReferralReward',
+    inputs: [
+      { name: 'referrer', type: 'address', indexed: true },
+      { name: 'referee', type: 'address', indexed: true },
+      { name: 'skillHash', type: 'bytes32', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'ReferralWithdrawn',
+    inputs: [
+      { name: 'referrer', type: 'address', indexed: true },
       { name: 'amount', type: 'uint256', indexed: false },
     ],
   },

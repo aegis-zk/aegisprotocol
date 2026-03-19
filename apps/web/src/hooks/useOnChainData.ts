@@ -7,11 +7,12 @@ import {
   type Address,
 } from "viem";
 import { base } from "viem/chains";
-import { REGISTRY_ADDRESS } from "../config";
+import { REGISTRY_ADDRESS, REGISTRY_V4_ADDRESS } from "../config";
 
 // ── Constants ─────────────────────────────────────────────
 const REGISTRY = REGISTRY_ADDRESS[8453];
-const DEPLOYMENT_BLOCK = 42983389n;
+const REGISTRY_V4 = REGISTRY_V4_ADDRESS[8453];
+const DEPLOYMENT_BLOCK = 42983389n; // v4 deployment block (earliest)
 const CHUNK_SIZE = 9_999n;
 
 // ── Singleton read-only client (no wallet needed) ─────────
@@ -138,6 +139,9 @@ function parseMetadataURI(uri: string): SkillMetadata {
   }
 }
 
+// ── All registry addresses to scan (v5 + legacy v4) ──────
+const ALL_REGISTRIES: `0x${string}`[] = [REGISTRY, REGISTRY_V4].filter(Boolean) as `0x${string}`[];
+
 // ── Chunked event scanning (handles RPC block limits) ─────
 async function scanLogs<T>(
   event: any,
@@ -151,7 +155,7 @@ async function scanLogs<T>(
   for (let start = from; start <= to; start += CHUNK_SIZE + 1n) {
     const end = start + CHUNK_SIZE > to ? to : start + CHUNK_SIZE;
     const logs = await publicClient.getLogs({
-      address: REGISTRY,
+      address: ALL_REGISTRIES,
       event,
       fromBlock: start,
       toBlock: end,
@@ -296,16 +300,19 @@ export function useRegistrySkills(refreshMs = 30_000) {
             existing.level = ev.auditLevel as 0 | 1 | 2 | 3;
             existing.auditor = ev.auditorCommitment;
           } else {
-            // Registered without a listing — fetch metadata
+            // Registered without a listing — fetch metadata (try v5 then v4)
             let metaURI = "";
-            try {
-              metaURI = (await publicClient.readContract({
-                address: REGISTRY,
-                abi: [metadataURIsAbi],
-                functionName: "metadataURIs",
-                args: [ev.skillHash],
-              })) as string;
-            } catch { /* ignore */ }
+            for (const addr of ALL_REGISTRIES) {
+              try {
+                metaURI = (await publicClient.readContract({
+                  address: addr,
+                  abi: [metadataURIsAbi],
+                  functionName: "metadataURIs",
+                  args: [ev.skillHash],
+                })) as string;
+                if (metaURI) break;
+              } catch { /* try next */ }
+            }
 
             const meta = parseMetadataURI(metaURI);
             skillMap.set(ev.skillHash, {
@@ -328,32 +335,34 @@ export function useRegistrySkills(refreshMs = 30_000) {
           }
         }
 
-        // 5) Batch-fetch attestation data for stake amounts (multicall)
+        // 5) Batch-fetch attestation data for stake amounts (multicall from both contracts)
         if (registeredHashes.length > 0) {
-          try {
-            const results = await publicClient.multicall({
-              contracts: registeredHashes.map((h) => ({
-                address: REGISTRY,
-                abi: [getAttestationsAbi],
-                functionName: "getAttestations" as const,
-                args: [h],
-              })),
-            });
-            for (let i = 0; i < registeredHashes.length; i++) {
-              const result = results[i];
-              if (result.status === "success" && Array.isArray(result.result)) {
-                const attestations = result.result as any[];
-                if (attestations.length > 0) {
-                  const latest = attestations[attestations.length - 1];
-                  const entry = skillMap.get(registeredHashes[i]);
-                  if (entry) {
-                    entry.stake = parseFloat(formatEther(latest.stakeAmount ?? 0n));
+          for (const registryAddr of ALL_REGISTRIES) {
+            try {
+              const results = await publicClient.multicall({
+                contracts: registeredHashes.map((h) => ({
+                  address: registryAddr,
+                  abi: [getAttestationsAbi],
+                  functionName: "getAttestations" as const,
+                  args: [h],
+                })),
+              });
+              for (let i = 0; i < registeredHashes.length; i++) {
+                const result = results[i];
+                if (result.status === "success" && Array.isArray(result.result)) {
+                  const attestations = result.result as any[];
+                  if (attestations.length > 0) {
+                    const latest = attestations[attestations.length - 1];
+                    const entry = skillMap.get(registeredHashes[i]);
+                    if (entry && entry.stake === 0) {
+                      entry.stake = parseFloat(formatEther(latest.stakeAmount ?? 0n));
+                    }
                   }
                 }
               }
+            } catch {
+              // Non-critical — try next registry or skip
             }
-          } catch {
-            // Non-critical — stake will just show 0
           }
         }
 

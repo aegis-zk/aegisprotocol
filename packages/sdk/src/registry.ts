@@ -12,6 +12,8 @@ import {
 } from 'viem';
 import { base } from 'viem/chains';
 import abi from './abi/AegisRegistry.json' with { type: 'json' };
+
+const zeroAddress: Address = '0x0000000000000000000000000000000000000000';
 import type {
   AegisConfig,
   Attestation,
@@ -395,6 +397,7 @@ export async function listSkill(
   params: {
     skillHash: Hex;
     metadataURI: string;
+    referrer?: Address;
     fee?: bigint;
   },
 ): Promise<Hex> {
@@ -418,7 +421,7 @@ export async function listSkill(
     address: registryAddress,
     abi,
     functionName: 'listSkill',
-    args: [params.skillHash, params.metadataURI],
+    args: [params.skillHash, params.metadataURI, params.referrer ?? zeroAddress],
     value: fee,
   });
 }
@@ -475,6 +478,7 @@ export async function registerSkill(
     auditorCommitment: Hex;
     auditLevel: 1 | 2 | 3;
     bountyRecipient?: Address;
+    referrer?: Address;
     fee?: bigint;
   },
 ): Promise<Hex> {
@@ -493,7 +497,6 @@ export async function registerSkill(
     );
   }
 
-  const zeroAddress: Address = '0x0000000000000000000000000000000000000000';
   return walletClient.writeContract({
     address: registryAddress,
     abi,
@@ -506,8 +509,35 @@ export async function registerSkill(
       params.auditorCommitment,
       params.auditLevel,
       params.bountyRecipient ?? zeroAddress,
+      params.referrer ?? zeroAddress,
     ],
     value: fee,
+  });
+}
+
+export async function getReferralEarnings(
+  publicClient: PublicClient,
+  registryAddress: Address,
+  account: Address,
+): Promise<bigint> {
+  const result = await publicClient.readContract({
+    address: registryAddress,
+    abi,
+    functionName: 'getReferralEarnings',
+    args: [account],
+  });
+  return result as bigint;
+}
+
+export async function withdrawReferralEarnings(
+  walletClient: WalletClient<Transport, Chain, Account>,
+  registryAddress: Address,
+): Promise<Hex> {
+  return walletClient.writeContract({
+    address: registryAddress,
+    abi,
+    functionName: 'withdrawReferralEarnings',
+    args: [],
   });
 }
 

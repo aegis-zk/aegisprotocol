@@ -12,7 +12,12 @@ export const CHAIN_CONFIG = {
  * Updated after each deployment.
  */
 export const REGISTRY_ADDRESSES: Record<number, Address> = {
-  // Base Mainnet (v4 — disputes, revocation, auditor profiles, bounties)
+  // Base Mainnet (v5 — referral rewards, all v4 features)
+  8453: '0xcB2D64212431D942dE5559F50946BAeD521923Cc',
+};
+
+/** Legacy v4 addresses — indexer reads from both v4 + v5 */
+export const REGISTRY_V4_ADDRESSES: Record<number, Address> = {
   8453: '0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd',
 };
 
@@ -24,13 +29,14 @@ export const PROTOCOL_FEE_BPS = 500; // 5% fee on staking (500 basis points)
 export const MIN_BOUNTY = BigInt('1000000000000000'); // 0.001 ETH
 export const BOUNTY_EXPIRATION = 30 * 24 * 60 * 60; // 30 days in seconds
 export const LISTING_FEE = BigInt('1000000000000000'); // 0.001 ETH (same as registration fee)
+export const REFERRAL_BPS = 5000; // 50% of fee to referrer (5000 basis points)
 
 /**
  * Deployment block numbers for each chain.
  * Event queries default to starting from these blocks.
  */
 export const DEPLOYMENT_BLOCKS: Record<number, bigint> = {
-  8453: 42983389n, // Base Mainnet deployment v4 (Mar 5 2026)
+  8453: 43575353n, // Base Mainnet deployment v5 (Mar 19 2026)
 };
 
 /** Max block range for eth_getLogs (public RPCs typically limit to 10K) */

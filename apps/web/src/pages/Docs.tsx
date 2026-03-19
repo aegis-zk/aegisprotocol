@@ -469,7 +469,7 @@ export function Docs() {
 ├── packages/
 │   ├── contracts/     # Solidity — AegisRegistry + UltraHonkVerifier
 │   │   ├── src/       # AegisRegistry.sol, IAegisRegistry.sol, AegisErrors.sol
-│   │   ├── test/      # 25 Foundry tests (forge test)
+│   │   ├── test/      # 104 Foundry tests (forge test)
 │   │   └── script/    # Deploy.s.sol deployment scripts
 │   ├── circuits/      # Noir — ZK attestation circuit
 │   │   └── src/       # main.nr (40 lines)
@@ -485,7 +485,7 @@ export function Docs() {
           <section id="arch-contracts" ref={setRef("arch-contracts")} style={{ marginTop: 32 }}>
             <SubHeading>Smart Contracts</SubHeading>
             <Para>
-              The contract layer consists of two deployed contracts on Base L2:
+              The contract layer consists of the following deployed contracts on Base L2:
             </Para>
             <InfoTable
               headers={["Contract", "Language", "Description"]}
@@ -515,9 +515,9 @@ export function Docs() {
 
           {/* SDK */}
           <section id="arch-sdk" ref={setRef("arch-sdk")} style={{ marginTop: 32 }}>
-            <SubHeading>SDK <span style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>v0.5.0</span></SubHeading>
+            <SubHeading>SDK <span style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>v0.8.0</span></SubHeading>
             <Para>
-              The TypeScript SDK (<InlineCode>@aegisaudit/sdk</InlineCode>) provides a high-level client for interacting with the registry. It wraps viem for chain interactions, includes a prover module for ZK proofs, and supports full discovery and event queries. Install via <InlineCode>npm install @aegisaudit/sdk</InlineCode>.
+              The TypeScript SDK (<InlineCode>@aegisaudit/sdk</InlineCode>) provides a high-level client for interacting with the registry. It wraps viem for chain interactions, includes a prover module for ZK proofs, supports referral rewards, and integrates with ERC-8004 trust infrastructure. Install via <InlineCode>npm install @aegisaudit/sdk</InlineCode>.
             </Para>
             <InfoTable
               headers={["Module", "Exports", "Description"]}
@@ -531,8 +531,8 @@ export function Docs() {
               ]}
             />
 
-            <Callout color={GREEN} label="Agent Capabilities (v0.5.0)">
-              The SDK provides full feature parity with the web app. AI agents can: discover all registered skills and auditors via event scanning, fetch metadata URIs, verify attestation proofs, manage auditor stake, open and resolve disputes — all programmatically via <InlineCode>npm install @aegisaudit/sdk</InlineCode>.
+            <Callout color={GREEN} label="Agent Capabilities (v0.8.0)">
+              The SDK provides full feature parity with the web app. AI agents can: discover skills and auditors, verify attestation proofs, manage stake, handle disputes, earn referral rewards, and bridge attestations to ERC-8004 — all programmatically via <InlineCode>npm install @aegisaudit/sdk</InlineCode>.
             </Callout>
 
             <CodeBlock code={`import { AegisClient } from '@aegisaudit/sdk';
@@ -964,13 +964,13 @@ fn main(
           <section id="sdk-agents" ref={setRef("sdk-agents")} style={{ marginTop: 56 }}>
             <SectionHeading>SDK for Agents</SectionHeading>
             <Para>
-              The <InlineCode>@aegisaudit/sdk</InlineCode> package (v0.5.0) gives AI agents full programmatic access to the AEGIS registry — the same capabilities available in the web app. Agents can discover skills, verify proofs, manage stake, and handle disputes without any web interface.
+              The <InlineCode>@aegisaudit/sdk</InlineCode> package (v0.8.0) gives AI agents full programmatic access to the AEGIS registry — the same capabilities available in the web app. Agents can discover skills, verify proofs, manage stake, handle disputes, earn referral rewards, and bridge attestations to ERC-8004.
             </Para>
 
             <CodeBlock code={`npm install @aegisaudit/sdk`} filename="terminal" lang="bash" />
 
             <Callout color={GREEN} label="Auto-Resolved Configuration">
-              Registry addresses are built into the SDK for known chains (Base Sepolia, Base Mainnet). Just pass <InlineCode>chainId</InlineCode> — no need to look up contract addresses.
+              Registry addresses are built into the SDK for Base mainnet. Just pass <InlineCode>chainId</InlineCode> — no need to look up contract addresses.
             </Callout>
           </section>
 
@@ -1205,11 +1205,11 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
             />
 
             <InfoTable
-              headers={["Registry", "Base Sepolia", "Base Mainnet"]}
+              headers={["Registry", "Base Mainnet"]}
               rows={[
-                ["IdentityRegistry", "0x8004A818...BD9e", "0x8004A169...a432"],
-                ["ReputationRegistry", "0x8004B663...8713", "0x8004BAa1...9b63"],
-                ["ValidationRegistry", "0x8004Cb1B...4272", "Not yet deployed"],
+                ["IdentityRegistry", "0x8004A169...a432"],
+                ["ReputationRegistry", "0x8004BAa1...9b63"],
+                ["ValidationRegistry", "0x17CDbc4d...76b3"],
               ]}
             />
           </section>
@@ -1429,8 +1429,10 @@ const profiles = await trustApi.batchProfiles([1n, 2n, 3n]);`} filename="trust-c
             <InfoTable
               headers={["Contract", "Address"]}
               rows={[
-                ["UltraHonkVerifier", "0x6c58dE61157AA10E62174c37DFBe63094e334cE6"],
-                ["AegisRegistry", "0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba"],
+                ["UltraHonkVerifier", "0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7"],
+                ["AegisRegistry (v5)", "0xcB2D64212431D942dE5559F50946BAeD521923Cc"],
+                ["AegisRegistry (v4 legacy)", "0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd"],
+                ["ValidationRegistry (ERC-8004)", "0x17CDbc4dbbEb0053EF9a6c1b3e0d1DA1FC5D76b3"],
               ]}
             />
 

@@ -893,9 +893,9 @@ export function Auditors() {
             padding: "4px 14px", borderRadius: 20, border: `1px solid ${BORDER}`,
             marginBottom: 20, background: `${ACCENT}06`,
           }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: AUDITOR_DATA.length > 0 ? GREEN : TEXT_MUTED, animation: AUDITOR_DATA.length > 0 ? "pulse 2s infinite" : "none" }} />
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: lbStats.totalAuditors > 0 ? GREEN : TEXT_MUTED, animation: lbStats.totalAuditors > 0 ? "pulse 2s infinite" : "none" }} />
             <span style={{ color: TEXT_DIM, fontSize: 11, fontFamily: FONT }}>
-              {AUDITOR_DATA.length > 0 ? `${statusCounts.active} auditors active on Base` : "No auditors registered yet"}
+              {lbStats.totalAuditors > 0 ? `${lbStats.totalAuditors} auditors active on Base` : "No auditors registered yet"}
             </span>
           </div>
 
@@ -919,10 +919,10 @@ export function Auditors() {
 
           {/* Stats Row */}
           <div style={{ display: "flex", gap: 12, marginBottom: 0 }}>
-            <StatCard label="Total Auditors" value={String(AUDITOR_DATA.length)} sub={`${statusCounts.active} active`} />
-            <StatCard label="Total Staked" value={`${totalStake.toFixed(1)} ETH`} sub="Bonded across all auditors" accent />
-            <StatCard label="Attestations" value={totalAttestations.toLocaleString()} sub="Skills verified" />
-            <StatCard label="Disputes" value={String(AUDITOR_DATA.reduce((s, a) => s + a.disputes, 0))} sub={`${statusCounts.slashed} slashed`} />
+            <StatCard label="Total Auditors" value={String(lbStats.totalAuditors)} sub={`${lbStats.totalAuditors} active`} />
+            <StatCard label="Total Staked" value={`${lbTotalStake.toFixed(3)} ETH`} sub="Bonded across all auditors" accent />
+            <StatCard label="Attestations" value={lbStats.totalAttestations.toLocaleString()} sub="Skills verified" />
+            <StatCard label="Disputes" value={String(lbStats.openDisputes)} sub={`0 slashed`} />
           </div>
         </div>
 

@@ -460,7 +460,7 @@ const METHODS: MethodDef[] = [
     ],
     tsExample: `import { AegisClient } from '@aegisaudit/sdk';
 
-// Registry address auto-resolved for Base Sepolia
+// Registry address auto-resolved for Base
 const client = new AegisClient({ chainId: 8453 });
 
 const skillHash = '0x183c9388...';
@@ -528,7 +528,7 @@ print(f"Score: {rep.score}")
 print(f"Staked: {rep.total_stake}")
 print(f"Audits: {rep.attestation_count}")`,
   },
-  // ── Discovery (v0.5.0) ──
+  // ── Discovery (v0.8.0) ──
   {
     name: "listAllSkills",
     signature: "(options?) → Promise<SkillRegisteredEvent[]>",
@@ -1241,7 +1241,7 @@ export function Developers() {
               code={lang === "ts"
                 ? `import { AegisClient } from '@aegisaudit/sdk';
 
-// Initialize client — registry auto-resolved for Base Sepolia
+// Initialize client — registry auto-resolved for Base
 const client = new AegisClient({ chainId: 8453 });
 
 // Discover all registered skills
@@ -1257,7 +1257,7 @@ const isValid = await client.verify(
 console.log('Valid:', isValid); // true`
                 : `from aegis_sdk import AegisClient
 
-# Initialize — registry auto-resolved for Base Sepolia
+# Initialize — registry auto-resolved for Base
 client = AegisClient(chain_id=8453)
 
 # Discover all registered skills
@@ -1384,7 +1384,7 @@ pip install aegis-sdk[proving]`}
             </h2>
             <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Browse registered skills, auditors, and metadata on-chain. These read-only methods scan contract events and don't require a wallet.
-              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.5.0</span>
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.8.0</span>
             </p>
 
             {discoveryOps.map(m => (
@@ -1676,7 +1676,7 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
             </h2>
             <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
               Four additional MCP tools that query the AEGIS subgraph (The Graph) for indexed protocol data. These provide faster, richer responses than on-chain event scanning.
-              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.5.0</span>
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 8, fontWeight: 700 }}>v0.8.0</span>
             </p>
             <div style={{
               overflowX: "auto",

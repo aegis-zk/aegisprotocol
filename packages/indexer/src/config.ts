@@ -1,4 +1,4 @@
-import { REGISTRY_ADDRESSES, DEPLOYMENT_BLOCKS } from '@aegisaudit/sdk';
+import { REGISTRY_ADDRESSES, REGISTRY_V4_ADDRESSES, DEPLOYMENT_BLOCKS } from '@aegisaudit/sdk';
 
 // ── Environment ──────────────────────────────────────────────
 
@@ -36,5 +36,9 @@ export const config = {
 /** Derived values that depend on chain config */
 export const chainConfig = {
   registryAddress: REGISTRY_ADDRESSES[config.chainId] as `0x${string}`,
+  /** Legacy v4 address — indexer watches both for merged reads */
+  registryV4Address: REGISTRY_V4_ADDRESSES[config.chainId] as `0x${string}` | undefined,
   deploymentBlock: DEPLOYMENT_BLOCKS[config.chainId] ?? 0n,
+  /** v4 deployment block — needed for backfilling legacy events */
+  deploymentBlockV4: 42983389n,
 };

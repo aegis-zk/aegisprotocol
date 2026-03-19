@@ -95,6 +95,8 @@ export {
   MIN_BOUNTY,
   BOUNTY_EXPIRATION,
   LISTING_FEE,
+  REFERRAL_BPS,
+  REGISTRY_V4_ADDRESSES,
   REVERT_ERRORS,
 } from './constants';
 

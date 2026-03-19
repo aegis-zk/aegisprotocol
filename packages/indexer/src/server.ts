@@ -6,6 +6,7 @@ import { auditorsRouter } from './routes/auditors.js';
 import { disputesRouter } from './routes/disputes.js';
 import { bountiesRouter } from './routes/bounties.js';
 import { statsRouter } from './routes/stats.js';
+import { referralsRouter } from './routes/referrals.js';
 
 export const app = new Hono();
 
@@ -24,14 +25,19 @@ app.get('/', (c) =>
       'GET /skills',
       'GET /skills/by-category',
       'GET /skills/unaudited',
+      'GET /skills/registry',
       'GET /skills/:hash',
       'GET /auditors/leaderboard',
       'GET /auditors/:commitment',
       'GET /disputes/open',
       'GET /disputes/:id',
+      'GET /bounties',
       'GET /bounties/open',
       'GET /stats',
       'GET /stats/events',
+      'GET /stats/attestation-levels',
+      'GET /referrals/stats',
+      'GET /referrals/:address',
     ],
   }),
 );
@@ -43,6 +49,7 @@ app.route('/auditors', auditorsRouter);
 app.route('/disputes', disputesRouter);
 app.route('/bounties', bountiesRouter);
 app.route('/stats', statsRouter);
+app.route('/referrals', referralsRouter);
 
 // ── 404 fallback ─────────────────────────────────────────
 

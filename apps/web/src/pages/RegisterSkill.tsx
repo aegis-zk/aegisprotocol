@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, type Hex } from 'viem';
 import { registryAbi } from '../abi';
@@ -15,6 +15,13 @@ const AUDIT_LEVELS = [
 export function RegisterSkill() {
   const { isConnected } = useAccount();
   const registryAddress = useRegistryAddress();
+
+  // Parse referrer from URL query params (?ref=0x...)
+  const referrer = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    return ref && /^0x[a-fA-F0-9]{40}$/.test(ref) ? ref as Hex : null;
+  }, []);
 
   const [skillHash, setSkillHash] = useState('');
   const [criteriaHash, setCriteriaHash] = useState('');
@@ -55,6 +62,8 @@ export function RegisterSkill() {
         publicInputs,
         ensureHex(auditorCommitment),
         auditLevel,
+        '0x0000000000000000000000000000000000000000', // bountyRecipient
+        referrer ?? '0x0000000000000000000000000000000000000000', // referrer
       ],
       value: REGISTRATION_FEE,
     });
@@ -76,6 +85,18 @@ export function RegisterSkill() {
         Register an AI agent skill with a ZK-verified attestation proof.
         The proof validates the audit was performed correctly without revealing source code.
       </p>
+
+      {referrer && (
+        <div className="card" style={{ marginBottom: '1rem', borderLeft: '3px solid #00ff88', padding: '0.75rem 1rem' }}>
+          <span style={{ color: '#00ff88', fontWeight: 600 }}>Referred by</span>{' '}
+          <span className="mono" style={{ fontSize: '0.82rem' }}>
+            {referrer.slice(0, 6)}...{referrer.slice(-4)}
+          </span>
+          <span style={{ color: '#888', marginLeft: '0.5rem', fontSize: '0.82rem' }}>
+            — they'll earn 50% of the registration fee
+          </span>
+        </div>
+      )}
 
       <div className="card">
         <form onSubmit={handleSubmit}>

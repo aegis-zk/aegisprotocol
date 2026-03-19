@@ -65,6 +65,8 @@ interface IAegisRegistry {
     event BountyClaimed(bytes32 indexed skillHash, address indexed recipient, uint256 auditorPayout, uint256 protocolFee);
     event BountyReclaimed(bytes32 indexed skillHash, address indexed publisher, uint256 amount);
     event AttestationRevoked(bytes32 indexed skillHash, uint256 attestationIndex, bytes32 indexed auditorCommitment);
+    event ReferralReward(address indexed referrer, address indexed referee, bytes32 indexed skillHash, uint256 amount);
+    event ReferralWithdrawn(address indexed referrer, uint256 amount);
 
     // ──────────────────────────────────────────────
     //  Skill Listing (no audit required)
@@ -73,7 +75,8 @@ interface IAegisRegistry {
     /// @notice List a skill for future auditing (no auditor or ZK proof required)
     /// @param skillHash keccak256 of the skill package source code
     /// @param metadataURI URI pointing to skill metadata JSON (IPFS, HTTP, or data URI). Cannot be empty.
-    function listSkill(bytes32 skillHash, string calldata metadataURI) external payable;
+    /// @param referrer Address of the referrer (address(0) to skip referral reward)
+    function listSkill(bytes32 skillHash, string calldata metadataURI, address referrer) external payable;
 
     /// @notice Get a skill listing
     /// @param skillHash keccak256 of the skill package
@@ -92,6 +95,7 @@ interface IAegisRegistry {
     /// @param auditorCommitment Identifies the auditor anonymously
     /// @param auditLevel 1=basic, 2=standard, 3=comprehensive
     /// @param bountyRecipient Address to receive bounty payout (address(0) to skip)
+    /// @param referrer Address of the referrer (address(0) to skip referral reward)
     function registerSkill(
         bytes32 skillHash,
         string calldata metadataURI,
@@ -99,7 +103,8 @@ interface IAegisRegistry {
         bytes32[] calldata publicInputs,
         bytes32 auditorCommitment,
         uint8 auditLevel,
-        address bountyRecipient
+        address bountyRecipient,
+        address referrer
     ) external payable;
 
     // ──────────────────────────────────────────────
@@ -239,4 +244,16 @@ interface IAegisRegistry {
     /// @param skillHash keccak256 of the skill package
     /// @return The bounty info (amount=0 if none exists)
     function getBounty(bytes32 skillHash) external view returns (Bounty memory);
+
+    // ──────────────────────────────────────────────
+    //  Referral Actions
+    // ──────────────────────────────────────────────
+
+    /// @notice Withdraw accumulated referral earnings
+    function withdrawReferralEarnings() external;
+
+    /// @notice Get pending referral earnings for an address
+    /// @param account The referrer address
+    /// @return earnings Accumulated referral earnings in wei
+    function getReferralEarnings(address account) external view returns (uint256 earnings);
 }

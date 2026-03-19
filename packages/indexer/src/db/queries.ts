@@ -429,8 +429,266 @@ export function getStats(): StatsRow {
   };
 }
 
+// ── Attestation levels ────────────────────────────────
+
+export interface AttestationLevelCounts {
+  l1: number;
+  l2: number;
+  l3: number;
+}
+
+/** Count non-revoked attestations by audit level. */
+export function getAttestationLevelCounts(): AttestationLevelCounts {
+  const count = (level: number): number => {
+    const row = queryOne<{ c: number }>(
+      'SELECT COUNT(*) AS c FROM attestations WHERE audit_level = ? AND revoked = 0',
+      [level],
+    );
+    return row?.c ?? 0;
+  };
+  return { l1: count(1), l2: count(2), l3: count(3) };
+}
+
+// ── Registry skills (full detail for web app) ────────
+
+export interface RegistrySkillRow {
+  skill_hash: string;
+  publisher: string;
+  metadata_uri: string;
+  skill_name: string;
+  category: string;
+  block_number: string;
+  tx_hash: string;
+  listed_at: string;
+  attestation_count: number;
+}
+
+export interface RegistrySkillDetail extends RegistrySkillRow {
+  attestations: Array<{
+    attestation_index: number;
+    auditor_commitment: string;
+    audit_level: number;
+    revoked: number;
+    tx_hash: string;
+    created_at: string;
+    auditor_stake: string;
+  }>;
+  disputes: Array<{
+    dispute_id: number;
+    attestation_index: number;
+    challenger: string;
+    bond: string;
+    resolved: number;
+    auditor_fault: number;
+    opened_at: string;
+    resolved_at: string | null;
+    tx_hash: string;
+  }>;
+}
+
+/** All skills with attestations and disputes inlined (for registry page). */
+export function getRegistrySkills(limit = 500): RegistrySkillDetail[] {
+  const skills = queryAll<RegistrySkillRow>(
+    `SELECT s.*,
+            (SELECT COUNT(*) FROM attestations a WHERE a.skill_hash = s.skill_hash AND a.revoked = 0) AS attestation_count
+     FROM skills s
+     ORDER BY s.block_number DESC
+     LIMIT ?`,
+    [limit],
+  );
+
+  return skills.map((s) => {
+    const attestations = queryAll<{
+      attestation_index: number;
+      auditor_commitment: string;
+      audit_level: number;
+      revoked: number;
+      tx_hash: string;
+      created_at: string;
+      auditor_stake: string;
+    }>(
+      `SELECT a.attestation_index, a.auditor_commitment, a.audit_level, a.revoked, a.tx_hash, a.created_at,
+              COALESCE(aud.current_stake, '0') AS auditor_stake
+       FROM attestations a
+       LEFT JOIN auditors aud ON aud.auditor_commitment = a.auditor_commitment
+       WHERE a.skill_hash = ?
+       ORDER BY a.attestation_index DESC`,
+      [s.skill_hash],
+    );
+
+    const disputes = queryAll<{
+      dispute_id: number;
+      attestation_index: number;
+      challenger: string;
+      bond: string;
+      resolved: number;
+      auditor_fault: number;
+      opened_at: string;
+      resolved_at: string | null;
+      tx_hash: string;
+    }>(
+      `SELECT dispute_id, attestation_index, challenger, bond, resolved, auditor_fault, opened_at, resolved_at, tx_hash
+       FROM disputes WHERE skill_hash = ?
+       ORDER BY dispute_id DESC`,
+      [s.skill_hash],
+    );
+
+    return { ...s, attestations, disputes };
+  });
+}
+
+// ── All bounties (not just open) ──────────────────────
+
+/** All bounties with skill metadata joined. */
+export function getAllBounties(limit = 200) {
+  return queryAll(
+    `SELECT b.*, s.skill_name, s.category, s.publisher
+     FROM bounties b
+     LEFT JOIN skills s ON s.skill_hash = b.skill_hash
+     ORDER BY CAST(b.amount AS REAL) DESC
+     LIMIT ?`,
+    [limit],
+  );
+}
+
+// ── Auditor profile (full detail) ─────────────────────
+
+export interface AuditorProfileRow {
+  auditor_commitment: string;
+  initial_stake: string;
+  current_stake: string;
+  attestation_count: number;
+  l2_attestation_count: number;
+  l3_attestation_count: number;
+  last_attestation_at: string | null;
+  disputes_involved: number;
+  disputes_lost: number;
+  reputation_score: number;
+  block_number: string;
+  tx_hash: string;
+  registered_at: string;
+}
+
+/** Full auditor profile with l2/l3 counts and attestation details. */
+export function getAuditorProfile(commitment: string): AuditorProfileRow | undefined {
+  return queryOne<AuditorProfileRow>(
+    `SELECT a.*,
+            (a.attestation_count * 10 + CAST(a.current_stake AS REAL) / 1e16 - a.disputes_lost * 20) AS reputation_score,
+            (SELECT COUNT(*) FROM attestations att WHERE att.auditor_commitment = a.auditor_commitment AND att.audit_level = 2 AND att.revoked = 0) AS l2_attestation_count,
+            (SELECT COUNT(*) FROM attestations att WHERE att.auditor_commitment = a.auditor_commitment AND att.audit_level = 3 AND att.revoked = 0) AS l3_attestation_count,
+            (SELECT MAX(att.created_at) FROM attestations att WHERE att.auditor_commitment = a.auditor_commitment) AS last_attestation_at
+     FROM auditors a
+     WHERE a.auditor_commitment = ?`,
+    [commitment],
+  );
+}
+
+/** Attestations by auditor with skill name, category, and disputes. */
+export function getAuditorAttestationsDetailed(commitment: string) {
+  const attestations = queryAll<{
+    skill_hash: string;
+    attestation_index: number;
+    audit_level: number;
+    revoked: number;
+    tx_hash: string;
+    created_at: string;
+    skill_name: string;
+    category: string;
+  }>(
+    `SELECT a.skill_hash, a.attestation_index, a.audit_level, a.revoked, a.tx_hash, a.created_at,
+            COALESCE(s.skill_name, 'Unknown Skill') AS skill_name,
+            COALESCE(s.category, 'Uncategorized') AS category
+     FROM attestations a
+     LEFT JOIN skills s ON s.skill_hash = a.skill_hash
+     WHERE a.auditor_commitment = ?
+     ORDER BY a.created_at DESC`,
+    [commitment],
+  );
+
+  // Attach disputes for each attestation's skill
+  return attestations.map((att) => {
+    const disputes = queryAll<{
+      dispute_id: number;
+      attestation_index: number;
+      challenger: string;
+      bond: string;
+      resolved: number;
+      auditor_fault: number;
+      opened_at: string;
+      resolved_at: string | null;
+      tx_hash: string;
+    }>(
+      `SELECT dispute_id, attestation_index, challenger, bond, resolved, auditor_fault, opened_at, resolved_at, tx_hash
+       FROM disputes WHERE skill_hash = ?`,
+      [att.skill_hash],
+    );
+    return { ...att, disputes };
+  });
+}
+
+// ── Leaderboard with l2/l3 counts ─────────────────────
+
+export interface LeaderboardRow extends AuditorRow {
+  l2_attestation_count: number;
+  l3_attestation_count: number;
+  last_attestation_at: string | null;
+}
+
+/** Leaderboard with per-level attestation counts. */
+export function getLeaderboardDetailed(limit = 50, offset = 0): LeaderboardRow[] {
+  return queryAll<LeaderboardRow>(
+    `SELECT a.*,
+            (a.attestation_count * 10 + CAST(a.current_stake AS REAL) / 1e16 - a.disputes_lost * 20) AS reputation_score,
+            (SELECT COUNT(*) FROM attestations att WHERE att.auditor_commitment = a.auditor_commitment AND att.audit_level = 2 AND att.revoked = 0) AS l2_attestation_count,
+            (SELECT COUNT(*) FROM attestations att WHERE att.auditor_commitment = a.auditor_commitment AND att.audit_level = 3 AND att.revoked = 0) AS l3_attestation_count,
+            (SELECT MAX(att.created_at) FROM attestations att WHERE att.auditor_commitment = a.auditor_commitment) AS last_attestation_at
+     FROM auditors a
+     ORDER BY reputation_score DESC
+     LIMIT ? OFFSET ?`,
+    [limit, offset],
+  );
+}
+
 // ── Event log ──────────────────────────────────────────
 
 export function getRecentEvents(limit = 100) {
   return queryAll(`SELECT * FROM event_log ORDER BY id DESC LIMIT ?`, [limit]);
+}
+
+// ════════════════════════════════════════════════════════
+//  REFERRAL QUERIES
+// ════════════════════════════════════════════════════════
+
+export function insertReferral(params: {
+  referrer: string;
+  referee: string;
+  skillHash: string;
+  amount: string;
+  blockNumber: string;
+  txHash: string;
+  logIndex: number;
+}): void {
+  run(
+    `INSERT OR IGNORE INTO referrals (referrer, referee, skill_hash, amount, block_number, tx_hash, log_index)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [params.referrer, params.referee, params.skillHash, params.amount, params.blockNumber, params.txHash, params.logIndex],
+  );
+}
+
+export function getReferralsByReferrer(referrer: string, limit = 50) {
+  return queryAll(
+    `SELECT * FROM referrals WHERE referrer = ? ORDER BY id DESC LIMIT ?`,
+    [referrer, limit],
+  );
+}
+
+export function getReferralStats() {
+  const totals = queryOne<{ total_referrals: number; total_amount: string }>(
+    `SELECT COUNT(*) as total_referrals, COALESCE(SUM(CAST(amount AS REAL)), 0) as total_amount FROM referrals`,
+  );
+  const topReferrers = queryAll(
+    `SELECT referrer, COUNT(*) as referral_count, SUM(CAST(amount AS REAL)) as total_earned
+     FROM referrals GROUP BY referrer ORDER BY total_earned DESC LIMIT 10`,
+  );
+  return { totals, topReferrers };
 }

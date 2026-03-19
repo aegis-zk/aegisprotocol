@@ -86,6 +86,15 @@ contract AegisRegistry is IAegisRegistry {
     /// @notice Listing fee (same as registration fee) — required to prevent spam
     uint256 public constant LISTING_FEE = 0.001 ether;
 
+    /// @notice Referral reward: 50% of fee to referrer (5000 basis points)
+    uint256 public constant REFERRAL_BPS = 5000;
+
+    /// @notice Fixed referral reward for fee-exempt registrations (funded from protocolBalance)
+    uint256 public constant REFERRAL_FIXED_REWARD = 0.0005 ether;
+
+    /// @notice Accumulated referral earnings per address (pull-pattern withdrawal)
+    mapping(address => uint256) public referralEarnings;
+
     // ──────────────────────────────────────────────
     //  Constructor
     // ──────────────────────────────────────────────
@@ -109,13 +118,14 @@ contract AegisRegistry is IAegisRegistry {
     // ──────────────────────────────────────────────
 
     /// @inheritdoc IAegisRegistry
-    function listSkill(bytes32 skillHash, string calldata metadataURI) external payable {
+    function listSkill(bytes32 skillHash, string calldata metadataURI, address referrer) external payable {
         if (skillHash == bytes32(0)) revert AegisErrors.InvalidSkillHash();
         if (bytes(metadataURI).length == 0) revert AegisErrors.EmptyMetadata();
         if (!feeExempt[msg.sender] && msg.value < LISTING_FEE) revert AegisErrors.InsufficientListingFee();
         if (_skillListings[skillHash].listed) revert AegisErrors.SkillAlreadyListed();
+        if (referrer == msg.sender) revert AegisErrors.SelfReferral();
 
-        if (msg.value > 0) protocolBalance += msg.value;
+        _processReferralFee(msg.value, referrer, msg.sender, skillHash);
 
         _skillListings[skillHash] = SkillListing({
             publisher: msg.sender,
@@ -147,56 +157,17 @@ contract AegisRegistry is IAegisRegistry {
         bytes32[] calldata publicInputs,
         bytes32 auditorCommitment,
         uint8 auditLevel,
-        address bountyRecipient
+        address bountyRecipient,
+        address referrer
     ) external payable {
         if (!feeExempt[msg.sender] && msg.value < REGISTRATION_FEE) revert AegisErrors.InsufficientFee();
         if (auditLevel < 1 || auditLevel > 3) revert AegisErrors.InvalidAuditLevel();
         if (!_auditors[auditorCommitment].registered) revert AegisErrors.AuditorNotRegistered();
+        if (referrer == msg.sender) revert AegisErrors.SelfReferral();
 
-        if (msg.value > 0) protocolBalance += msg.value;
-
-        // Verify the ZK proof on-chain
-        bool valid = verifier.verify(attestationProof, publicInputs);
-        if (!valid) revert AegisErrors.InvalidProof();
-
-        // Store the attestation
-        _attestations[skillHash].push(
-            Attestation({
-                skillHash: skillHash,
-                auditCriteriaHash: publicInputs.length > 1 ? publicInputs[1] : bytes32(0),
-                zkProof: attestationProof,
-                auditorCommitment: auditorCommitment,
-                stakeAmount: _auditors[auditorCommitment].totalStake,
-                timestamp: block.timestamp,
-                auditLevel: auditLevel
-            })
-        );
-
-        // Update auditor stats
-        _auditors[auditorCommitment].attestationCount++;
-        _auditors[auditorCommitment].reputationScore++;
-
-        // Store metadata URI (overwrites if skill already has one)
-        if (bytes(metadataURI).length > 0) {
-            metadataURIs[skillHash] = metadataURI;
-        }
-
-        // Bounty payout: if a bounty exists, level matches, and recipient is provided
-        Bounty storage bounty = _bounties[skillHash];
-        if (bounty.amount > 0 && !bounty.claimed && bountyRecipient != address(0)) {
-            if (auditLevel >= bounty.requiredLevel) {
-                bounty.claimed = true;
-
-                uint256 protocolCut = (bounty.amount * PROTOCOL_FEE_BPS) / 10_000;
-                uint256 auditorPayout = bounty.amount - protocolCut;
-                protocolBalance += protocolCut;
-
-                (bool sent,) = bountyRecipient.call{value: auditorPayout}("");
-                if (!sent) revert AegisErrors.BountyTransferFailed();
-
-                emit BountyClaimed(skillHash, bountyRecipient, auditorPayout, protocolCut);
-            }
-        }
+        _processReferralFee(msg.value, referrer, msg.sender, skillHash);
+        _storeAttestation(skillHash, metadataURI, attestationProof, publicInputs, auditorCommitment, auditLevel);
+        _processBountyPayout(skillHash, auditLevel, bountyRecipient);
 
         emit SkillRegistered(skillHash, auditLevel, auditorCommitment);
     }
@@ -507,6 +478,110 @@ contract AegisRegistry is IAegisRegistry {
     /// @inheritdoc IAegisRegistry
     function getBounty(bytes32 skillHash) external view returns (Bounty memory) {
         return _bounties[skillHash];
+    }
+
+    // ──────────────────────────────────────────────
+    //  Referral Actions
+    // ──────────────────────────────────────────────
+
+    /// @inheritdoc IAegisRegistry
+    function withdrawReferralEarnings() external {
+        uint256 amount = referralEarnings[msg.sender];
+        if (amount == 0) revert AegisErrors.NoReferralEarnings();
+        referralEarnings[msg.sender] = 0;
+        (bool sent,) = msg.sender.call{value: amount}("");
+        require(sent, "Transfer failed");
+        emit ReferralWithdrawn(msg.sender, amount);
+    }
+
+    /// @inheritdoc IAegisRegistry
+    function getReferralEarnings(address account) external view returns (uint256 earnings) {
+        return referralEarnings[account];
+    }
+
+    /// @dev Store attestation and update auditor stats (extracted to reduce stack depth)
+    function _storeAttestation(
+        bytes32 skillHash,
+        string calldata metadataURI,
+        bytes calldata attestationProof,
+        bytes32[] calldata publicInputs,
+        bytes32 auditorCommitment,
+        uint8 auditLevel
+    ) internal {
+        // Verify the ZK proof on-chain
+        bool valid = verifier.verify(attestationProof, publicInputs);
+        if (!valid) revert AegisErrors.InvalidProof();
+
+        // Store the attestation
+        _attestations[skillHash].push(
+            Attestation({
+                skillHash: skillHash,
+                auditCriteriaHash: publicInputs.length > 1 ? publicInputs[1] : bytes32(0),
+                zkProof: attestationProof,
+                auditorCommitment: auditorCommitment,
+                stakeAmount: _auditors[auditorCommitment].totalStake,
+                timestamp: block.timestamp,
+                auditLevel: auditLevel
+            })
+        );
+
+        // Update auditor stats
+        _auditors[auditorCommitment].attestationCount++;
+        _auditors[auditorCommitment].reputationScore++;
+
+        // Store metadata URI (overwrites if skill already has one)
+        if (bytes(metadataURI).length > 0) {
+            metadataURIs[skillHash] = metadataURI;
+        }
+    }
+
+    /// @dev Process bounty payout if applicable (extracted to reduce stack depth)
+    function _processBountyPayout(bytes32 skillHash, uint8 auditLevel, address bountyRecipient) internal {
+        Bounty storage bounty = _bounties[skillHash];
+        if (bounty.amount > 0 && !bounty.claimed && bountyRecipient != address(0)) {
+            if (auditLevel >= bounty.requiredLevel) {
+                bounty.claimed = true;
+
+                uint256 protocolCut = (bounty.amount * PROTOCOL_FEE_BPS) / 10_000;
+                uint256 auditorPayout = bounty.amount - protocolCut;
+                protocolBalance += protocolCut;
+
+                (bool sent,) = bountyRecipient.call{value: auditorPayout}("");
+                if (!sent) revert AegisErrors.BountyTransferFailed();
+
+                emit BountyClaimed(skillHash, bountyRecipient, auditorPayout, protocolCut);
+            }
+        }
+    }
+
+    /// @dev Process fee splitting for referrals. Handles three cases:
+    ///   1. No referrer → all to protocolBalance
+    ///   2. Fee-paying registration with referrer → 50% to referrer, 50% to protocol
+    ///   3. Fee-exempt registration with referrer → fixed reward from protocolBalance
+    function _processReferralFee(
+        uint256 valueSent,
+        address referrer,
+        address referee,
+        bytes32 skillHash
+    ) internal {
+        if (referrer == address(0)) {
+            // No referrer — all to protocol (backward-compatible)
+            if (valueSent > 0) protocolBalance += valueSent;
+        } else if (valueSent > 0) {
+            // Fee-paying registration — split between referrer and protocol
+            uint256 referralAmount = (valueSent * REFERRAL_BPS) / 10_000;
+            protocolBalance += valueSent - referralAmount;
+            referralEarnings[referrer] += referralAmount;
+            emit ReferralReward(referrer, referee, skillHash, referralAmount);
+        } else {
+            // Fee-exempt registration — fund referral from protocol balance
+            if (protocolBalance >= REFERRAL_FIXED_REWARD) {
+                protocolBalance -= REFERRAL_FIXED_REWARD;
+                referralEarnings[referrer] += REFERRAL_FIXED_REWARD;
+                emit ReferralReward(referrer, referee, skillHash, REFERRAL_FIXED_REWARD);
+            }
+            // If insufficient protocolBalance, silently skip (don't revert)
+        }
     }
 
     // ──────────────────────────────────────────────

@@ -25,6 +25,13 @@ skillsRouter.get('/unaudited', (c) => {
   return c.json({ data: skills, count: skills.length });
 });
 
+/** GET /skills/registry — All skills with attestations + disputes inlined (for web app registry page). */
+skillsRouter.get('/registry', (c) => {
+  const limit = Number(c.req.query('limit') ?? 500);
+  const skills = q.getRegistrySkills(limit);
+  return c.json({ data: skills, count: skills.length });
+});
+
 /** GET /skills/:hash — Single skill with attestation details. */
 skillsRouter.get('/:hash', (c) => {
   const hash = c.req.param('hash');

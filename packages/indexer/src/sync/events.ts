@@ -94,4 +94,22 @@ export const REGISTRY_EVENTS = [
       { name: 'amount', type: 'uint256', indexed: false },
     ],
   },
+  {
+    type: 'event',
+    name: 'ReferralReward',
+    inputs: [
+      { name: 'referrer', type: 'address', indexed: true },
+      { name: 'referee', type: 'address', indexed: true },
+      { name: 'skillHash', type: 'bytes32', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'ReferralWithdrawn',
+    inputs: [
+      { name: 'referrer', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
 ] as const;

@@ -141,7 +141,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, address(0)
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, address(0), address(0)
         );
     }
 
@@ -179,7 +179,7 @@ contract AegisRegistryTest is Test {
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.InvalidProof.selector);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, address(0)
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, address(0), address(0)
         );
     }
 
@@ -192,7 +192,7 @@ contract AegisRegistryTest is Test {
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.InvalidAuditLevel.selector);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "", fakeProof, publicInputs, auditorCommitment, 0, address(0)
+            skillHash, "", fakeProof, publicInputs, auditorCommitment, 0, address(0), address(0)
         );
     }
 
@@ -204,7 +204,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.InsufficientFee.selector);
-        registry.registerSkill{value: 0}(skillHash, "", fakeProof, publicInputs, auditorCommitment, 1, address(0));
+        registry.registerSkill{value: 0}(skillHash, "", fakeProof, publicInputs, auditorCommitment, 1, address(0), address(0));
     }
 
     function test_registerSkill_revertAuditorNotRegistered() public {
@@ -214,7 +214,7 @@ contract AegisRegistryTest is Test {
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.AuditorNotRegistered.selector);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "", fakeProof, publicInputs, unknownCommitment, 1, address(0)
+            skillHash, "", fakeProof, publicInputs, unknownCommitment, 1, address(0), address(0)
         );
     }
 
@@ -585,7 +585,7 @@ contract AegisRegistryTest is Test {
         // Register skill with bountyRecipient
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Bounty should be claimed
@@ -616,7 +616,7 @@ contract AegisRegistryTest is Test {
         address bountyRecipient = makeAddr("bountyRecipient");
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Protocol gained: 0.001 ETH reg fee + 5% of 0.1 ETH bounty = 0.001 + 0.005 = 0.006 ETH
@@ -642,7 +642,7 @@ contract AegisRegistryTest is Test {
         address bountyRecipient = makeAddr("bountyRecipient");
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 3, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 3, bountyRecipient, address(0)
         );
 
         IAegisRegistry.Bounty memory b = registry.getBounty(skillHash);
@@ -667,7 +667,7 @@ contract AegisRegistryTest is Test {
         address bountyRecipient = makeAddr("bountyRecipient");
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Bounty NOT claimed (level too low)
@@ -692,7 +692,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, address(0)
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, address(0), address(0)
         );
 
         // Bounty should NOT be claimed when recipient is address(0)
@@ -714,7 +714,7 @@ contract AegisRegistryTest is Test {
         address bountyRecipient = makeAddr("bountyRecipient");
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Skill should be registered normally
@@ -772,7 +772,7 @@ contract AegisRegistryTest is Test {
         address bountyRecipient = makeAddr("bountyRecipient");
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Try to reclaim after it was claimed
@@ -820,7 +820,7 @@ contract AegisRegistryTest is Test {
         address bountyRecipient = makeAddr("bountyRecipient");
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Bounty claimed — should be able to post a new one
@@ -862,7 +862,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: registrationFee}(
-            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Protocol balance: auditorFee + registrationFee + 5% bounty cut
@@ -932,7 +932,7 @@ contract AegisRegistryTest is Test {
         // registerSkill with value: 0 (fee-exempt) — bounty should still pay
         vm.prank(auditor);
         registry.registerSkill{value: 0}(
-            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Bounty claimed
@@ -973,7 +973,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(auditor);
         registry.registerSkill{value: 0.001 ether}(
-            skill2, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 2, bountyRecipient
+            skill2, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 2, bountyRecipient, address(0)
         );
 
         // skill2 bounty claimed, others untouched
@@ -1001,7 +1001,7 @@ contract AegisRegistryTest is Test {
         // Register at L1, bounty requires L2 — no payout
         vm.prank(auditor);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, makeAddr("recipient")
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, makeAddr("recipient"), address(0)
         );
 
         // Open dispute on the attestation
@@ -1041,7 +1041,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(auditor);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, bountyRecipient, address(0)
         );
 
         // Protocol cut: 5 ETH * 500 / 10000 = 0.25 ETH
@@ -1072,7 +1072,7 @@ contract AegisRegistryTest is Test {
         // Auditor sets self as bounty recipient
         vm.prank(auditor);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, auditor
+            skillHash, "ipfs://QmMeta", fakeProof, publicInputs, auditorCommitment, 1, auditor, address(0)
         );
 
         // Net change: paid 0.001 ETH reg fee, received 0.095 ETH bounty
@@ -1123,7 +1123,7 @@ contract AegisRegistryTest is Test {
 
     function test_listSkill() public {
         vm.prank(publisher);
-        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
 
         IAegisRegistry.SkillListing memory listing = registry.getSkillListing(skillHash);
         assertTrue(listing.listed);
@@ -1134,7 +1134,7 @@ contract AegisRegistryTest is Test {
 
     function test_listSkill_storesMetadataURI() public {
         vm.prank(publisher);
-        registry.listSkill{value: 0.001 ether}(skillHash, "data:application/json;base64,eyJuYW1lIjoiVGVzdCJ9");
+        registry.listSkill{value: 0.001 ether}(skillHash, "data:application/json;base64,eyJuYW1lIjoiVGVzdCJ9", address(0));
 
         string memory uri = registry.metadataURIs(skillHash);
         assertEq(uri, "data:application/json;base64,eyJuYW1lIjoiVGVzdCJ9");
@@ -1144,7 +1144,7 @@ contract AegisRegistryTest is Test {
         uint256 protocolBefore = registry.protocolBalance();
 
         vm.prank(publisher);
-        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
 
         assertEq(registry.protocolBalance() - protocolBefore, 0.001 ether);
     }
@@ -1153,46 +1153,46 @@ contract AegisRegistryTest is Test {
         vm.prank(publisher);
         vm.expectEmit(true, true, false, true);
         emit IAegisRegistry.SkillListed(skillHash, publisher, "ipfs://QmSkillMeta");
-        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
     }
 
     function test_listSkill_revertInsufficientFee() public {
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.InsufficientListingFee.selector);
-        registry.listSkill{value: 0.0005 ether}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.0005 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
     }
 
     function test_listSkill_revertZeroFee() public {
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.InsufficientListingFee.selector);
-        registry.listSkill{value: 0}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0}(skillHash, "ipfs://QmSkillMeta", address(0));
     }
 
     function test_listSkill_revertEmptyMetadata() public {
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.EmptyMetadata.selector);
-        registry.listSkill{value: 0.001 ether}(skillHash, "");
+        registry.listSkill{value: 0.001 ether}(skillHash, "", address(0));
     }
 
     function test_listSkill_revertZeroSkillHash() public {
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.InvalidSkillHash.selector);
-        registry.listSkill{value: 0.001 ether}(bytes32(0), "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.001 ether}(bytes32(0), "ipfs://QmSkillMeta", address(0));
     }
 
     function test_listSkill_revertAlreadyListed() public {
         vm.prank(publisher);
-        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
 
         vm.prank(publisher);
         vm.expectRevert(AegisErrors.SkillAlreadyListed.selector);
-        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta2");
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta2", address(0));
     }
 
     function test_listSkill_thenRegisterSkill() public {
         // List a skill first (unaudited)
         vm.prank(publisher);
-        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
 
         // Then register an auditor and attest it
         vm.prank(auditor);
@@ -1206,7 +1206,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmUpdatedMeta", fakeProof, publicInputs, auditorCommitment, 1, address(0)
+            skillHash, "ipfs://QmUpdatedMeta", fakeProof, publicInputs, auditorCommitment, 1, address(0), address(0)
         );
 
         // Both listing and attestation should exist
@@ -1225,7 +1225,7 @@ contract AegisRegistryTest is Test {
         uint256 protocolBefore = registry.protocolBalance();
 
         vm.prank(publisher);
-        registry.listSkill{value: 0.01 ether}(skillHash, "ipfs://QmSkillMeta");
+        registry.listSkill{value: 0.01 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
 
         // Entire msg.value goes to protocol balance
         assertEq(registry.protocolBalance() - protocolBefore, 0.01 ether);
@@ -1314,7 +1314,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash2, "ipfs://QmSecondSkill", fakeProof, publicInputs, auditorCommitment, 1, address(0)
+            skillHash2, "ipfs://QmSecondSkill", fakeProof, publicInputs, auditorCommitment, 1, address(0), address(0)
         );
 
         vm.prank(challenger);
@@ -1413,7 +1413,7 @@ contract AegisRegistryTest is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmUpdated", fakeProof, publicInputs, auditorCommitment, 2, address(0)
+            skillHash, "ipfs://QmUpdated", fakeProof, publicInputs, auditorCommitment, 2, address(0), address(0)
         );
 
         // Revoke only the first attestation
@@ -1421,6 +1421,142 @@ contract AegisRegistryTest is Test {
 
         assertTrue(registry.isAttestationRevoked(skillHash, 0));
         assertFalse(registry.isAttestationRevoked(skillHash, 1));
+    }
+
+    // ──────────────────────────────────────────────
+    //  Referral Rewards
+    // ──────────────────────────────────────────────
+
+    function test_referral_listSkill_splitsFee() public {
+        address referrer = makeAddr("referrer");
+        vm.deal(publisher, 10 ether);
+
+        uint256 protocolBefore = registry.protocolBalance();
+
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", referrer);
+
+        // 50% to referrer, 50% to protocol
+        assertEq(registry.getReferralEarnings(referrer), 0.0005 ether);
+        assertEq(registry.protocolBalance() - protocolBefore, 0.0005 ether);
+    }
+
+    function test_referral_registerSkill_splitsFee() public {
+        address referrer = makeAddr("referrer");
+
+        vm.prank(auditor);
+        registry.registerAuditor{value: 0.02 ether}(auditorCommitment);
+
+        bytes32[] memory publicInputs = new bytes32[](4);
+        publicInputs[0] = skillHash;
+        publicInputs[1] = keccak256("criteria_v1_basic");
+        publicInputs[2] = bytes32(uint256(1));
+        publicInputs[3] = auditorCommitment;
+
+        uint256 protocolBefore = registry.protocolBalance();
+
+        vm.prank(publisher);
+        registry.registerSkill{value: 0.001 ether}(
+            skillHash, "ipfs://QmSkillMetadata", fakeProof, publicInputs, auditorCommitment, 1, address(0), referrer
+        );
+
+        assertEq(registry.getReferralEarnings(referrer), 0.0005 ether);
+        assertEq(registry.protocolBalance() - protocolBefore, 0.0005 ether);
+    }
+
+    function test_referral_selfReferral_reverts() public {
+        vm.prank(publisher);
+        vm.expectRevert(AegisErrors.SelfReferral.selector);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", publisher);
+    }
+
+    function test_referral_zeroReferrer_allToProtocol() public {
+        uint256 protocolBefore = registry.protocolBalance();
+
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", address(0));
+
+        assertEq(registry.protocolBalance() - protocolBefore, 0.001 ether);
+    }
+
+    function test_referral_withdrawal() public {
+        address referrer = makeAddr("referrer");
+
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", referrer);
+
+        uint256 balanceBefore = referrer.balance;
+
+        vm.prank(referrer);
+        registry.withdrawReferralEarnings();
+
+        assertEq(referrer.balance - balanceBefore, 0.0005 ether);
+        assertEq(registry.getReferralEarnings(referrer), 0);
+    }
+
+    function test_referral_withdrawal_reverts_noEarnings() public {
+        address nobody = makeAddr("nobody");
+        vm.prank(nobody);
+        vm.expectRevert(AegisErrors.NoReferralEarnings.selector);
+        registry.withdrawReferralEarnings();
+    }
+
+    function test_referral_accumulates_acrossMultiple() public {
+        address referrer = makeAddr("referrer");
+        bytes32 skillHash2 = keccak256("skill_2");
+
+        vm.startPrank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", referrer);
+        registry.listSkill{value: 0.001 ether}(skillHash2, "ipfs://QmSkillMeta2", referrer);
+        vm.stopPrank();
+
+        // Two referrals at 0.0005 each = 0.001 total
+        assertEq(registry.getReferralEarnings(referrer), 0.001 ether);
+    }
+
+    function test_referral_feeExempt_fundedFromProtocol() public {
+        address referrer = makeAddr("referrer");
+        address exemptUser = makeAddr("exemptUser");
+
+        // First, seed protocolBalance via a normal listing
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(keccak256("seed_skill"), "ipfs://seed", address(0));
+
+        uint256 protocolBefore = registry.protocolBalance();
+
+        // Make exemptUser fee-exempt
+        registry.setFeeExempt(exemptUser, true);
+
+        vm.prank(exemptUser);
+        registry.listSkill{value: 0}(skillHash, "ipfs://QmSkillMeta", referrer);
+
+        // Referrer should get fixed reward from protocol balance
+        assertEq(registry.getReferralEarnings(referrer), 0.0005 ether);
+        assertEq(registry.protocolBalance(), protocolBefore - 0.0005 ether);
+    }
+
+    function test_referral_feeExempt_insufficientProtocol_skipsReward() public {
+        address referrer = makeAddr("referrer");
+        address exemptUser = makeAddr("exemptUser");
+
+        // Protocol balance is 0 — no funds to reward referrer
+        registry.setFeeExempt(exemptUser, true);
+
+        vm.prank(exemptUser);
+        registry.listSkill{value: 0}(skillHash, "ipfs://QmSkillMeta", referrer);
+
+        // No reward since protocol has no funds
+        assertEq(registry.getReferralEarnings(referrer), 0);
+    }
+
+    function test_referral_emitsEvent() public {
+        address referrer = makeAddr("referrer");
+
+        vm.expectEmit(true, true, true, true);
+        emit IAegisRegistry.ReferralReward(referrer, publisher, skillHash, 0.0005 ether);
+
+        vm.prank(publisher);
+        registry.listSkill{value: 0.001 ether}(skillHash, "ipfs://QmSkillMeta", referrer);
     }
 
     // Allow this contract to receive ETH (for completeUnstake tests)

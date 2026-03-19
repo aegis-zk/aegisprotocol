@@ -5,6 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {AegisRegistry} from "../src/AegisRegistry.sol";
 import {MockVerifier} from "../src/mocks/MockVerifier.sol";
 import {HonkVerifier} from "../src/generated/UltraHonkVerifier.sol";
+import {ValidationRegistry} from "../src/erc8004/ValidationRegistry.sol";
 
 /// @notice Deploys AEGIS with MockVerifier (for testing / quick iteration)
 contract DeployScript is Script {
@@ -52,6 +53,26 @@ contract DeployRegistryOnly is Script {
         AegisRegistry registry = new AegisRegistry(existingVerifier);
         console2.log("AegisRegistry deployed at:", address(registry));
         console2.log("Using existing verifier:", existingVerifier);
+
+        vm.stopBroadcast();
+    }
+}
+
+/// @notice Deploys the ERC-8004 ValidationRegistry
+/// @dev Uses the existing IdentityRegistry at 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432
+contract DeployValidationRegistry is Script {
+    function run() external {
+        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address identityRegistry = vm.envOr(
+            "IDENTITY_REGISTRY",
+            address(0x8004A169FB4a3325136EB29fA0ceB6D2e539a432)
+        );
+
+        vm.startBroadcast(deployerKey);
+
+        ValidationRegistry validationRegistry = new ValidationRegistry(identityRegistry);
+        console2.log("ValidationRegistry deployed at:", address(validationRegistry));
+        console2.log("Using IdentityRegistry:", identityRegistry);
 
         vm.stopBroadcast();
     }

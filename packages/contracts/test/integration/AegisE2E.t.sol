@@ -104,6 +104,7 @@ contract AegisE2E is Test {
             publicInputs,
             auditorCommitment,
             auditLevel,
+            address(0),
             address(0)
         );
 
@@ -149,7 +150,7 @@ contract AegisE2E is Test {
 
         vm.prank(publisher);
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel, address(0)
+            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel, address(0), address(0)
         );
 
         // Re-verify the stored attestation through the registry
@@ -178,7 +179,7 @@ contract AegisE2E is Test {
         vm.prank(publisher);
         vm.expectRevert();
         registry.registerSkill{value: 0.001 ether}(
-            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel, address(0)
+            skillHash, "ipfs://QmTest123", proof, publicInputs, auditorCommitment, auditLevel, address(0), address(0)
         );
     }
 
@@ -201,7 +202,7 @@ contract AegisE2E is Test {
         vm.prank(publisher);
         vm.expectRevert();
         registry.registerSkill{value: 0.001 ether}(
-            wrongInputs[0], "ipfs://QmTest123", proof, wrongInputs, auditorCommitment, auditLevel, address(0)
+            wrongInputs[0], "ipfs://QmTest123", proof, wrongInputs, auditorCommitment, auditLevel, address(0), address(0)
         );
     }
 }

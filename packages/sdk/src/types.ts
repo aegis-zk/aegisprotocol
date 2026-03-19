@@ -85,6 +85,8 @@ export interface RegisterSkillParams {
   auditLevel: 1 | 2 | 3;
   /** Address to receive bounty payout if one exists for this skill (defaults to 0x0 to skip) */
   bountyRecipient?: Address;
+  /** Address of the referrer who brought this user to the platform (defaults to 0x0 = no referral). Referrer earns 50% of the registration fee. */
+  referrer?: Address;
   /** Registration fee in wei (default: 0.001 ETH = 1000000000000000n). Must be >= 0.001 ETH or tx reverts with InsufficientFee. */
   fee?: bigint;
 }
@@ -125,6 +127,8 @@ export interface ListSkillParams {
   skillHash: Hex;
   /** URI pointing to skill metadata JSON (IPFS, HTTP, or data URI). Cannot be empty. Use `metadataToDataURI()` to encode inline. */
   metadataURI: string;
+  /** Address of the referrer who brought this user to the platform (defaults to 0x0 = no referral). Referrer earns 50% of the listing fee. */
+  referrer?: Address;
   /** Listing fee in wei (default: 0.001 ETH = 1000000000000000n). Must be >= 0.001 ETH or tx reverts. */
   fee?: bigint;
 }
