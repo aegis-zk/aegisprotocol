@@ -1,6 +1,6 @@
 # AEGIS Protocol — Project Context
 
-Last updated: 2026-03-18
+Last updated: 2026-03-19
 
 This document captures the full state of the AEGIS Protocol project for continuity across context windows.
 
@@ -15,20 +15,22 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | Website | https://aegisprotocol.tech |
 | Vercel project | `jadebroccoli-2626s-projects/dist` (deploy from `apps/web/dist`) |
 | GitHub | https://github.com/aegis-zk/aegisprotocol |
-| npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.7.0 — includes MCP server) |
+| npm SDK | https://www.npmjs.com/package/@aegisaudit/sdk (v0.8.0 — includes MCP server) |
 | npm MCP Server | https://www.npmjs.com/package/@aegisaudit/mcp-server (deprecated — merged into SDK) |
 | npm Consumer Middleware | https://www.npmjs.com/package/@aegisaudit/consumer-middleware (v0.1.0) |
-| AegisRegistry (mainnet v4) | `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389) |
+| AegisRegistry (mainnet v5) | `0xcB2D64212431D942dE5559F50946BAeD521923Cc` (Base, block 43575353) — referral rewards |
+| AegisRegistry (mainnet v4, legacy) | `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389) — indexed for historical data |
 | AegisRegistry (mainnet v3, deprecated) | `0xa0FF1563Ab7d5d514146F2713125098954Af1F61` (Base, block 42942701) |
 | AegisRegistry (mainnet v2, deprecated) | `0x2E993439E0241b220BF12652897342054202f57C` (Base) |
 | AegisRegistry (mainnet v1, deprecated) | `0xBED52D8CEe2690900e21e5ffcb988DFF728D7E1D` (Base) |
+| ValidationRegistry (ERC-8004) | `0x17CDbc4dbbEb0053EF9a6c1b3e0d1DA1FC5D76b3` (Base) — agent validation |
 | HonkVerifier (mainnet) | `0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7` (Base) |
 | AegisRegistry (testnet, deprecated) | `0x851CfbB116aBdd50Ab899c35680eBd8273dD6Bba` (Base Sepolia — removed in v0.6.0) |
 | HonkVerifier (testnet, deprecated) | `0x6c58dE61157AA10E62174c37DFBe63094e334cE6` (Base Sepolia — removed in v0.6.0) |
 | Deployer wallet (mainnet) | `0x20bABe2d87B225445C4398029DFfE9DfEF275170` |
 | Scout bot wallet | `0x4145aF7351Cbc65e3B031C081bfD5377D18E31ad` (fee-exempt on v4) |
-| Skills listed | Live — scout bot actively populating v4 contract |
-| Indexer | `@aegisaudit/indexer@0.1.0` (local, port 4200) |
+| Skills listed | Live — scout bot actively populating contract (289 skills indexed) |
+| Indexer | `@aegisaudit/indexer@0.1.0` — VPS via pm2 (`aegis-indexer`), port 4200, dual-contract (v4+v5) |
 | Subgraph (Studio) | https://thegraph.com/studio/subgraph/aegis-protocol |
 | Subgraph GraphQL | `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.3.0` |
 
@@ -44,7 +46,7 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 ```
 aegis/
 ├── packages/
-│   ├── sdk/            # @aegisaudit/sdk@0.7.0 — SDK + MCP server + ZK prover (tsup, ESM+CJS)
+│   ├── sdk/            # @aegisaudit/sdk@0.8.0 — SDK + MCP server + ZK prover (tsup, ESM+CJS)
 │   ├── mcp-server/     # (deprecated — merged into sdk in v0.7.0)
 │   ├── indexer/        # @aegisaudit/indexer@0.1.0 — Event indexer + REST API (Hono, sql.js)
 │   ├── subgraph/       # @aegisaudit/subgraph@0.3.0 — The Graph subgraph (Base L2, AssemblyScript)
@@ -91,7 +93,7 @@ VERIFIER_ADDRESS=0xefc302c44579ccd362943D696dD71c8EdBCa5Ff7 forge script script/
 
 | Package | Version |
 |---|---|
-| @aegisaudit/sdk | 0.7.0 (includes MCP server) |
+| @aegisaudit/sdk | 0.8.0 (includes MCP server, referral support) |
 | @aegisaudit/mcp-server | deprecated (merged into SDK) |
 | @aegisaudit/indexer | 0.1.0 |
 | @aegisaudit/subgraph | 0.3.0 |
@@ -106,16 +108,25 @@ When bumping versions:
 - Publish with `npm publish --access public`
 - Commit the version bump
 
-## Contract (AegisRegistry v4)
+## Contract (AegisRegistry v5 — Referral Rewards)
+
+### v5 Changes (2026-03-19)
+
+- **Referral rewards**: `listSkill` and `registerSkill` accept an `address referrer` parameter. 50% of fees (REFERRAL_BPS = 5000) go to the referrer's withdrawable balance.
+- **Self-referral prevention**: `referrer` cannot be `msg.sender` or `address(0)` — silently ignored (no revert, fee goes to protocol).
+- **Pull-pattern withdrawals**: Referrers call `withdrawReferralBalance()` to claim accumulated rewards.
+- **New events**: `ReferralPaid(address indexed referrer, address indexed payer, uint256 amount)`, `ReferralWithdrawn(address indexed referrer, uint256 amount)`
+- **New views**: `referralBalances(address)` → uint256, `totalReferralEarnings(address)` → uint256
+- **Dual-contract indexing**: Indexer watches both v4 (`0xEFF4...9cCd`) and v5 (`0xcB2D...23Cc`), merging historical data seamlessly.
 
 ### Functions
 
 **Skill Listing:**
-- `listSkill(bytes32 skillHash, string metadataURI)` — 0.001 ETH fee
+- `listSkill(bytes32 skillHash, string metadataURI, address referrer)` — 0.001 ETH fee (50% to referrer if valid)
 - `getSkillListing(bytes32 skillHash)` → SkillListing
 
 **Attestation:**
-- `registerSkill(bytes32 skillHash, string metadataURI, bytes attestationProof, bytes32[] publicInputs, bytes32 auditorCommitment, uint8 auditLevel, address bountyRecipient)` — 0.001 ETH fee
+- `registerSkill(bytes32 skillHash, string metadataURI, bytes attestationProof, bytes32[] publicInputs, bytes32 auditorCommitment, uint8 auditLevel, address bountyRecipient, address referrer)` — 0.001 ETH fee (50% to referrer if valid)
 - `getAttestations(bytes32 skillHash)` → Attestation[]
 - `verifyAttestation(bytes32 skillHash, uint256 attestationIndex)` → bool
 - `isAttestationRevoked(bytes32 skillHash, uint256 attestationIndex)` → bool
@@ -146,9 +157,14 @@ When bumping versions:
 - `setFeeExempt(address account, bool exempt)` — whitelist addresses from listing/registration fees
 - `transferOwnership(address newOwner)`
 
-**Fee Exemption (v4):**
+**Fee Exemption:**
 - `feeExempt(address)` → bool — check if an address is exempt from fees
 - Exempt addresses can call `listSkill()` and `registerSkill()` with `msg.value = 0`
+
+**Referrals (v5):**
+- `referralBalances(address)` → uint256 — withdrawable referral balance
+- `totalReferralEarnings(address)` → uint256 — lifetime referral earnings
+- `withdrawReferralBalance()` — pull-pattern withdrawal of accumulated referral rewards
 
 ### Events
 
@@ -163,6 +179,8 @@ AttestationRevoked(bytes32 indexed skillHash, uint256 attestationIndex, bytes32 
 BountyPosted(bytes32 indexed skillHash, uint256 amount, uint8 requiredLevel, uint256 expiresAt)
 BountyClaimed(bytes32 indexed skillHash, address indexed recipient, uint256 auditorPayout, uint256 protocolFee)
 BountyReclaimed(bytes32 indexed skillHash, address indexed publisher, uint256 amount)
+ReferralPaid(address indexed referrer, address indexed payer, uint256 amount)
+ReferralWithdrawn(address indexed referrer, uint256 amount)
 UnstakeInitiated(bytes32 indexed auditorCommitment, uint256 amount, uint256 unlockTimestamp)
 UnstakeCompleted(bytes32 indexed auditorCommitment, uint256 amount)
 UnstakeCancelled(bytes32 indexed auditorCommitment, uint256 amount)
@@ -178,6 +196,7 @@ UnstakeCancelled(bytes32 indexed auditorCommitment, uint256 amount)
 | LISTING_FEE | 0.001 ETH |
 | MIN_BOUNTY | 0.001 ETH |
 | PROTOCOL_FEE_BPS | 500 (5%) |
+| REFERRAL_BPS | 5000 (50% of fees to referrer) |
 | UNSTAKE_COOLDOWN | 3 days |
 | BOUNTY_EXPIRATION | 30 days |
 
@@ -197,7 +216,8 @@ REST API on port 4200, backed by SQLite (sql.js WASM):
 | `GET /disputes/open` | Unresolved disputes |
 | `GET /disputes/:id` | Single dispute by ID |
 | `GET /bounties/open` | Active bounties sorted by reward |
-| `GET /stats` | Protocol-wide statistics |
+| `GET /referrals/:address` | Referral stats for an address |
+| `GET /stats` | Protocol-wide statistics (includes v4 + v5 addresses) |
 | `GET /stats/events` | Recent raw event log |
 
 Config via env vars: `PORT`, `CHAIN_ID`, `RPC_URL`, `DB_PATH`, `POLL_INTERVAL_MS`
@@ -325,7 +345,15 @@ Data URIs (`data:application/json;base64,...`) are decoded inline in AssemblyScr
 - Structured error handling across attestation tools (`AttestationNotFound`, `AttestationIndexOutOfBounds`)
 - `register-auditor` auto-adjusts stake to account for 5% protocol fee
 
-## SDK (AegisClient) — v0.6.0
+## SDK (AegisClient) — v0.8.0
+
+### v0.8.0 changes (2026-03-19)
+
+- **Referral support**: `listSkill()` and `registerSkill()` accept optional `referrer` address parameter
+- **v4 legacy address**: `REGISTRY_V4_ADDRESSES` exported for dual-contract indexing
+- **`REFERRAL_BPS`**: Exported constant (5000 = 50%)
+- **ERC-8004 live**: ValidationRegistry address updated from null to `0x17CDbc4dbbEb0053EF9a6c1b3e0d1DA1FC5D76b3`
+- **Updated ABI**: AegisRegistry.json includes referral functions, events, and views
 
 ### v0.6.0 changes
 
@@ -554,6 +582,9 @@ CSS diamond logo preferred over PNG images.
 12. **WASM vs CLI proof format** — bb.js WASM produces 8032-byte proofs, CLI `bb prove --verifier_target evm` produces 9024-byte proofs. Only CLI format verifies on-chain. The bb binary is bundled inside `@aztec/bb.js` npm at `build/{platform}/bb`.
 13. **bb auto-detection** — `findBbBinary()` resolves from npm package first, then PATH, then `$HOME/.bb/bb`. Agents should NOT manually install bb.
 14. **Package consolidation done (A8, v0.7.0)** — MCP server merged into SDK. `@aegisaudit/sdk` is the single package. `@aegisaudit/mcp-server` is deprecated. Agent config uses `npx -y @aegisaudit/sdk`.
+15. **v5 is the active contract (A9, v0.8.0)** — v4 at `0xEFF4...9cCd` is legacy (read-only for historical data). v5 at `0xcB2D...23Cc` handles all new writes. Indexer watches both.
+16. **Referral fee = 50% of listing/registration fee** — REFERRAL_BPS = 5000. Self-referral silently ignored (no revert). Referrers use pull-pattern withdrawal.
+17. **Indexer runs on VPS via pm2** — `aegis-indexer` process, port 4200, SQLite at `/data/aegis-indexer.db`. Dual-contract watching (v4 + v5).
 
 ---
 
@@ -660,6 +691,26 @@ These are the open-source templates anyone can fork. Each is its own repo with i
   - [x] Update all references across codebase (agents, web, docs, consumer-middleware)
   - [ ] Possibly: remote prover service (plan in memory, deferred)
 
+- [x] **A9 — AegisRegistry v5 referral rewards (v0.8.0)** `High` ✅ Done
+  50% fee split referral system with self-referral prevention and pull-pattern withdrawals
+  - [x] Contract deployed to Base at `0xcB2D64212431D942dE5559F50946BAeD521923Cc` (block 43575353)
+  - [x] `listSkill` and `registerSkill` accept `address referrer` parameter
+  - [x] 50% of listing/registration fees credited to referrer's withdrawable balance
+  - [x] Self-referral prevention (referrer ≠ msg.sender, silently ignored)
+  - [x] `withdrawReferralBalance()` pull-pattern withdrawal
+  - [x] Dual-contract indexer watches both v4 + v5, merges 289 skills / 26 attestations
+  - [x] Frontend updated with on-chain fallbacks for all data hooks (v4 + v5 reads)
+  - [x] RegisterSkill page parses `?ref=0xADDRESS` from URL, shows referral banner
+  - [x] SDK constants updated: REGISTRY_ADDRESSES, REGISTRY_V4_ADDRESSES, REFERRAL_BPS, DEPLOYMENT_BLOCKS
+  - [x] 104 tests passing (unit + integration)
+
+- [x] **A10 — ERC-8004 ValidationRegistry** `Medium` ✅ Done
+  Non-upgradeable ValidationRegistry deployed to Base mainnet
+  - [x] Contract at `0x17CDbc4dbbEb0053EF9a6c1b3e0d1DA1FC5D76b3`
+  - [x] ABI-compatible with official upgradeable ERC-8004 spec
+  - [x] SDK erc8004-constants updated with live address
+  - [x] MCP tool descriptions updated (removed "not yet deployed" language)
+
 - [~] **B2 — `aegis-scout-agent`** npm/GitHub monitor + auto-lister
   - [x] Scout bot running and actively listing skills on v4 contract
   - [x] Wallet `0x4145aF7351Cbc65e3B031C081bfD5377D18E31ad` whitelisted (fee-exempt)
@@ -725,7 +776,20 @@ These are the open-source templates anyone can fork. Each is its own repo with i
 - [x] Clickable rows (Dashboard top auditors → profile, Leaderboard → profile)
 - [x] Dead files cleaned up (Home.tsx, Leaderboard.tsx removed)
 
-### Contract Changes (v4)
+### Contract Changes (v5 — referral rewards)
+
+- [x] `listSkill` and `registerSkill` accept `address referrer` parameter (50% fee split)
+- [x] Self-referral prevention (referrer ≠ msg.sender, silently ignored)
+- [x] `withdrawReferralBalance()` pull-pattern withdrawal
+- [x] `referralBalances(address)` and `totalReferralEarnings(address)` views
+- [x] `ReferralPaid` and `ReferralWithdrawn` events
+- [x] Deployed to `0xcB2D64212431D942dE5559F50946BAeD521923Cc` (Base, block 43575353)
+- [x] 104 tests passing (unit + integration)
+- [x] Dual-contract indexer (v4 + v5) deployed on VPS via pm2
+- [x] Frontend on-chain fallbacks read from both v4 and v5 contracts
+- [x] ERC-8004 ValidationRegistry deployed to `0x17CDbc4dbbEb0053EF9a6c1b3e0d1DA1FC5D76b3`
+
+### Contract Changes (v4 — legacy)
 
 - [x] `feeExempt` mapping — addresses exempt from listing/registration fees
 - [x] `setFeeExempt(address, bool)` — owner-only setter
@@ -733,8 +797,7 @@ These are the open-source templates anyone can fork. Each is its own repo with i
 - [x] Deployed to `0xEFF449364D8f064e6dBCF0f0e0aD030D7E489cCd` (Base, block 42983389)
 - [x] Verified on BaseScan
 - [x] Scout bot wallet whitelisted
-- [x] All references updated (frontend, SDK, subgraph, AEGIS.md)
-- [x] Subgraph redeployed as v0.2.0
+- [x] Now legacy — indexed for historical data only
 
 ### Recommended Sequence (updated)
 
@@ -757,9 +820,11 @@ Done:      Full protocol loop closed ✅
            A7 (v0.6.0 agent onboarding) ✅ — mainnet-only, auto-wallet, bundled prover
            A8 (v0.7.0 package consolidation) ✅ — MCP server merged into SDK, single package
 
-Pending:   Deploy ValidationRegistry to Base mainnet (unblocks Issues #9, #12 full mode)
+Done:      A9 (v5 referral rewards) ✅ — deployed, dual-contract indexing live
+           A10 (ERC-8004 ValidationRegistry) ✅ — deployed to Base mainnet
+           Frontend fixed ✅ — on-chain fallbacks for all data hooks, dual-contract reads
 In flight: awesome-mcp-servers PR + Glama listing (pending review)
-Next:      Publish @aegisaudit/sdk@0.7.0 to npm + deprecate @aegisaudit/mcp-server
+Next:      Publish @aegisaudit/sdk@0.8.0 to npm
            ↳ Remote prover service (deferred — plan saved in memory)
 ```
 
