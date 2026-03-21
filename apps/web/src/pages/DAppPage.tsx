@@ -1,10 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAccount, useReadContract } from "wagmi";
 import { NavConnectWallet } from "../components/NavConnectWallet";
+import { registryAbi } from "../abi";
+import { useRegistryAddress } from "../hooks/useRegistryAddress";
 import { RegisterAuditor } from "./RegisterAuditor";
 import { RegisterSkill } from "./RegisterSkill";
 import { Verify } from "./Verify";
 import { Status } from "./Status";
+import { Unstake } from "./Unstake";
+import { AuditQueue } from "./AuditQueue";
 
 // ── Design tokens (matches all other pages) ──────────────────
 const ACCENT = "#FF3366";
@@ -21,18 +26,32 @@ const FONT_HEAD = "'Orbitron', sans-serif";
 const FONT = "'Space Mono', monospace";
 
 // ── Tab config ──────────────────────────────────────────────
-type DAppTab = "verify" | "auditor" | "skill" | "status";
+type DAppTab = "verify" | "auditor" | "skill" | "status" | "unstake" | "queue";
 
 const TABS: { id: DAppTab; label: string; icon: string; desc: string }[] = [
   { id: "verify", label: "Verify Skill", icon: "🔍", desc: "Look up attestations and verify ZK proofs on-chain" },
   { id: "auditor", label: "Register Auditor", icon: "🛡️", desc: "Stake ETH to become an anonymous auditor" },
   { id: "skill", label: "Submit Skill", icon: "📦", desc: "Register a skill with a ZK-verified attestation proof" },
   { id: "status", label: "Auditor Status", icon: "📊", desc: "Look up any auditor's reputation and stats" },
+  { id: "unstake", label: "Manage Stake", icon: "💰", desc: "Initiate, complete, or cancel unstaking from your auditor position" },
+  { id: "queue", label: "Audit Queue", icon: "⚙️", desc: "Monitor the autonomous audit queue status and task pipeline" },
 ];
+
+const TEAL = "#2DD4BF";
 
 export function DAppPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DAppTab>("verify");
+  const { address, isConnected } = useAccount();
+  const registryAddress = useRegistryAddress();
+
+  const { data: isFeeExempt } = useReadContract({
+    address: registryAddress,
+    abi: registryAbi,
+    functionName: 'feeExempt',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && !!registryAddress },
+  });
 
   const navItems = [
     { label: "DApp", onClick: () => navigate("/app") },
@@ -216,12 +235,27 @@ export function DAppPage() {
           </div>
         </div>
 
+        {/* Fee Exemption Banner */}
+        {isConnected && isFeeExempt && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10, marginBottom: 20,
+            padding: "10px 16px", background: `${TEAL}10`, border: `1px solid ${TEAL}30`,
+            borderRadius: 8, fontSize: 12, color: TEAL,
+            animation: "fadeInUp 0.5s ease 0.12s both",
+          }}>
+            <span style={{ fontSize: 16 }}>&#x2713;</span>
+            Your wallet is fee-exempt &mdash; registration and listing fees are waived.
+          </div>
+        )}
+
         {/* Tab Content */}
         <div className="dapp-content" style={{ animation: "fadeInUp 0.5s ease 0.15s both" }}>
           {activeTab === "verify" && <Verify />}
           {activeTab === "auditor" && <RegisterAuditor />}
           {activeTab === "skill" && <RegisterSkill />}
           {activeTab === "status" && <Status />}
+          {activeTab === "unstake" && <Unstake />}
+          {activeTab === "queue" && <AuditQueue />}
         </div>
       </div>
     </div>

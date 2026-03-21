@@ -17,6 +17,14 @@ export function Status() {
     query: { enabled: !!queryCommitment && !!registryAddress },
   });
 
+  const { data: activeDisputes } = useReadContract({
+    address: registryAddress,
+    abi: registryAbi,
+    functionName: 'getActiveDisputeCount',
+    args: queryCommitment ? [queryCommitment] : undefined,
+    query: { enabled: !!queryCommitment && !!registryAddress },
+  });
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!commitment) return;
@@ -91,6 +99,13 @@ export function Status() {
             <div className="stat-card">
               <div className="stat-label">Attestations</div>
               <div className="stat-value">{attestationCount.toString()}</div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-label">Active Disputes</div>
+              <div className="stat-value" style={{ color: activeDisputes && (activeDisputes as bigint) > 0n ? 'var(--error)' : undefined }}>
+                {activeDisputes !== undefined ? (activeDisputes as bigint).toString() : '—'}
+              </div>
             </div>
           </div>
 

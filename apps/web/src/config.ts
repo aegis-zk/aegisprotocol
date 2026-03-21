@@ -18,3 +18,5 @@ export const REGISTRY_V4_ADDRESS: Record<number, Address> = {
 export const REGISTRATION_FEE = BigInt('1000000000000000'); // 0.001 ETH
 export const MIN_AUDITOR_STAKE = BigInt('10000000000000000'); // 0.01 ETH
 export const MIN_DISPUTE_BOND = BigInt('5000000000000000'); // 0.005 ETH
+export const UNSTAKE_COOLDOWN = 259200; // 3 days in seconds
+export const AUDIT_QUEUE_URL = (import.meta.env.VITE_AUDIT_QUEUE_URL ?? 'http://localhost:9090') as string;

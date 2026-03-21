@@ -243,4 +243,95 @@ export const registryAbi = [
       { name: 'amount', type: 'uint256', indexed: false },
     ],
   },
+  // Revocation
+  {
+    type: 'function',
+    name: 'revokeAttestation',
+    inputs: [
+      { name: 'skillHash', type: 'bytes32' },
+      { name: 'attestationIndex', type: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'isAttestationRevoked',
+    inputs: [
+      { name: 'skillHash', type: 'bytes32' },
+      { name: 'attestationIndex', type: 'uint256' },
+    ],
+    outputs: [{ name: 'revoked', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  // Unstaking
+  {
+    type: 'function',
+    name: 'initiateUnstake',
+    inputs: [
+      { name: 'auditorCommitment', type: 'bytes32' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'completeUnstake',
+    inputs: [{ name: 'auditorCommitment', type: 'bytes32' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'cancelUnstake',
+    inputs: [{ name: 'auditorCommitment', type: 'bytes32' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getUnstakeRequest',
+    inputs: [{ name: 'auditorCommitment', type: 'bytes32' }],
+    outputs: [{
+      name: '',
+      type: 'tuple',
+      components: [
+        { name: 'amount', type: 'uint256' },
+        { name: 'unlockTimestamp', type: 'uint256' },
+      ],
+    }],
+    stateMutability: 'view',
+  },
+  // Disputes
+  {
+    type: 'function',
+    name: 'getActiveDisputeCount',
+    inputs: [{ name: 'auditorCommitment', type: 'bytes32' }],
+    outputs: [{ name: 'count', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getDispute',
+    inputs: [{ name: 'disputeId', type: 'uint256' }],
+    outputs: [
+      { name: 'skillHash', type: 'bytes32' },
+      { name: 'attestationIndex', type: 'uint256' },
+      { name: 'evidence', type: 'bytes' },
+      { name: 'challenger', type: 'address' },
+      { name: 'bond', type: 'uint256' },
+      { name: 'resolved', type: 'bool' },
+      { name: 'auditorFault', type: 'bool' },
+    ],
+    stateMutability: 'view',
+  },
+  // Fee exemption
+  {
+    type: 'function',
+    name: 'feeExempt',
+    inputs: [{ name: '', type: 'address' }],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+  },
 ] as const;

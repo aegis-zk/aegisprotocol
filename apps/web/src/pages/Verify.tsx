@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { formatEther, type Hex } from 'viem';
+import { decodeEventLog, formatEther, type Hex } from 'viem';
 import { registryAbi } from '../abi';
 import { useRegistryAddress } from '../hooks/useRegistryAddress';
 import { MIN_DISPUTE_BOND } from '../config';
@@ -25,6 +25,24 @@ function formatTimestamp(ts: bigint): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function RevocationBadge({ skillHash, index }: { skillHash: Hex; index: number }) {
+  const registryAddress = useRegistryAddress();
+  const { data: revoked } = useReadContract({
+    address: registryAddress,
+    abi: registryAbi,
+    functionName: 'isAttestationRevoked',
+    args: [skillHash, BigInt(index)],
+    query: { enabled: !!registryAddress },
+  });
+
+  if (!revoked) return null;
+  return (
+    <span className="badge badge-error" style={{ fontWeight: 700, letterSpacing: '0.04em' }}>
+      REVOKED
+    </span>
+  );
 }
 
 function VerifyButton({ skillHash, index }: { skillHash: Hex; index: number }) {
@@ -70,7 +88,21 @@ function DisputeForm({ skillHash, index, onClose }: { skillHash: Hex; index: num
   const [evidence, setEvidence] = useState('');
 
   const { data: hash, writeContract, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { data: receipt, isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  // Extract disputeId from DisputeOpened event
+  const disputeId = (() => {
+    if (!receipt?.logs) return undefined;
+    for (const log of receipt.logs) {
+      try {
+        const decoded = decodeEventLog({ abi: registryAbi, data: log.data, topics: log.topics });
+        if (decoded.eventName === 'DisputeOpened') {
+          return (decoded.args as { disputeId: bigint }).disputeId;
+        }
+      } catch { /* not our event */ }
+    }
+    return undefined;
+  })();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -134,6 +166,11 @@ function DisputeForm({ skillHash, index, onClose }: { skillHash: Hex; index: num
       </form>
       <div className="mt-1">
         <TxStatus hash={hash} isPending={isPending} isConfirming={isConfirming} isSuccess={isSuccess} error={error} />
+        {isSuccess && disputeId !== undefined && (
+          <div className="alert alert-success" style={{ marginTop: '0.5rem' }}>
+            Dispute #{disputeId.toString()} opened successfully.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -252,6 +289,7 @@ export function Verify() {
                     <span className={`badge ${att.auditLevel >= 3 ? 'badge-success' : att.auditLevel >= 2 ? 'badge-warning' : 'badge-info'}`}>
                       {LEVEL_LABELS[att.auditLevel] ?? `Level ${att.auditLevel}`}
                     </span>
+                    {queryHash && <RevocationBadge skillHash={queryHash} index={i} />}
                   </div>
                 </div>
 
