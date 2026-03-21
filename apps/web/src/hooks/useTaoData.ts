@@ -6,10 +6,6 @@ const INDEXER_URL =
   (import.meta.env.VITE_INDEXER_URL as string)?.replace(/\/$/, "") ||
   "https://indexer.aegisprotocol.tech";
 
-const SUBTENSOR_URL =
-  (import.meta.env.VITE_BITTENSOR_RPC_URL as string) ||
-  "https://entrypoint-finney.opentensor.ai:443";
-
 // ── Types ───────────────────────────────────────────────
 
 export interface TaoSubnet {
@@ -71,23 +67,7 @@ export function computeTaoMinerHash(netuid: number, hotkey: string): string {
   return keccak256(toHex(`tao:miner:${netuid}:${hotkey}`));
 }
 
-// ── SCALE compact length decoder (fallback) ─────────────
-
-function decodeCompactLength(bytes: number[], offset: number): { value: number; bytesRead: number } {
-  const mode = bytes[offset] & 0x03;
-  if (mode === 0) return { value: bytes[offset] >> 2, bytesRead: 1 };
-  if (mode === 1) {
-    const val = (bytes[offset] | (bytes[offset + 1] << 8)) >> 2;
-    return { value: val, bytesRead: 2 };
-  }
-  if (mode === 2) {
-    const val = (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 2;
-    return { value: val, bytesRead: 4 };
-  }
-  return { value: 0, bytesRead: 1 };
-}
-
-// ── Indexer fetch with fallback ─────────────────────────
+// ── Indexer fetch ───────────────────────────────────────
 
 async function indexerFetch<T>(path: string): Promise<T | null> {
   try {
@@ -100,40 +80,6 @@ async function indexerFetch<T>(path: string): Promise<T | null> {
   } catch {
     return null;
   }
-}
-
-// ── Fallback: direct Finney RPC ─────────────────────────
-
-async function fetchSubnetsFallback(): Promise<TaoSubnet[]> {
-  const res = await fetch(SUBTENSOR_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: 1, jsonrpc: "2.0",
-      method: "state_call",
-      params: ["SubnetInfoRuntimeApi_get_subnets_info", "0x"],
-    }),
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = (await res.json()) as { result?: string; error?: { message: string } };
-  if (json.error) throw new Error(json.error.message);
-  if (!json.result) throw new Error("Empty response");
-
-  const hex = json.result.slice(2);
-  const bytes: number[] = [];
-  for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.slice(i, i + 2), 16));
-  const { value: subnetCount } = decodeCompactLength(bytes, 0);
-
-  return Array.from({ length: subnetCount }, (_, i) => ({
-    netuid: i,
-    name: SUBNET_NAMES[i] || `Subnet ${i}`,
-    minerCount: 0,
-    validatorCount: 0,
-    skillHash: computeTaoSubnetHash(i),
-    attested: false,
-    attestationCount: 0,
-  }));
 }
 
 // ── Hooks ───────────────────────────────────────────────
@@ -173,14 +119,6 @@ export function useTaoSubnets() {
             setSubnets(mapped);
           }
           return;
-        }
-
-        // Fallback to direct RPC
-        const rpcData = await fetchSubnetsFallback();
-        if (!cancelled) {
-          cachedSubnets = rpcData;
-          cacheTime = Date.now();
-          setSubnets(rpcData);
         }
       } catch (err) {
         // Final fallback: known subnet names
