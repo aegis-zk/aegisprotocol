@@ -7,6 +7,7 @@ import { disputesRouter } from './routes/disputes.js';
 import { bountiesRouter } from './routes/bounties.js';
 import { statsRouter } from './routes/stats.js';
 import { referralsRouter } from './routes/referrals.js';
+import { taoRouter } from './routes/tao.js';
 
 export const app = new Hono();
 
@@ -38,6 +39,9 @@ app.get('/', (c) =>
       'GET /stats/attestation-levels',
       'GET /referrals/stats',
       'GET /referrals/:address',
+      'GET /tao/subnets',
+      'GET /tao/subnets/:netuid',
+      'GET /tao/stats',
     ],
   }),
 );
@@ -50,6 +54,7 @@ app.route('/disputes', disputesRouter);
 app.route('/bounties', bountiesRouter);
 app.route('/stats', statsRouter);
 app.route('/referrals', referralsRouter);
+app.route('/tao', taoRouter);
 
 // ── 404 fallback ─────────────────────────────────────────
 

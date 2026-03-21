@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 import { useProtocolStats, useActivityFeed, useAuditorLeaderboard, useAttestationLevels, useSkillNames } from "../hooks/useSubgraphData";
 import { formatEther } from "viem";
+import { ReferralTab } from "./Referrals";
+import { BittensorTab } from "./Bittensor";
 
 // ── Design tokens ────────────────────────────────────────
 const ACCENT = "#FF3366";
@@ -77,8 +80,11 @@ function formatStake(weiStr: string): string {
   }
 }
 
+type DashTab = "overview" | "referrals" | "bittensor";
+
 export function Dashboard() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<DashTab>("overview");
   const { stats, loading: statsLoading } = useProtocolStats();
   const { events, loading: eventsLoading } = useActivityFeed(30);
   const { auditors, loading: auditorsLoading } = useAuditorLeaderboard();
@@ -183,7 +189,7 @@ export function Dashboard() {
       {/* Content */}
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "100px 24px 60px" }}>
         {/* Header */}
-        <div style={{ marginBottom: 40, animation: "fadeInUp 0.5s ease 0s both" }}>
+        <div style={{ marginBottom: 24, animation: "fadeInUp 0.5s ease 0s both" }}>
           <h1 style={{ fontFamily: FONT_HEAD, fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
             Protocol Dashboard
           </h1>
@@ -191,6 +197,50 @@ export function Dashboard() {
             Real-time overview of AEGIS protocol activity on Base L2
           </p>
         </div>
+
+        {/* Tab Navigation */}
+        <div style={{
+          display: "flex", gap: 4, marginBottom: 32,
+          borderBottom: `1px solid ${BORDER}`, paddingBottom: 0,
+          animation: "fadeInUp 0.5s ease 0.03s both",
+        }}>
+          {([
+            { id: "overview" as DashTab, label: "Overview" },
+            { id: "referrals" as DashTab, label: "Referrals" },
+            { id: "bittensor" as DashTab, label: "Bittensor" },
+          ]).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                background: "transparent",
+                border: "none",
+                borderBottom: activeTab === tab.id ? `2px solid ${ACCENT}` : "2px solid transparent",
+                color: activeTab === tab.id ? TEXT : TEXT_DIM,
+                fontSize: 13,
+                fontWeight: activeTab === tab.id ? 700 : 400,
+                fontFamily: FONT,
+                padding: "12px 16px",
+                cursor: "pointer",
+                transition: "all 0.15s",
+                marginBottom: -1,
+              }}
+              onMouseEnter={e => { if (activeTab !== tab.id) (e.currentTarget.style.color = TEXT); }}
+              onMouseLeave={e => { if (activeTab !== tab.id) (e.currentTarget.style.color = TEXT_DIM); }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Referrals Tab */}
+        {activeTab === "referrals" && <ReferralTab />}
+
+        {/* Bittensor Tab */}
+        {activeTab === "bittensor" && <BittensorTab />}
+
+        {/* Overview Tab */}
+        {activeTab === "overview" && <>
 
         {/* Stat Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 40, animation: "fadeInUp 0.5s ease 0.05s both" }}>
@@ -444,6 +494,8 @@ export function Dashboard() {
             ))}
           </div>
         </div>
+
+        </>}
       </div>
     </div>
   );
