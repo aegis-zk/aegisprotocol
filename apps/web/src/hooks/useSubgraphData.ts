@@ -1,138 +1,17 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  createPublicClient,
-  http,
-  formatEther,
-  type Hex,
-  type Address,
-} from "viem";
-import { base } from "viem/chains";
-import { REGISTRY_ADDRESS, REGISTRY_V4_ADDRESS } from "../config";
+import { useState, useEffect, useCallback } from "react";
 
 // ── Indexer API base URL ──────────────────────────────
-// In production, point this to your VPS. For local dev, default to localhost:4200.
-
 const INDEXER_URL =
   (import.meta as any).env?.VITE_INDEXER_URL?.replace(/\/$/, "") ||
   "https://indexer.aegisprotocol.tech";
 
-/** Track whether indexer is reachable to avoid repeated slow timeouts */
-let indexerDown = false;
-let indexerDownSince = 0;
-const INDEXER_RETRY_MS = 60_000; // retry indexer every 60s even if it was down
-
-async function indexerFetch<T>(path: string, retries = 2): Promise<T> {
-  // If indexer was recently marked down, skip retries and fail fast
-  if (indexerDown && Date.now() - indexerDownSince < INDEXER_RETRY_MS) {
-    throw new Error("Indexer offline (cached)");
-  }
-
-  let lastErr: unknown;
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const res = await fetch(`${INDEXER_URL}${path}`, {
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (!res.ok) throw new Error(`Indexer error: ${res.status}`);
-      const json = await res.json();
-      indexerDown = false; // mark as recovered
-      return json.data as T;
-    } catch (err) {
-      lastErr = err;
-      if (attempt < retries - 1) {
-        await new Promise((r) => setTimeout(r, 1_000 * (attempt + 1)));
-      }
-    }
-  }
-  // Mark indexer as down
-  indexerDown = true;
-  indexerDownSince = Date.now();
-  throw lastErr;
-}
-
-// ── On-chain fallback infrastructure ─────────────────
-const REGISTRIES: `0x${string}`[] = [
-  REGISTRY_ADDRESS[8453] as `0x${string}`,
-  REGISTRY_V4_ADDRESS[8453] as `0x${string}`,
-].filter(Boolean);
-const DEPLOYMENT_BLOCK = 42983389n; // v4 deployment block (earliest)
-const CHUNK = 9_999n;
-
-const onChainClient = createPublicClient({
-  chain: base,
-  transport: http("https://mainnet.base.org"),
-});
-
-const skillListedAbi = {
-  type: "event" as const,
-  name: "SkillListed" as const,
-  inputs: [
-    { name: "skillHash", type: "bytes32" as const, indexed: true },
-    { name: "publisher", type: "address" as const, indexed: true },
-    { name: "metadataURI", type: "string" as const, indexed: false },
-  ],
-} as const;
-
-const skillRegisteredAbi = {
-  type: "event" as const,
-  name: "SkillRegistered" as const,
-  inputs: [
-    { name: "skillHash", type: "bytes32" as const, indexed: true },
-    { name: "auditLevel", type: "uint8" as const, indexed: false },
-    { name: "auditorCommitment", type: "bytes32" as const, indexed: true },
-  ],
-} as const;
-
-const auditorRegisteredAbi = {
-  type: "event" as const,
-  name: "AuditorRegistered" as const,
-  inputs: [
-    { name: "auditorCommitment", type: "bytes32" as const, indexed: true },
-    { name: "stake", type: "uint256" as const, indexed: false },
-  ],
-} as const;
-
-const disputeOpenedAbi = {
-  type: "event" as const,
-  name: "DisputeOpened" as const,
-  inputs: [
-    { name: "disputeId", type: "uint256" as const, indexed: true },
-    { name: "skillHash", type: "bytes32" as const, indexed: true },
-  ],
-} as const;
-
-const bountyPostedAbi = {
-  type: "event" as const,
-  name: "BountyPosted" as const,
-  inputs: [
-    { name: "skillHash", type: "bytes32" as const, indexed: true },
-    { name: "publisher", type: "address" as const, indexed: true },
-    { name: "amount", type: "uint256" as const, indexed: false },
-    { name: "requiredLevel", type: "uint8" as const, indexed: false },
-    { name: "expiresAt", type: "uint256" as const, indexed: false },
-  ],
-} as const;
-
-/** Scan logs from both v4+v5 registries in chunks */
-async function scanAllLogs<T>(event: any, processLog: (log: any) => T): Promise<T[]> {
-  const to = await onChainClient.getBlockNumber();
-  const results: T[] = [];
-  for (let start = DEPLOYMENT_BLOCK; start <= to; start += CHUNK + 1n) {
-    const end = start + CHUNK > to ? to : start + CHUNK;
-    const logs = await onChainClient.getLogs({
-      address: REGISTRIES,
-      event,
-      fromBlock: start,
-      toBlock: end,
-    });
-    for (const log of logs) results.push(processLog(log));
-  }
-  return results;
-}
-
-function estimateTs(eventBlock: bigint, headBlock: bigint, headTs: number): number {
-  const diff = Number(headBlock - eventBlock);
-  return (headTs - diff * 2) * 1000;
+async function indexerFetch<T>(path: string): Promise<T> {
+  const res = await fetch(`${INDEXER_URL}${path}`, {
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Indexer error: ${res.status}`);
+  const json = await res.json();
+  return json.data as T;
 }
 
 // ── Types ────────────────────────────────────────────────
@@ -241,6 +120,24 @@ export interface BountyEntry {
   txHash: string;
 }
 
+export interface SkillEntry {
+  id: string;
+  skillHash: string;
+  name: string;
+  description: string;
+  category: string;
+  publisher: string;
+  auditor: string;
+  level: 0 | 1 | 2 | 3;
+  stake: number;
+  status: "active" | "disputed" | "expired" | "revoked";
+  auditStatus: "unaudited" | "in_review" | "attested";
+  timestamp: number;
+  verifications: number;
+  txHash: string;
+  blockNumber: number;
+}
+
 // ── Hooks ────────────────────────────────────────────────
 
 const DEFAULT_STATS: ProtocolStats = {
@@ -253,34 +150,6 @@ const DEFAULT_STATS: ProtocolStats = {
   openBounties: 0,
   unauditedSkills: 0,
 };
-
-async function fetchStatsOnChain(): Promise<ProtocolStats> {
-  const [listed, registered, auditors, disputes, bounties] = await Promise.all([
-    scanAllLogs(skillListedAbi, () => 1),
-    scanAllLogs(skillRegisteredAbi, (l: any) => l.args.skillHash as string),
-    scanAllLogs(auditorRegisteredAbi, () => 1),
-    scanAllLogs(disputeOpenedAbi, () => 1),
-    scanAllLogs(bountyPostedAbi, () => 1),
-  ]);
-
-  const attestedHashes = new Set(registered);
-  const totalSkills = listed.length;
-  const totalAttestations = registered.length;
-  const totalAuditors = auditors.length;
-  const totalDisputes = disputes.length;
-  const totalBounties = bounties.length;
-
-  return {
-    totalSkills,
-    totalAttestations,
-    totalAuditors,
-    totalDisputes,
-    openDisputes: totalDisputes, // approximate — would need resolve events
-    totalBounties,
-    openBounties: totalBounties, // approximate
-    unauditedSkills: totalSkills - attestedHashes.size,
-  };
-}
 
 export function useProtocolStats(refreshMs = 30_000) {
   const [stats, setStats] = useState<ProtocolStats>(DEFAULT_STATS);
@@ -309,13 +178,7 @@ export function useProtocolStats(refreshMs = 30_000) {
         unauditedSkills: data.unaudited_skills,
       });
     } catch (err) {
-      console.error("[indexer] Indexer unavailable, falling back to on-chain reads");
-      try {
-        const onChainStats = await fetchStatsOnChain();
-        setStats(onChainStats);
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch stats:", err2);
-      }
+      console.error("[indexer] Failed to fetch stats:", err);
     } finally {
       setLoading(false);
     }
@@ -357,41 +220,7 @@ export function useActivityFeed(limit = 20, refreshMs = 30_000) {
         })),
       );
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for events, falling back to on-chain");
-      try {
-        // Scan recent events from both contracts
-        const headBlock = await onChainClient.getBlockNumber();
-        // Only scan recent ~50k blocks (~1 day) for the feed
-        const recentFrom = headBlock > 50_000n ? headBlock - 50_000n : DEPLOYMENT_BLOCK;
-        const [listed, registered] = await Promise.all([
-          scanAllLogs(skillListedAbi, (l: any) => ({
-            eventName: "SkillListed",
-            txHash: l.transactionHash as string,
-            blockNumber: String(l.blockNumber),
-            data: JSON.stringify({ skillHash: l.args.skillHash, publisher: l.args.publisher }),
-          })),
-          scanAllLogs(skillRegisteredAbi, (l: any) => ({
-            eventName: "SkillRegistered",
-            txHash: l.transactionHash as string,
-            blockNumber: String(l.blockNumber),
-            data: JSON.stringify({ skillHash: l.args.skillHash, auditLevel: Number(l.args.auditLevel) }),
-          })),
-        ]);
-        const all = [...listed, ...registered]
-          .sort((a, b) => Number(BigInt(b.blockNumber) - BigInt(a.blockNumber)))
-          .slice(0, limit)
-          .map((e, i) => ({
-            id: String(i),
-            eventName: e.eventName,
-            txHash: e.txHash,
-            blockNumber: e.blockNumber,
-            timestamp: new Date().toISOString(),
-            data: e.data,
-          }));
-        setEvents(all);
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch events:", err2);
-      }
+      console.error("[indexer] Failed to fetch events:", err);
     } finally {
       setLoading(false);
     }
@@ -445,35 +274,7 @@ export function useAuditorLeaderboard(refreshMs = 30_000) {
         })),
       );
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for auditors, falling back to on-chain");
-      try {
-        const auditorLogs = await scanAllLogs(auditorRegisteredAbi, (l: any) => ({
-          commitment: l.args.auditorCommitment as string,
-          stake: l.args.stake as bigint,
-          blockNumber: l.blockNumber as bigint,
-          txHash: l.transactionHash as string,
-        }));
-        const auditorMap = new Map<string, typeof auditorLogs[0]>();
-        for (const a of auditorLogs) auditorMap.set(a.commitment, a);
-        setAuditors(
-          Array.from(auditorMap.values()).map((a) => ({
-            id: a.commitment,
-            currentStake: formatEther(a.stake),
-            initialStake: formatEther(a.stake),
-            attestationCount: 0,
-            l2AttestationCount: 0,
-            l3AttestationCount: 0,
-            lastAttestationAt: null,
-            disputesInvolved: 0,
-            disputesLost: 0,
-            reputationScore: "100",
-            timestamp: new Date().toISOString(),
-            txHash: a.txHash,
-          })),
-        );
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch auditors:", err2);
-      }
+      console.error("[indexer] Failed to fetch auditors:", err);
     } finally {
       setLoading(false);
     }
@@ -497,19 +298,7 @@ export function useAttestationLevels(refreshMs = 30_000) {
       const data = await indexerFetch<AttestationLevelCounts>("/stats/attestation-levels");
       setCounts(data);
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for attestation levels, falling back to on-chain");
-      try {
-        const registered = await scanAllLogs(skillRegisteredAbi, (l: any) => Number(l.args.auditLevel));
-        const levels = { l1: 0, l2: 0, l3: 0 };
-        for (const lvl of registered) {
-          if (lvl === 1) levels.l1++;
-          else if (lvl === 2) levels.l2++;
-          else if (lvl === 3) levels.l3++;
-        }
-        setCounts(levels);
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch attestation levels:", err2);
-      }
+      console.error("[indexer] Failed to fetch attestation levels:", err);
     } finally {
       setLoading(false);
     }
@@ -547,21 +336,7 @@ export function useSkillNames(refreshMs = 30_000) {
       }
       setSkills(map);
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for skill names, falling back to on-chain");
-      try {
-        const listed = await scanAllLogs(skillListedAbi, (l: any) => ({
-          skillHash: (l.args.skillHash as string).toLowerCase(),
-          metadataURI: l.args.metadataURI as string,
-        }));
-        const map = new Map<string, SkillNameEntry>();
-        for (const s of listed) {
-          const meta = parseMetadataURI(s.metadataURI);
-          map.set(s.skillHash, { id: s.skillHash, skillName: meta.name, category: meta.category });
-        }
-        setSkills(map);
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch skill names:", err2);
-      }
+      console.error("[indexer] Failed to fetch skill names:", err);
     } finally {
       setLoading(false);
     }
@@ -689,33 +464,7 @@ export function useAuditorProfile(commitment: string, refreshMs = 30_000) {
       extracted.sort((a, b) => (b.openedAt > a.openedAt ? 1 : -1));
       setDisputes(extracted);
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for auditor profile, falling back to on-chain");
-      try {
-        const auditorLogs = await scanAllLogs(auditorRegisteredAbi, (l: any) => ({
-          commitment: l.args.auditorCommitment as string,
-          stake: l.args.stake as bigint,
-          txHash: l.transactionHash as string,
-        }));
-        const match = auditorLogs.find((a) => a.commitment.toLowerCase() === commitment.toLowerCase());
-        if (match) {
-          setAuditor({
-            id: match.commitment,
-            currentStake: formatEther(match.stake),
-            initialStake: formatEther(match.stake),
-            attestationCount: 0,
-            l2AttestationCount: 0,
-            l3AttestationCount: 0,
-            lastAttestationAt: null,
-            disputesInvolved: 0,
-            disputesLost: 0,
-            reputationScore: "100",
-            timestamp: new Date().toISOString(),
-            txHash: match.txHash,
-          });
-        }
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch auditor profile:", err2);
-      }
+      console.error("[indexer] Failed to fetch auditor profile:", err);
     } finally {
       setLoading(false);
     }
@@ -770,36 +519,7 @@ export function useBounties(refreshMs = 30_000) {
         })),
       );
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for bounties, falling back to on-chain");
-      try {
-        const bountyLogs = await scanAllLogs(bountyPostedAbi, (l: any) => ({
-          skillHash: l.args.skillHash as string,
-          publisher: l.args.publisher as string,
-          amount: l.args.amount as bigint,
-          requiredLevel: Number(l.args.requiredLevel),
-          expiresAt: Number(l.args.expiresAt),
-          txHash: l.transactionHash as string,
-          blockNumber: l.blockNumber as bigint,
-        }));
-        setBounties(
-          bountyLogs.map((b) => ({
-            id: b.skillHash,
-            skillHash: b.skillHash,
-            skillName: b.skillHash.slice(0, 10) + "\u2026",
-            category: "Uncategorized",
-            publisher: b.publisher,
-            amount: formatEther(b.amount),
-            requiredLevel: b.requiredLevel,
-            expiresAt: new Date(b.expiresAt * 1000).toISOString(),
-            claimed: false,
-            reclaimed: false,
-            timestamp: new Date().toISOString(),
-            txHash: b.txHash,
-          })),
-        );
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch bounties:", err2);
-      }
+      console.error("[indexer] Failed to fetch bounties:", err);
     } finally {
       setLoading(false);
     }
@@ -815,24 +535,6 @@ export function useBounties(refreshMs = 30_000) {
 }
 
 // ── Registry Skills ──────────────────────────────────────
-
-export interface SkillEntry {
-  id: string;
-  skillHash: string;
-  name: string;
-  description: string;
-  category: string;
-  publisher: string;
-  auditor: string;
-  level: 0 | 1 | 2 | 3;
-  stake: number;
-  status: "active" | "disputed" | "expired" | "revoked";
-  auditStatus: "unaudited" | "in_review" | "attested";
-  timestamp: number;
-  verifications: number;
-  txHash: string;
-  blockNumber: number;
-}
 
 function parseMetadataURI(uri: string): { name: string; description: string; category: string } {
   const fallback = { name: "Unknown Skill", description: "", category: "Uncategorized" };
@@ -894,7 +596,6 @@ export function useRegistrySkills(refreshMs = 30_000) {
       >("/skills/registry");
 
       const entries: SkillEntry[] = data.map((s) => {
-        // Use indexer skill_name/category, fall back to parsing metadataURI
         let name = s.skill_name;
         let category = s.category;
         let description = "";
@@ -905,7 +606,6 @@ export function useRegistrySkills(refreshMs = 30_000) {
           description = parsed.description;
         }
 
-        // Determine audit status from attestations
         const activeAttestations = (s.attestations ?? []).filter((a) => a.revoked === 0);
         const latestAttestation = activeAttestations.length > 0 ? activeAttestations[0] : null;
         const auditLevel = latestAttestation ? latestAttestation.audit_level : 0;
@@ -914,7 +614,6 @@ export function useRegistrySkills(refreshMs = 30_000) {
           ? parseFloat((Number(latestAttestation.auditor_stake) / 1e18).toFixed(4))
           : 0;
 
-        // Determine statuses
         const hasOpenDispute = (s.disputes ?? []).some((d) => d.resolved === 0);
         const hasRevokedAttestation = (s.attestations ?? []).some((a) => a.revoked === 1);
 
@@ -925,7 +624,6 @@ export function useRegistrySkills(refreshMs = 30_000) {
         const auditStatus: "unaudited" | "in_review" | "attested" =
           latestAttestation ? "attested" : "unaudited";
 
-        // Parse listed_at as timestamp — try unix seconds first, then ISO date
         let ts = Number(s.listed_at);
         if (isNaN(ts) || ts < 1e9) {
           ts = new Date(s.listed_at).getTime();
@@ -955,84 +653,8 @@ export function useRegistrySkills(refreshMs = 30_000) {
       setSkills(entries);
       setError(null);
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for registry, falling back to on-chain");
-      try {
-        const headBlock = await onChainClient.getBlockNumber();
-        const block = await onChainClient.getBlock({ blockNumber: headBlock });
-        const headTs = Number(block.timestamp);
-
-        const [listedRaw, registeredRaw] = await Promise.all([
-          scanAllLogs(skillListedAbi, (l: any) => ({
-            skillHash: l.args.skillHash as Hex,
-            publisher: l.args.publisher as Address,
-            metadataURI: l.args.metadataURI as string,
-            blockNumber: l.blockNumber as bigint,
-            txHash: l.transactionHash as Hex,
-          })),
-          scanAllLogs(skillRegisteredAbi, (l: any) => ({
-            skillHash: l.args.skillHash as Hex,
-            auditLevel: Number(l.args.auditLevel),
-            auditorCommitment: l.args.auditorCommitment as Hex,
-            blockNumber: l.blockNumber as bigint,
-            txHash: l.transactionHash as Hex,
-          })),
-        ]);
-
-        const skillMap = new Map<string, SkillEntry>();
-        for (const ev of listedRaw) {
-          const meta = parseMetadataURI(ev.metadataURI);
-          skillMap.set(ev.skillHash, {
-            id: ev.skillHash.slice(0, 10),
-            skillHash: ev.skillHash,
-            name: meta.name,
-            description: meta.description,
-            category: meta.category,
-            publisher: ev.publisher,
-            auditor: "",
-            level: 0,
-            stake: 0,
-            status: "active",
-            auditStatus: "unaudited",
-            timestamp: estimateTs(ev.blockNumber, headBlock, headTs),
-            verifications: 0,
-            txHash: ev.txHash,
-            blockNumber: Number(ev.blockNumber),
-          });
-        }
-
-        for (const ev of registeredRaw) {
-          const existing = skillMap.get(ev.skillHash);
-          if (existing) {
-            existing.auditStatus = "attested";
-            existing.level = ev.auditLevel as 0 | 1 | 2 | 3;
-            existing.auditor = ev.auditorCommitment;
-          } else {
-            skillMap.set(ev.skillHash, {
-              id: ev.skillHash.slice(0, 10),
-              skillHash: ev.skillHash,
-              name: ev.skillHash.slice(0, 10) + "\u2026",
-              description: "",
-              category: "Uncategorized",
-              publisher: "",
-              auditor: ev.auditorCommitment,
-              level: ev.auditLevel as 0 | 1 | 2 | 3,
-              stake: 0,
-              status: "active",
-              auditStatus: "attested",
-              timestamp: estimateTs(ev.blockNumber, headBlock, headTs),
-              verifications: 0,
-              txHash: ev.txHash,
-              blockNumber: Number(ev.blockNumber),
-            });
-          }
-        }
-
-        setSkills(Array.from(skillMap.values()));
-        setError(null);
-      } catch (err2) {
-        console.error("[on-chain] Failed to fetch registry skills:", err2);
-        setError(err2 instanceof Error ? err2.message : "Failed to load registry data");
-      }
+      console.error("[indexer] Failed to fetch registry skills:", err);
+      setError(err instanceof Error ? err.message : "Failed to load registry data");
     } finally {
       setLoading(false);
     }
@@ -1047,10 +669,7 @@ export function useRegistrySkills(refreshMs = 30_000) {
   return { skills, loading, error };
 }
 
-// ══════════════════════════════════════════════════════════
-//  Hook: useRecentEvents — live feed for Landing page
-//  Fetches from indexer instead of direct RPC to avoid rate limits
-// ══════════════════════════════════════════════════════════
+// ── Live Event Feed (Landing page) ──────────────────────
 
 export interface LiveEvent {
   type: "LISTED" | "ATTESTED" | "STAKED" | "DISPUTE";
@@ -1164,7 +783,7 @@ export function useRecentEvents(limit = 8) {
 
       setEvents(mapped);
     } catch (err) {
-      console.error("[indexer] Indexer unavailable for events, skipping live feed");
+      console.error("[indexer] Failed to fetch recent events:", err);
     } finally {
       setLoading(false);
     }
