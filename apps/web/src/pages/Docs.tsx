@@ -210,6 +210,7 @@ const SECTIONS: SidenavSection[] = [
   { id: "x402-trust-api", label: "x402 Trust API", indent: true },
   { id: "cli-ref", label: "CLI Reference" },
   { id: "deployment", label: "Deployment" },
+  { id: "referral-rewards", label: "Referral Rewards" },
   { id: "consumer-middleware", label: "Consumer Middleware" },
   { id: "reputation-system", label: "Reputation System" },
   { id: "aegis-token", label: "$AEGIS Token", indent: true },
@@ -770,7 +771,9 @@ const metadataURI = await uploadMetadata(metadata);`} filename="audit-workflow.t
                 ["REGISTRATION_FEE", "0.001 ETH", "Fee to register a skill attestation"],
                 ["MIN_AUDITOR_STAKE", "0.01 ETH", "Minimum ETH to register as an auditor"],
                 ["MIN_DISPUTE_BOND", "0.005 ETH", "Minimum bond to open a dispute"],
+                ["LISTING_FEE", "0.001 ETH", "Fee to list a new skill in the registry"],
                 ["PROTOCOL_FEE_BPS", "500 (5%)", "Fee deducted from staking and bounty operations"],
+                ["REFERRAL_BPS", "5000 (50%)", "Percentage of listing/registration fee credited to referrer"],
                 ["UNSTAKE_COOLDOWN", "3 days", "Cooldown period before unstaked ETH can be withdrawn"],
                 ["MIN_BOUNTY", "0.001 ETH", "Minimum bounty amount to incentivize auditors"],
                 ["BOUNTY_EXPIRATION", "30 days", "Time before unclaimed bounties can be reclaimed"],
@@ -784,7 +787,8 @@ const metadataURI = await uploadMetadata(metadata);`} filename="audit-workflow.t
             <InfoTable
               headers={["Function", "Access", "Description"]}
               rows={[
-                ["registerSkill(skillHash, metadataURI, proof, inputs, commitment, level, bountyRecipient)", "payable", "Register a skill with ZK proof. Auto-claims matching bounty if bountyRecipient is set"],
+                ["listSkill(skillHash, metadataURI, referrer)", "payable", "List a new skill. 50% of LISTING_FEE (0.0005 ETH) credited to referrer if valid"],
+                ["registerSkill(skillHash, metadataURI, proof, inputs, commitment, level, bountyRecipient, referrer)", "payable", "Register a skill with ZK proof. 50% of fee to referrer. Auto-claims matching bounty if bountyRecipient is set"],
                 ["registerAuditor(auditorCommitment)", "payable", "Register as auditor. Requires MIN_AUDITOR_STAKE"],
                 ["addStake(auditorCommitment)", "payable", "Add more stake to an existing auditor"],
                 ["getAttestations(skillHash)", "view", "Get all attestations for a skill hash"],
@@ -799,6 +803,12 @@ const metadataURI = await uploadMetadata(metadata);`} filename="audit-workflow.t
                 ["postBounty(skillHash, requiredLevel)", "payable", "Post ETH bounty for a skill audit. Min 0.001 ETH, expires in 30 days"],
                 ["reclaimBounty(skillHash)", "external", "Reclaim expired unclaimed bounty (publisher only)"],
                 ["getBounty(skillHash)", "view", "Get bounty details (publisher, amount, level, expiry, claimed)"],
+                ["setFeeExempt(account, exempt)", "onlyOwner", "Whitelist an address from listing/registration fees"],
+                ["revokeAttestation(skillHash, index)", "onlyOwner", "Revoke an attestation"],
+                ["withdrawReferralBalance()", "external", "Withdraw accumulated referral rewards (pull-pattern)"],
+                ["referralBalances(address)", "view", "Check withdrawable referral balance for an address"],
+                ["totalReferralEarnings(address)", "view", "Check lifetime referral earnings for an address"],
+                ["feeExempt(address)", "view", "Check if an address is exempt from fees"],
                 ["withdrawProtocolBalance(to)", "onlyOwner", "Withdraw accumulated protocol fees"],
                 ["transferOwnership(newOwner)", "onlyOwner", "Transfer admin role (for future DAO migration)"],
               ]}
@@ -848,14 +858,21 @@ struct Bounty {
             <InfoTable
               headers={["Event", "Parameters", "When Emitted"]}
               rows={[
+                ["SkillListed", "skillHash (indexed), publisher (indexed), metadataURI", "New skill listed in the registry"],
                 ["SkillRegistered", "skillHash (indexed), auditLevel, auditorCommitment", "New skill attestation registered"],
                 ["AuditorRegistered", "auditorCommitment (indexed), stake", "New auditor registers with stake"],
                 ["StakeAdded", "auditorCommitment (indexed), amount, totalStake", "Auditor adds to their stake"],
+                ["AttestationRevoked", "skillHash (indexed), attestationIndex, auditorCommitment (indexed)", "Attestation revoked by protocol owner"],
                 ["DisputeOpened", "disputeId (indexed), skillHash (indexed)", "Dispute opened against attestation"],
                 ["DisputeResolved", "disputeId (indexed), auditorSlashed", "Dispute resolved by governance"],
                 ["BountyPosted", "skillHash (indexed), amount, requiredLevel, expiresAt", "Bounty posted for a skill"],
                 ["BountyClaimed", "skillHash (indexed), recipient (indexed), auditorPayout, protocolFee", "Bounty claimed via registerSkill"],
                 ["BountyReclaimed", "skillHash (indexed), publisher (indexed), amount", "Expired bounty reclaimed by publisher"],
+                ["ReferralPaid", "referrer (indexed), payer (indexed), amount", "Referral reward credited (50% of fee)"],
+                ["ReferralWithdrawn", "referrer (indexed), amount", "Referrer withdrew accumulated rewards"],
+                ["UnstakeInitiated", "auditorCommitment (indexed), amount, unlockTimestamp", "Auditor started 3-day unstake cooldown"],
+                ["UnstakeCompleted", "auditorCommitment (indexed), amount", "Unstaked ETH withdrawn after cooldown"],
+                ["UnstakeCancelled", "auditorCommitment (indexed), amount", "Pending unstake request cancelled"],
               ]}
             />
           </section>
@@ -1042,7 +1059,8 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
             <InfoTable
               headers={["Method", "ETH Required", "Description"]}
               rows={[
-                ["registerSkill(params)", "0.001 ETH", "Submit a skill attestation with ZK proof"],
+                ["listSkill(skillHash, metadataURI, referrer?)", "0.001 ETH", "List a new skill in the registry (50% fee to referrer if provided)"],
+                ["registerSkill(params)", "0.001 ETH", "Submit a skill attestation with ZK proof (supports optional referrer for 50% fee split)"],
                 ["registerAuditor(commitment, stake)", "0.01+ ETH", "Register as anonymous auditor (5% protocol fee)"],
                 ["addStake(commitment, amount)", "any", "Add stake to existing registration (5% protocol fee)"],
                 ["openDispute(skillHash, index, evidence, bond)", "0.005+ ETH", "Challenge a fraudulent attestation"],
@@ -1052,6 +1070,9 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
                 ["cancelUnstake(commitment)", "0", "Cancel pending unstake"],
                 ["postBounty(skillHash, level, amount)", "0.001+ ETH", "Post bounty to incentivize auditors (5% fee on claim)"],
                 ["reclaimBounty(skillHash)", "0", "Reclaim expired bounty (publisher only, full refund)"],
+                ["withdrawReferralBalance()", "0", "Withdraw accumulated referral rewards (pull-pattern)"],
+                ["referralBalances(address)", "0 (read)", "Check withdrawable referral balance for an address"],
+                ["totalReferralEarnings(address)", "0 (read)", "Check lifetime referral earnings for an address"],
                 ["registerAgent(agentURI)", "0", "Register agent in ERC-8004 IdentityRegistry (mints NFT)"],
                 ["requestErc8004Validation(params)", "0", "Step 1: Agent owner requests ERC-8004 validation"],
                 ["respondToErc8004Validation(params)", "0", "Step 2: AEGIS validator submits validation response"],
@@ -1143,29 +1164,39 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
           <section id="mcp-tools" ref={setRef("mcp-tools")} style={{ marginTop: 32 }}>
             <SubHeading>Available Tools</SubHeading>
             <Para>
-              The MCP server exposes 39 tools — 23 read-only, 4 subgraph-powered, and 12 write operations. Write tools require <InlineCode>AEGIS_PRIVATE_KEY</InlineCode> to be set. If no wallet is configured, calling a write tool returns setup instructions automatically.
+              The MCP server exposes 45 tools — 25 read-only, 4 subgraph-powered, 14 write operations, and 2 utility tools. Write tools require <InlineCode>AEGIS_PRIVATE_KEY</InlineCode> to be set. If no wallet is configured, calling a write tool returns setup instructions automatically.
             </Para>
             <InfoTable
               headers={["Tool", "Parameters", "Description"]}
               rows={[
                 ["aegis-info", "—", "Protocol overview, wallet status, and tool discovery"],
                 ["wallet-status", "—", "Check wallet connection, address, and ETH balance"],
+                ["generate-wallet", "—", "Generate a fresh Ethereum wallet (address + private key)"],
                 ["list-all-skills", "fromBlock?, toBlock?", "Browse all registered skills on-chain"],
                 ["list-all-auditors", "fromBlock?, toBlock?", "Browse all registered auditors"],
                 ["get-attestations", "skillHash", "Get ZK attestations for a specific skill"],
                 ["verify-attestation", "skillHash, attestationIndex", "Verify a ZK proof on-chain via the UltraHonk verifier"],
+                ["is-attestation-revoked", "skillHash, attestationIndex", "Check if an attestation has been revoked"],
                 ["get-auditor-reputation", "auditorCommitment", "Query auditor reputation (score, stake, attestation count)"],
+                ["get-auditor-profile", "auditorCommitment", "Aggregated auditor data (stake, attestations, disputes, tier)"],
                 ["get-metadata-uri", "skillHash", "Get the IPFS metadata URI for a skill"],
                 ["list-disputes", "skillHash?, fromBlock?, toBlock?", "List opened disputes, optionally filtered by skill"],
                 ["list-resolved-disputes", "fromBlock?, toBlock?", "List resolved disputes with slash results"],
+                ["get-dispute", "disputeId", "Get details for a specific dispute"],
+                ["get-active-dispute-count", "auditorCommitment", "Count of unresolved disputes for an auditor"],
+                ["get-dispute-count", "—", "Total dispute count across the protocol"],
                 ["get-unstake-request", "auditorCommitment", "Get pending unstake request details"],
+                ["get-bounty", "skillHash", "Get bounty details for a skill (amount, level, expiry, claimed)"],
+                ["generate-attestation-proof", "skillHash, criteriaHash, auditLevel, auditorCommitment, auditorPrivateKey", "Generate ZK proof for registerSkill (wraps bb CLI)"],
+                ["generate-auditor-commitment", "auditorPrivateKey", "Compute Pedersen hash commitment for registerAuditor"],
                 ["register-auditor", "auditorCommitment, stakeEth", "Register as anonymous auditor (5% protocol fee, min 0.01 net)"],
                 ["add-stake", "auditorCommitment, amountEth", "Add more ETH stake (5% protocol fee)"],
                 ["open-dispute", "skillHash, attestationIndex, evidence, bondEth", "Challenge a fraudulent attestation (min 0.005 ETH bond)"],
+                ["resolve-dispute", "disputeId, auditorFault", "Resolve a dispute (owner only)"],
+                ["revoke-attestation", "skillHash, attestationIndex", "Revoke an attestation (owner only)"],
                 ["initiate-unstake", "auditorCommitment, amountEth", "Start 3-day unstake cooldown"],
                 ["complete-unstake", "auditorCommitment", "Withdraw ETH after cooldown period"],
                 ["cancel-unstake", "auditorCommitment", "Cancel pending unstake request"],
-                ["get-bounty", "skillHash", "Get bounty details for a skill (amount, level, expiry, claimed)"],
                 ["post-bounty", "skillHash, requiredLevel, amountEth", "Post ETH bounty for a skill audit (min 0.001 ETH)"],
                 ["reclaim-bounty", "skillHash", "Reclaim expired unclaimed bounty (publisher only)"],
                 ["create-agent-registration", "name, description, skills?, services?", "Generate ERC-8004 agent registration JSON"],
@@ -1180,6 +1211,9 @@ if (isValid && rep.score > 0n && rep.attestationCount > 2n) {
                 ["browse-unaudited", "limit?, offset?", "List skills with no attestations from the subgraph"],
                 ["browse-bounties", "limit?, offset?", "List open bounties sorted by reward from the subgraph"],
                 ["audit-skill", "skillHash, level", "Full audit flow — discover, evaluate, generate proof, and attest"],
+                ["tao-list-subnets", "—", "List Bittensor TAO subnets"],
+                ["tao-browse-miners", "subnetId", "Browse miners in a TAO subnet"],
+                ["tao-check-subnet", "subnetId", "Check subnet details and status"],
               ]}
             />
 
@@ -1467,6 +1501,49 @@ aegis status --skill 0x0000...0000 -n base
             <Callout color={AMBER} label="Important">
               Never commit private keys or API keys to version control. Use environment variables or a <InlineCode>.env</InlineCode> file (which is gitignored by default in the monorepo).
             </Callout>
+          </section>
+
+          {/* ═══ Referral Rewards ═══ */}
+          <section id="referral-rewards" ref={setRef("referral-rewards")} style={{ marginTop: 56 }}>
+            <SectionHeading>Referral Rewards <span style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>v5</span></SectionHeading>
+            <Para>
+              AegisRegistry v5 (<InlineCode>0xcB2D...23Cc</InlineCode>) introduces a referral system. When listing or registering a skill, pass a <InlineCode>referrer</InlineCode> address to split 50% of the fee to the referrer. Self-referral is silently ignored (no revert). Referrers accumulate rewards and withdraw via a pull-pattern.
+            </Para>
+
+            <InfoTable
+              headers={["Mechanism", "Details"]}
+              rows={[
+                ["Fee Split", "50% of listing/registration fee (0.0005 ETH) credited to referrer"],
+                ["Self-Referral", "Silently ignored — referrer cannot equal msg.sender or address(0)"],
+                ["Withdrawal", "Pull-pattern via withdrawReferralBalance() — referrer calls to claim"],
+                ["Views", "referralBalances(address) and totalReferralEarnings(address)"],
+                ["Events", "ReferralPaid(referrer, payer, amount), ReferralWithdrawn(referrer, amount)"],
+                ["Frontend", "Register page parses ?ref=0xADDRESS from URL and passes to contract"],
+              ]}
+            />
+
+            <SubHeading>Dual-Contract Indexing</SubHeading>
+            <Para>
+              The indexer watches both v4 (<InlineCode>0xEFF4...9cCd</InlineCode>) and v5 (<InlineCode>0xcB2D...23Cc</InlineCode>) contracts, merging historical data seamlessly. All new writes go to v5; v4 is read-only for historical data. The frontend reads from both contracts via on-chain fallbacks.
+            </Para>
+
+            <CodeBlock code={`import { AegisClient } from '@aegisaudit/sdk';
+
+const client = new AegisClient({ chainId: 8453 });
+
+// registerSkill with referrer (v5)
+const tx = await client.registerSkill({
+  skillHash: '0x...',
+  metadataURI: 'ipfs://Qm...',
+  attestationProof: proof.proof,
+  publicInputs: proof.publicInputs,
+  auditorCommitment: '0x...',
+  auditLevel: 2,
+  referrer: '0x1234...5678',  // earns 50% of 0.001 ETH fee
+});
+
+// Share referral link
+const link = \`https://aegisprotocol.tech/app?ref=\${myAddress}\`;`} filename="referrals.ts" lang="typescript" />
           </section>
 
           {/* ═══ Consumer Middleware ═══ */}

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { NavConnectWallet } from "../components/NavConnectWallet";
-import { useRecentEvents } from "../hooks/useOnChainData";
+import { useRecentEvents } from "../hooks/useSubgraphData";
 
 const ACCENT = "#FF3366";
 const ACCENT2 = "#FF6B9D";
@@ -1004,6 +1004,92 @@ function Footer() {
   );
 }
 
+function TaoSection() {
+  const navigate = useNavigate();
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const cards = [
+    {
+      title: "Subnet Discovery",
+      desc: "Browse all active Bittensor subnets. Each subnet gets a deterministic AEGIS skill hash for on-chain attestation tracking.",
+      icon: <svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="12" fill="none" stroke="#2DD4BF" strokeWidth="1.5" /><circle cx="18" cy="18" r="5" fill="#2DD4BF" opacity="0.2" /><line x1="27" y1="27" x2="33" y2="33" stroke="#2DD4BF" strokeWidth="1.5" /></svg>,
+    },
+    {
+      title: "Miner Attestation",
+      desc: "Audit individual miners with TAO-specific criteria: response quality, uptime, latency, weight distribution, and integrity checks.",
+      icon: <svg width="36" height="36" viewBox="0 0 36 36"><rect x="6" y="6" width="24" height="24" rx="4" fill="none" stroke="#60A5FA" strokeWidth="1.5" /><polyline points="12,20 16,24 24,14" fill="none" stroke="#60A5FA" strokeWidth="2" /></svg>,
+    },
+    {
+      title: "Cross-Chain Trust",
+      desc: "Register ZK attestations on Base L2 using derived skill hashes. No token bridging required \u2014 trust flows across chains.",
+      icon: <svg width="36" height="36" viewBox="0 0 36 36"><polygon points="18,3 33,12 33,24 18,33 3,24 3,12" fill="none" stroke={ACCENT} strokeWidth="1.5" /><polygon points="18,10 26,15 26,25 18,30 10,25 10,15" fill={ACCENT} opacity="0.1" /></svg>,
+    },
+  ];
+
+  return (
+    <section style={{ padding: "100px 40px", position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ marginBottom: 48 }}>
+          <div style={{
+            fontFamily: FONT_BODY, fontSize: 12,
+            color: "#2DD4BF", marginBottom: 12, textTransform: "uppercase",
+            letterSpacing: "0.12em", fontWeight: 400,
+          }}>Cross-Chain Trust</div>
+          <h2 style={{
+            fontFamily: FONT_BODY, fontSize: 34,
+            fontWeight: 700, color: TEXT, letterSpacing: "-0.01em", margin: "0 0 14px",
+          }}>Attest Bittensor miners on Base</h2>
+          <p style={{
+            fontFamily: FONT_BODY, fontSize: 14,
+            color: TEXT_DIM, maxWidth: 580, lineHeight: 1.7, margin: 0,
+          }}>
+            AEGIS bridges Bittensor subnet intelligence to EVM-based attestations.
+            Audit TAO miners with specialized criteria and register trust signals on Base L2.
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 32 }}>
+          {cards.map((c, i) => (
+            <div
+              key={i}
+              onMouseEnter={() => setHoveredCard(i)}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{
+                background: hoveredCard === i ? "#1A1A1F" : SURFACE,
+                border: `1px solid ${hoveredCard === i ? "#2DD4BF40" : BORDER}`,
+                borderRadius: 12, padding: 32,
+                transition: "all 0.3s ease", cursor: "default",
+              }}
+            >
+              <div style={{ marginBottom: 20, opacity: 0.8 }}>{c.icon}</div>
+              <div style={{
+                fontFamily: FONT_BODY, fontSize: 15, fontWeight: 700,
+                color: TEXT, marginBottom: 10,
+              }}>{c.title}</div>
+              <div style={{
+                fontFamily: FONT_BODY, fontSize: 13,
+                color: TEXT_DIM, lineHeight: 1.7,
+              }}>{c.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <button
+            onClick={() => navigate("/dashboard")}
+            style={{
+              background: "transparent", color: "#2DD4BF",
+              border: `1px solid #2DD4BF40`, borderRadius: 8,
+              padding: "12px 28px", fontSize: 13, fontWeight: 700,
+              cursor: "pointer", fontFamily: FONT_BODY,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#2DD4BF15"; e.currentTarget.style.borderColor = "#2DD4BF"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "#2DD4BF40"; }}
+          >Explore Subnets &rarr;</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Landing() {
   return (
     <>
@@ -1036,6 +1122,7 @@ export function Landing() {
       <NavBar />
       <Hero />
       <Features />
+      <TaoSection />
       <GlobeSection />
       <HowItWorks />
       <CodeBlock />

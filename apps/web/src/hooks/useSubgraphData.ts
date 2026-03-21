@@ -1046,3 +1046,135 @@ export function useRegistrySkills(refreshMs = 30_000) {
 
   return { skills, loading, error };
 }
+
+// ══════════════════════════════════════════════════════════
+//  Hook: useRecentEvents — live feed for Landing page
+//  Fetches from indexer instead of direct RPC to avoid rate limits
+// ══════════════════════════════════════════════════════════
+
+export interface LiveEvent {
+  type: "LISTED" | "ATTESTED" | "STAKED" | "DISPUTE";
+  skill: string;
+  skillHash?: string;
+  level: number;
+  auditor: string;
+  time: string;
+  amount?: string;
+  blockNumber: bigint;
+  txHash: string;
+}
+
+function eventNameToType(name: string): LiveEvent["type"] | null {
+  switch (name) {
+    case "SkillListed": return "LISTED";
+    case "SkillRegistered": return "ATTESTED";
+    case "AuditorRegistered":
+    case "StakeAdded": return "STAKED";
+    case "DisputeOpened": return "DISPUTE";
+    default: return null;
+  }
+}
+
+function timeAgo(isoOrUnix: string): string {
+  let ms: number;
+  const n = Number(isoOrUnix);
+  if (!isNaN(n) && n > 1e9) {
+    ms = n < 1e12 ? n * 1000 : n;
+  } else {
+    ms = new Date(isoOrUnix).getTime();
+  }
+  const seconds = Math.floor((Date.now() - ms) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+function truncAddr(addr: string): string {
+  if (!addr || addr.length < 12) return addr || "\u2014";
+  return addr.slice(0, 6) + "\u2026" + addr.slice(-4);
+}
+
+export function useRecentEvents(limit = 8) {
+  const [events, setEvents] = useState<LiveEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch_ = useCallback(async () => {
+    try {
+      const data = await indexerFetch<
+        Array<{
+          id: number;
+          event_name: string;
+          tx_hash: string;
+          block_number: string;
+          indexed_at: string;
+          data: string;
+        }>
+      >(`/stats/events?limit=${limit * 2}`);
+
+      const mapped: LiveEvent[] = [];
+      for (const e of data) {
+        const evType = eventNameToType(e.event_name);
+        if (!evType) continue;
+
+        let parsed: any = {};
+        try { parsed = JSON.parse(e.data); } catch { /* ok */ }
+
+        let skill = "\u2014";
+        let skillHash: string | undefined;
+        let level = 0;
+        let auditor = "\u2014";
+        let amount: string | undefined;
+
+        if (evType === "LISTED") {
+          skill = parsed.skillName || parsed.skill_name || (parsed.skillHash ? parsed.skillHash.slice(0, 10) + "\u2026" : "\u2014");
+          skillHash = parsed.skillHash || parsed.skill_hash;
+          auditor = truncAddr(parsed.publisher);
+        } else if (evType === "ATTESTED") {
+          skill = parsed.skillName || parsed.skill_name || (parsed.skillHash ? parsed.skillHash.slice(0, 10) + "\u2026" : "\u2014");
+          skillHash = parsed.skillHash || parsed.skill_hash;
+          level = parsed.auditLevel ?? parsed.audit_level ?? 0;
+          auditor = truncAddr(parsed.auditorCommitment || parsed.auditor_commitment || "");
+        } else if (evType === "STAKED") {
+          const stake = parsed.stake || parsed.amount;
+          if (stake) {
+            const eth = Number(stake) / 1e18;
+            amount = `${eth >= 0.01 ? eth.toFixed(2) : eth.toFixed(4)} ETH`;
+          }
+          auditor = truncAddr(parsed.auditorCommitment || parsed.auditor_commitment || "");
+        } else if (evType === "DISPUTE") {
+          skill = parsed.skillName || parsed.skill_name || (parsed.skillHash ? parsed.skillHash.slice(0, 10) + "\u2026" : "\u2014");
+          skillHash = parsed.skillHash || parsed.skill_hash;
+        }
+
+        mapped.push({
+          type: evType,
+          skill,
+          skillHash,
+          level,
+          auditor,
+          time: timeAgo(e.indexed_at),
+          amount,
+          blockNumber: BigInt(e.block_number),
+          txHash: e.tx_hash,
+        });
+
+        if (mapped.length >= limit) break;
+      }
+
+      setEvents(mapped);
+    } catch (err) {
+      console.error("[indexer] Indexer unavailable for events, skipping live feed");
+    } finally {
+      setLoading(false);
+    }
+  }, [limit]);
+
+  useEffect(() => {
+    fetch_();
+    const id = setInterval(fetch_, 30_000);
+    return () => clearInterval(id);
+  }, [fetch_]);
+
+  return { events, loading };
+}

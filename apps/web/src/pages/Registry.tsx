@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavConnectWallet } from "../components/NavConnectWallet";
 import { useRegistrySkills, type SkillEntry } from "../hooks/useSubgraphData";
+import { TaoRegistryTab } from "./TaoRegistry";
+
+type RegTab = "skills" | "bittensor";
 
 const ACCENT = "#FF3366";
 const ACCENT2 = "#FF6B9D";
@@ -326,6 +329,7 @@ function AttestationRow({ att, expanded, onToggle, index }: { att: Attestation; 
 
 export function Registry() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<RegTab>("skills");
   const { skills, loading, error } = useRegistrySkills();
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<number | null>(null);
@@ -518,9 +522,44 @@ export function Registry() {
             </div>
           </div>
 
+          {/* Tab Buttons */}
+          <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: `1px solid ${BORDER}` }}>
+            {([
+              { id: "skills" as RegTab, label: "Skills" },
+              { id: "bittensor" as RegTab, label: "Bittensor" },
+            ]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  background: "transparent", border: "none", outline: "none",
+                  color: activeTab === tab.id ? TEXT : TEXT_DIM,
+                  fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 400,
+                  padding: "10px 20px", cursor: "pointer",
+                  borderBottom: activeTab === tab.id ? `2px solid ${ACCENT}` : "2px solid transparent",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { if (activeTab !== tab.id) (e.currentTarget.style.color = TEXT); }}
+                onMouseLeave={e => { if (activeTab !== tab.id) (e.currentTarget.style.color = TEXT_DIM); }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+        </div>
+
+        {activeTab === "bittensor" && (
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 48px 60px" }}>
+            <TaoRegistryTab />
+          </div>
+        )}
+
+        {activeTab === "skills" && (<>
+        <div style={{ padding: "0 48px 24px", maxWidth: 1200, margin: "0 auto" }}>
           {/* Search Bar */}
           <div style={{
-            maxWidth: 680, position: "relative", marginBottom: 24,
+            maxWidth: 680, position: "relative", marginBottom: 24, marginTop: 24,
           }}>
             <div style={{
               display: "flex", alignItems: "center",
@@ -663,6 +702,7 @@ export function Registry() {
             Base &middot; Registry 0x2E99...f57C
           </span>
         </div>
+        </>)}
       </div>
     </>
   );

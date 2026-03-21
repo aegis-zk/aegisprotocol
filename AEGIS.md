@@ -1,6 +1,6 @@
 # AEGIS Protocol — Project Context
 
-Last updated: 2026-03-19
+Last updated: 2026-03-21
 
 This document captures the full state of the AEGIS Protocol project for continuity across context windows.
 
@@ -30,7 +30,7 @@ On-chain zero-knowledge skill attestation protocol for AI agents on Base L2. Aud
 | Deployer wallet (mainnet) | `0x20bABe2d87B225445C4398029DFfE9DfEF275170` |
 | Scout bot wallet | `0x4145aF7351Cbc65e3B031C081bfD5377D18E31ad` (fee-exempt on v4) |
 | Skills listed | Live — scout bot actively populating contract (289 skills indexed) |
-| Indexer | `@aegisaudit/indexer@0.1.0` — VPS via pm2 (`aegis-indexer`), port 4200, dual-contract (v4+v5) |
+| Indexer | `@aegisaudit/indexer@0.1.0` — VPS via systemd (`aegis-indexer.service`), port 4200, dual-contract (v4+v5), Bittensor TAO integration |
 | Subgraph (Studio) | https://thegraph.com/studio/subgraph/aegis-protocol |
 | Subgraph GraphQL | `https://api.studio.thegraph.com/query/1743315/aegis-protocol/v0.3.0` |
 
@@ -219,6 +219,9 @@ REST API on port 4200, backed by SQLite (sql.js WASM):
 | `GET /referrals/:address` | Referral stats for an address |
 | `GET /stats` | Protocol-wide statistics (includes v4 + v5 addresses) |
 | `GET /stats/events` | Recent raw event log |
+| `GET /tao/subnets` | All Bittensor subnets (real on-chain names, node counts, AEGIS attestation status) |
+| `GET /tao/subnets/:netuid` | Subnet metagraph (real hotkeys, stake in TAO, consensus/incentive/dividends) |
+| `GET /tao/stats` | Bittensor aggregate stats (total subnets, nodes, attested counts) |
 
 Config via env vars: `PORT`, `CHAIN_ID`, `RPC_URL`, `DB_PATH`, `POLL_INTERVAL_MS`
 
@@ -545,12 +548,16 @@ All pages in `apps/web/src/pages/`:
 | Page | File | Key Features |
 |---|---|---|
 | Landing | `Landing.tsx` | Three.js hero, animated stats, feature grid, CTA |
-| DApp | `DAppPage.tsx` | Verify Skill, Register Auditor, Submit Skill, Auditor Status tabs |
+| DApp | `DAppPage.tsx` | 6 tabs: Verify Skill, Register Auditor, Submit Skill, Auditor Status, Manage Stake, Audit Queue. Fee exemption banner |
 | Registry | `Registry.tsx` | Live on-chain skills (30s auto-refresh), detail panel, BaseScan links |
-| Dashboard | `Dashboard.tsx` | Protocol stats, activity feed, top auditors (subgraph-powered) |
+| Dashboard | `Dashboard.tsx` | 3 tabs: Overview, Referrals, Bittensor. Protocol stats, activity feed, top auditors |
+| Bittensor | `Bittensor.tsx` | Subnet explorer (129 subnets), expandable metagraph with real hotkeys/stake/metrics |
+| Referrals | `Referrals.tsx` | Referral stats dashboard |
 | Auditors | `Auditors.tsx` | Info tab + Leaderboard tab with search/filter/pagination, min-stake tier gating |
 | Auditor Profile | `AuditorProfile.tsx` | Stats, tier progress, attestation history, dispute history, reputation breakdown (7-factor), stake-cap warning |
 | Bounties | `Bounties.tsx` | Bounty board: stats, filters, post form, reclaim, subgraph-powered |
+| Unstake | `Unstake.tsx` | 3-phase unstake flow: initiate → pending (3-day cooldown) → complete |
+| Audit Queue | `AuditQueue.tsx` | Queue status dashboard with graceful offline handling |
 | Developers | `Developers.tsx` | SDK docs, code examples, API reference |
 | Docs | `Docs.tsx` | Protocol documentation, architecture diagrams |
 
@@ -587,6 +594,113 @@ CSS diamond logo preferred over PNG images.
 17. **Indexer runs on VPS via pm2** — `aegis-indexer` process, port 4200, SQLite at `/data/aegis-indexer.db`. Dual-contract watching (v4 + v5).
 
 ---
+
+## Bittensor TAO Integration (2026-03-20/21)
+
+Cross-chain skill attestation for Bittensor subnet miners. The indexer fetches real data from Finney chain via SCALE-encoded runtime API responses — zero external codec dependencies.
+
+### Architecture
+
+```
+Finney RPC → SCALE decoder → Indexer REST API → Frontend
+  ↓                                                  ↑
+  SubnetInfoRuntimeApi_get_subnets_info_v2           useTaoData.ts hook
+  NeuronInfoRuntimeApi_get_neurons_lite              (fallback: direct RPC)
+```
+
+### SCALE Parsing
+
+All data is decoded from raw SCALE bytes using custom per-field parsers in `packages/indexer/src/sync/tao.ts`:
+
+| Struct | Fields | Key Details |
+|---|---|---|
+| SubnetInfov2 | 19 fields | Fields 1-14 compact, field 15 Vec<[u16;2]>, fields 16-17 compact, field 18 AccountId32 (32B), field 19 Option<SubnetIdentityV3> |
+| SubnetIdentityV3 | 8 fields | subnet_name, github_repo, subnet_contact, subnet_url, discord, description, additional, logo_url (all BoundedVec<u8>) |
+| NeuronInfoLite | ~20 fields | hotkey(32B), coldkey(32B), uid(compact), netuid(compact), active(bool), axon_info(**34B** — 2 placeholder u8s), prometheus_info(31B), stake(Vec<(AccountId,Compact<u64>)>), rank/emission/incentive/consensus/trust/validator_trust/dividends(compact), last_update(**Compact<u64>** not Vec), validator_permit(bool), pruning_score(compact) |
+| AxonInfo | 34 bytes | block(u64), version(u32), ip(u128), port(u16), ip_type(u8), protocol(u8), placeholder1(u8), placeholder2(u8) |
+| PrometheusInfo | 31 bytes | block(u64), version(u32), ip(u128), port(u16), ip_type(u8) |
+
+**Critical gotchas discovered during implementation:**
+- AxonInfo is 34 bytes, not 32 — two placeholder u8 fields not in most docs
+- `last_update` is `Compact<u64>`, not `Vec<Compact<u64>>` — parsing as Vec causes hang
+- SubnetInfo v1 has no identity field — must use `get_subnets_info_v2` for on-chain names
+- Compact mode 3 (big integer): upper 6 bits encode `len - 4`, read `len` bytes little-endian
+
+### Indexer TAO Endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /tao/subnets` | All active subnets with real on-chain names, node counts, AEGIS attestation status |
+| `GET /tao/subnets/:netuid` | Metagraph for a subnet — real hotkeys, stake (TAO), consensus/incentive/dividends, validator detection |
+| `GET /tao/stats` | Aggregate stats (total subnets, total nodes, attested counts) |
+
+### Data Format
+
+- **Subnet names**: Fetched on-chain via `SubnetIdentityV3.subnet_name` (v2 API). Fallback: `Subnet {netuid}`
+- **Stake**: Decimal TAO string (e.g., `"338468.7431"`) — converted from rao (`/ 1e9`)
+- **Metrics**: Float 0.0–1.0 (e.g., incentive `0.953`) — converted from u16 (`/ 65535`)
+- **Hotkeys**: Full hex `0x`-prefixed 32-byte public keys
+- **Validator detection**: `validator_permit` bool from NeuronInfoLite OR stake ≥ 1000 TAO
+
+### Frontend
+
+- `apps/web/src/pages/Bittensor.tsx` — Subnet explorer table + expandable miner/validator metagraph
+- `apps/web/src/hooks/useTaoData.ts` — `useTaoSubnets()` and `useTaoMetagraph()` hooks with indexer-first, Finney RPC fallback
+- `apps/web/src/pages/Dashboard.tsx` — Bittensor tab in Protocol Dashboard
+
+### Key Files
+
+| File | Purpose |
+|---|---|
+| `packages/indexer/src/sync/tao.ts` | SCALE parser, RPC calls, caching (5min TTL) |
+| `packages/indexer/src/routes/tao.ts` | Hono route handlers for /tao/* endpoints |
+| `packages/indexer/src/server.ts` | Mounts taoRoutes at `/tao` |
+| `apps/web/src/pages/Bittensor.tsx` | Subnet explorer + MinerTable component |
+| `apps/web/src/hooks/useTaoData.ts` | Data fetching hooks (indexer + RPC fallback) |
+
+### Stats (as of 2026-03-21)
+
+- 129 active subnets discovered via single bulk RPC call
+- 30,575+ total miners/validators
+- Real on-chain names (e.g., SN3 = "τemplar", SN2 = "DSperse", SN5 = "Hone")
+- Every miner mapped to an AEGIS skill hash via `keccak256("tao:miner:{netuid}:{hotkey}")`
+
+## DApp Features (2026-03-20)
+
+Features added to `apps/web/src/pages/DAppPage.tsx`:
+
+| Tab | File | Features |
+|---|---|---|
+| Verify Skill | `Verify.tsx` | RevocationBadge component, dispute ID extraction from tx receipt |
+| Register Auditor | (inline) | Stake input, auditor commitment |
+| Submit Skill | (inline) | Skill hash, metadata URI, referral URL param support |
+| Auditor Status | `Status.tsx` | Active dispute count stat card |
+| Manage Stake | `Unstake.tsx` | 3-phase unstake flow: initiate → pending (3-day cooldown) → complete |
+| Audit Queue | `AuditQueue.tsx` | Queue status dashboard with graceful offline handling |
+
+New ABI entries in `apps/web/src/abi.ts`: revocation, unstaking (initiate/complete/cancel), disputes (open/resolve/getActiveCount), fee exemption.
+
+New constants in `apps/web/src/config.ts`: `UNSTAKE_COOLDOWN` (3 days), `AUDIT_QUEUE_URL`.
+
+## Deployment (2026-03-21)
+
+### VPS (Indexer)
+
+- **Host**: `broccoli@100.124.69.21` (Tailscale)
+- **Public IP**: `187.77.25.229`
+- **Service**: systemd user service `aegis-indexer.service` (auto-restart on failure, 5s delay)
+- **Working dir**: `~/aegis-indexer/`
+- **Port**: 4200 (not 4201)
+- **Reverse proxy**: nginx → `http://127.0.0.1:4200` for `indexer.aegisprotocol.tech` (SSL via Let's Encrypt)
+- **Deploy process**: `scp dist/index.js` → swap files → `kill <pid>` (systemd auto-restarts)
+- **DB**: `~/aegis-indexer/aegis-indexer.db` (SQLite via sql.js WASM)
+
+### Vercel (Frontend)
+
+- **Project**: `broccolistudios-2626s-projects/dist`
+- **Domain**: `aegisprotocol.tech`
+- **Deploy**: `cd apps/web && npm run build && cd dist && npx vercel --prod --yes`
+- **Build**: `tsc && vite build` → outputs to `dist/`
 
 ## Phase 2 Checklist
 
@@ -711,6 +825,28 @@ These are the open-source templates anyone can fork. Each is its own repo with i
   - [x] SDK erc8004-constants updated with live address
   - [x] MCP tool descriptions updated (removed "not yet deployed" language)
 
+- [x] **A11 — Bittensor TAO integration (2026-03-20/21)** `High` ✅ Done
+  Real Finney chain data via per-field SCALE parsing, zero new dependencies
+  - [x] `SubnetInfoRuntimeApi_get_subnets_info_v2` — bulk subnet discovery with on-chain names
+  - [x] `NeuronInfoRuntimeApi_get_neurons_lite` — full metagraph parser (NeuronInfoLite SCALE struct)
+  - [x] Correct AxonInfo (34B), PrometheusInfo (31B), Compact<u64> last_update
+  - [x] SubnetIdentityV3 parsing for real subnet names (replaced hardcoded SUBNET_NAMES)
+  - [x] Indexer REST endpoints: `/tao/subnets`, `/tao/subnets/:netuid`, `/tao/stats`
+  - [x] Frontend Bittensor page with subnet explorer + expandable miner table
+  - [x] `useTaoData.ts` hooks with indexer-first, Finney RPC fallback
+  - [x] Fixed BigInt crash on decimal TAO stake strings (`parseFloat` instead of `BigInt`)
+  - [x] Deployed indexer to VPS + frontend to Vercel
+
+- [x] **A12 — DApp features (2026-03-20)** `Medium` ✅ Done
+  Revocation, unstaking, disputes, fee exemption, audit queue
+  - [x] RevocationBadge component + dispute ID extraction from tx receipt
+  - [x] Active dispute count stat card
+  - [x] 3-phase unstake flow (initiate/pending/complete) with cooldown display
+  - [x] Audit queue status dashboard with graceful offline handling
+  - [x] Fee exemption banner on DApp page
+  - [x] 9 new ABI entries, 2 new config constants
+  - [x] Deployed to Vercel
+
 - [~] **B2 — `aegis-scout-agent`** npm/GitHub monitor + auto-lister
   - [x] Scout bot running and actively listing skills on v4 contract
   - [x] Wallet `0x4145aF7351Cbc65e3B031C081bfD5377D18E31ad` whitelisted (fee-exempt)
@@ -823,8 +959,24 @@ Done:      Full protocol loop closed ✅
 Done:      A9 (v5 referral rewards) ✅ — deployed, dual-contract indexing live
            A10 (ERC-8004 ValidationRegistry) ✅ — deployed to Base mainnet
            Frontend fixed ✅ — on-chain fallbacks for all data hooks, dual-contract reads
+           A11 (Bittensor TAO integration) ✅ — SCALE parser, 129 subnets, 30k+ nodes, real on-chain names
+           A12 (DApp features) ✅ — revocation, unstaking, disputes, fee exemption, audit queue
+           Indexer deployed to VPS ✅ — systemd service, nginx reverse proxy, SSL
+           Frontend deployed to Vercel ✅ — aegisprotocol.tech
 In flight: awesome-mcp-servers PR + Glama listing (pending review)
-Next:      Publish @aegisaudit/sdk@0.8.0 to npm
+Next:      **Fix frontend RPC rate limiting (critical)**
+           ↳ Registry page + Dashboard Overview hit Base mainnet.base.org directly via viem eth_getLogs
+           ↳ Gets 429 "over rate limit" → shows "Failed to load registry" and blank dashboard stats
+           ↳ Root cause: frontend fetches on-chain events directly instead of using the indexer
+           ↳ Fix: Registry page and Dashboard Overview should fetch from indexer API
+             (indexer.aegisprotocol.tech already has /skills, /stats, /auditors/leaderboard, /stats/events)
+             instead of making raw eth_getLogs calls to mainnet.base.org
+           ↳ Tester feedback (George): "Make sure claude is indexing all the data and storing it
+             in a database that is persistent — it seems like he's not storing it locally and serving
+             it via the API"
+           ↳ The indexer IS storing data in SQLite (aegis-indexer.db) and serving via REST API —
+             but the frontend pages aren't using it. They make direct RPC calls which get rate-limited.
+           Publish @aegisaudit/sdk@0.8.0 to npm
            ↳ Remote prover service (deferred — plan saved in memory)
 ```
 

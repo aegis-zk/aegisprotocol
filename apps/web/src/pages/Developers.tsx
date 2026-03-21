@@ -621,7 +621,7 @@ skill_disputes = await client.list_disputes(
   {
     name: "registerSkill",
     signature: "(params: RegisterSkillParams) → Promise<Hex>",
-    description: "Submit a verified skill attestation with ZK proof to the on-chain registry. Requires 0.001 ETH fee.",
+    description: "Submit a verified skill attestation with ZK proof to the on-chain registry. Requires 0.001 ETH fee. Supports optional referrer for 50% fee split.",
     group: "Write Operations",
     returnType: "Promise<Hex> (tx hash)",
     params: [
@@ -631,6 +631,7 @@ skill_disputes = await client.list_disputes(
       { name: "publicInputs", type: "Hex[]", required: true, description: "Public inputs: [skillHash, criteriaHash, auditLevel, auditorCommitment]" },
       { name: "auditorCommitment", type: "Hex (bytes32)", required: true, description: "Pedersen hash of auditor private key" },
       { name: "auditLevel", type: "1 | 2 | 3", required: true, description: "Audit tier: L1 Basic, L2 Standard, L3 Comprehensive" },
+      { name: "referrer", type: "Hex (address)", required: false, description: "Referrer address — earns 50% of the registration fee (0.0005 ETH). Self-referral silently ignored." },
       { name: "fee", type: "bigint", required: false, description: "Registration fee in wei (default: 0.001 ETH)" },
     ],
     tsExample: `import { AegisClient, generateAttestationViaCLI } from '@aegisaudit/sdk';
@@ -643,9 +644,13 @@ const wallet = createWalletClient({
 });
 client.setWallet(wallet);
 
-// Generate proof
+// Generate proof (bb binary auto-detected)
 const proof = await generateAttestationViaCLI({
-  circuitsDir: './packages/circuits',
+  skillHash: '0x4cd3b629...',
+  criteriaHash: '0x...',
+  auditLevel: 1,
+  auditorCommitment: '0x1a65fb21...',
+  auditorPrivateKey: '0x...',
 });
 
 const txHash = await client.registerSkill({
@@ -655,15 +660,20 @@ const txHash = await client.registerSkill({
   publicInputs: proof.publicInputs,
   auditorCommitment: '0x1a65fb21...',
   auditLevel: 1,
+  referrer: '0x1234...5678',  // optional — earns 50% of fee
 });`,
     pyExample: `from aegis_sdk import AegisClient
 
 # Attach wallet for write operations
 client.set_wallet(wallet)
 
-# Generate proof (via CLI)
+# Generate proof (bb binary auto-detected)
 proof = await generate_attestation_via_cli(
-    circuits_dir="./packages/circuits",
+    skill_hash="0x4cd3b629...",
+    criteria_hash="0x...",
+    audit_level=1,
+    auditor_commitment="0x1a65fb21...",
+    auditor_private_key="0x...",
 )
 
 tx_hash = await client.register_skill(
@@ -673,6 +683,7 @@ tx_hash = await client.register_skill(
     public_inputs=proof.public_inputs,
     auditor_commitment="0x1a65fb21...",
     audit_level=1,
+    referrer="0x1234...5678",  # optional — earns 50% of fee
 )`,
   },
   {
@@ -1003,6 +1014,7 @@ const SECTIONS: SidenavSection[] = [
   { id: "subgraph-tools", label: "Subgraph Tools" },
   { id: "reputation", label: "Reputation System" },
   { id: "aegis-token", label: "$AEGIS Token", indent: true },
+  { id: "referral-rewards", label: "Referral Rewards" },
   { id: "events", label: "Contract Events" },
   { id: "errors", label: "Error Handling" },
   { id: "consumer-middleware", label: "Consumer Middleware" },
@@ -1014,11 +1026,18 @@ const SECTIONS: SidenavSection[] = [
 
 // ── Contract Events ──────────────────────────────────────────
 const EVENTS = [
+  { name: "SkillListed", params: "skillHash (indexed bytes32), publisher (indexed address), metadataURI (string)", description: "Emitted when a new skill is listed in the registry" },
   { name: "SkillRegistered", params: "skillHash (indexed bytes32), auditLevel (uint8), auditorCommitment (bytes32)", description: "Emitted when a new skill attestation is registered" },
   { name: "AuditorRegistered", params: "auditorCommitment (indexed bytes32), stake (uint256)", description: "Emitted when a new auditor registers with stake" },
   { name: "StakeAdded", params: "auditorCommitment (indexed bytes32), amount (uint256), totalStake (uint256)", description: "Emitted when an auditor adds to their stake" },
+  { name: "AttestationRevoked", params: "skillHash (indexed bytes32), attestationIndex (uint256), auditorCommitment (indexed bytes32)", description: "Emitted when an attestation is revoked by the protocol owner" },
   { name: "DisputeOpened", params: "disputeId (indexed uint256), skillHash (indexed bytes32)", description: "Emitted when a dispute is opened against an attestation" },
   { name: "DisputeResolved", params: "disputeId (indexed uint256), auditorSlashed (bool)", description: "Emitted when a dispute is resolved by governance" },
+  { name: "BountyPosted", params: "skillHash (indexed bytes32), amount (uint256), requiredLevel (uint8), expiresAt (uint256)", description: "Emitted when an ETH bounty is posted for a skill audit" },
+  { name: "BountyClaimed", params: "skillHash (indexed bytes32), recipient (indexed address), auditorPayout (uint256), protocolFee (uint256)", description: "Emitted when a bounty is claimed via registerSkill with bountyRecipient" },
+  { name: "BountyReclaimed", params: "skillHash (indexed bytes32), publisher (indexed address), amount (uint256)", description: "Emitted when an expired bounty is reclaimed by the publisher" },
+  { name: "ReferralPaid", params: "referrer (indexed address), payer (indexed address), amount (uint256)", description: "Emitted when a referral reward is credited (50% of listing/registration fee)" },
+  { name: "ReferralWithdrawn", params: "referrer (indexed address), amount (uint256)", description: "Emitted when a referrer withdraws accumulated rewards" },
   { name: "UnstakeInitiated", params: "auditorCommitment (indexed bytes32), amount (uint256), unlockTimestamp (uint256)", description: "Emitted when an auditor starts the 3-day unstake cooldown" },
   { name: "UnstakeCompleted", params: "auditorCommitment (indexed bytes32), amount (uint256)", description: "Emitted when unstaked ETH is withdrawn after cooldown" },
   { name: "UnstakeCancelled", params: "auditorCommitment (indexed bytes32), amount (uint256)", description: "Emitted when a pending unstake request is cancelled" },
@@ -1344,8 +1363,11 @@ pip install aegis-sdk[proving]`}
               headers={["Constant", "Value", "Description"]}
               rows={[
                 ["REGISTRATION_FEE", "0.001 ETH", "Fee required to register a skill attestation"],
+                ["LISTING_FEE", "0.001 ETH", "Fee required to list a new skill"],
+                ["REFERRAL_BPS", "5000 (50%)", "Percentage of listing/registration fee credited to referrer"],
                 ["MIN_AUDITOR_STAKE", "0.01 ETH", "Minimum stake to register as an auditor"],
                 ["MIN_DISPUTE_BOND", "0.005 ETH", "Minimum bond to open a dispute"],
+                ["MIN_BOUNTY", "0.001 ETH", "Minimum bounty amount for a skill audit"],
               ]}
             />
           </section>
@@ -1854,6 +1876,132 @@ const l3 = getRequiredCriteria(3); // L1 + L2 criteria + 5 L3 criteria`, lang)}<
                 </table>
               </div>
             </div>
+          </section>
+
+          {/* ═══ Referral Rewards ═══ */}
+          <section id="referral-rewards" ref={setRef("referral-rewards")} style={{ marginTop: 56 }}>
+            <h2 style={{
+              fontFamily: FONT_HEAD, fontSize: 20, fontWeight: 700,
+              color: TEXT, marginBottom: 8,
+            }}>
+              Referral Rewards
+              <span style={{ color: SYN_TYPE, fontSize: 11, marginLeft: 10, fontWeight: 700 }}>v0.8.0</span>
+            </h2>
+            <p style={{ fontSize: 13, color: TEXT_DIM, marginBottom: 16, lineHeight: 1.7 }}>
+              AegisRegistry v5 introduces a referral system. When listing or registering a skill, pass a <span style={{ color: SYN_FN, fontFamily: FONT_CODE, fontSize: 12 }}>referrer</span> address to split 50% of the fee (0.0005 ETH) to the referrer. Referrers accumulate rewards and withdraw via a pull-pattern.
+            </p>
+
+            <div style={{ overflowX: "auto", marginBottom: 16 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {["Constant", "Value", "Description"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["REFERRAL_BPS", "5000 (50%)", "Percentage of listing/registration fee credited to referrer"],
+                    ["LISTING_FEE", "0.001 ETH", "Fee for listing a skill (50% = 0.0005 ETH to referrer)"],
+                    ["REGISTRATION_FEE", "0.001 ETH", "Fee for registering an attestation (50% = 0.0005 ETH to referrer)"],
+                  ].map(([constant, value, desc]) => (
+                    <tr key={constant} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11, fontWeight: 700 }}>{constant}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT, fontWeight: 700 }}>{value}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT_DIM }}>{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ overflowX: "auto", marginBottom: 16 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                    {["Method / View", "Description"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: TEXT_MUTED, fontFamily: FONT, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["referralBalances(address)", "Withdrawable referral balance for an address"],
+                    ["totalReferralEarnings(address)", "Lifetime referral earnings for an address"],
+                    ["withdrawReferralBalance()", "Pull-pattern withdrawal of accumulated referral rewards"],
+                  ].map(([method, desc]) => (
+                    <tr key={method} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <td style={{ padding: "8px 12px", color: SYN_FN, fontFamily: FONT_CODE, fontSize: 11, fontWeight: 700 }}>{method}</td>
+                      <td style={{ padding: "8px 12px", color: TEXT_DIM }}>{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{
+              background: `${GREEN}10`, border: `1px solid ${GREEN}30`, borderRadius: 8,
+              padding: "12px 16px", marginBottom: 16,
+            }}>
+              <span style={{ color: GREEN, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>Self-Referral Prevention</span>
+              <p style={{ fontSize: 12, color: TEXT_DIM, marginTop: 6, marginBottom: 0, lineHeight: 1.6 }}>
+                If <span style={{ color: SYN_FN, fontFamily: FONT_CODE }}>referrer</span> equals <span style={{ color: SYN_FN, fontFamily: FONT_CODE }}>msg.sender</span> or <span style={{ color: SYN_FN, fontFamily: FONT_CODE }}>address(0)</span>, the referral is silently ignored (no revert) and the full fee goes to the protocol.
+              </p>
+            </div>
+
+            <CodeWindow
+              code={lang === "ts"
+                ? `// Share your referral link
+const refLink = 'https://aegisprotocol.tech/app?ref=' + myAddress;
+
+// Referrer earns 0.0005 ETH per registration
+const tx = await client.registerSkill({
+  skillHash: '0x...',
+  metadataURI: 'ipfs://Qm...',
+  attestationProof: proof.proof,
+  publicInputs: proof.publicInputs,
+  auditorCommitment: '0x...',
+  auditLevel: 2,
+  referrer: '0x1234...5678',  // 50% of 0.001 ETH fee
+});
+
+// Check referral earnings (on-chain view)
+const balance = await publicClient.readContract({
+  address: registryAddress,
+  abi,
+  functionName: 'referralBalances',
+  args: [referrerAddress],
+});
+
+// Withdraw accumulated rewards
+const withdrawTx = await walletClient.writeContract({
+  address: registryAddress,
+  abi,
+  functionName: 'withdrawReferralBalance',
+});`
+                : `# Share your referral link
+ref_link = f"https://aegisprotocol.tech/app?ref={my_address}"
+
+# Referrer earns 0.0005 ETH per registration
+tx = await client.register_skill(
+    skill_hash="0x...",
+    metadata_uri="ipfs://Qm...",
+    attestation_proof=proof.proof,
+    public_inputs=proof.public_inputs,
+    auditor_commitment="0x...",
+    audit_level=2,
+    referrer="0x1234...5678",  # 50% of 0.001 ETH fee
+)
+
+# Check referral earnings
+balance = contract.functions.referralBalances(referrer).call()
+
+# Withdraw accumulated rewards
+tx = contract.functions.withdrawReferralBalance().transact()`}
+              lang={lang}
+              filename={lang === "ts" ? "referrals.ts" : "referrals.py"}
+            />
           </section>
 
           {/* ═══ Contract Events ═══ */}
