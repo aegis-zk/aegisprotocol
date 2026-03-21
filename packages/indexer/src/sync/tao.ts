@@ -57,85 +57,8 @@ export interface TaoStats {
   attestedMiners: number;
 }
 
-// ── Well-known subnet names (netuids 0-74+) ─────────────
-
-const SUBNET_NAMES: Record<number, string> = {
-  0: 'Root',
-  1: 'Apex',
-  2: 'Omron',
-  3: 'MyShell',
-  4: 'Targon',
-  5: 'OpenKaito',
-  6: 'Nous Research',
-  7: 'Subvortex',
-  8: 'Taoshi',
-  9: 'Pre-training',
-  10: 'MAP Protocol',
-  11: 'Dippy',
-  12: 'Horde',
-  13: 'Dataverse',
-  14: 'Palaidn',
-  15: 'Datura',
-  16: 'BitAds',
-  17: 'ThreeGen',
-  18: 'Cortex.t',
-  19: 'Namorai',
-  20: 'BitAgent',
-  21: 'FileTao',
-  22: 'Meta Search',
-  23: 'NicheImage',
-  24: 'Omega',
-  25: 'Hivemind',
-  26: 'Alchemy',
-  27: 'Compute',
-  28: 'Foundry S&P 500',
-  29: 'Coldint',
-  30: 'Bettensor',
-  31: 'NAS Chain',
-  32: "It's AI",
-  33: 'ReadyAI',
-  34: 'BitMind',
-  35: 'LogicNet',
-  36: 'NetSynth',
-  37: 'Finetuning',
-  38: 'Tatsu',
-  39: 'EdgeMaxxing',
-  40: 'Chunking',
-  41: 'Sportstensor',
-  42: 'Masa',
-  43: 'Graphite',
-  44: 'Score Predict',
-  45: 'GenScore',
-  46: 'NeuralAI',
-  47: 'Condense AI',
-  48: 'NextPlace',
-  49: 'Automate',
-  50: 'Audio Subnet',
-  51: 'Celium',
-  52: 'Dojo',
-  53: 'Frontier',
-  54: 'Subnet 54',
-  55: 'Subnet 55',
-  56: 'Gradients',
-  57: 'Gaia',
-  58: 'Dippy Speech',
-  59: 'Agent Arena',
-  60: 'Subnet 60',
-  61: 'RedTeam',
-  62: 'Agentao',
-  63: 'Subnet 63',
-  64: 'Chutes',
-  65: 'Hospice',
-  66: 'Atom',
-  67: 'Subnet 67',
-  68: 'Subnet 68',
-  69: 'Subnet 69',
-  70: 'Subnet 70',
-  71: 'Subnet 71',
-  72: 'Subnet 72',
-  73: 'Subnet 73',
-  74: 'Subnet 74',
-};
+// Subnet names are now fetched on-chain via SubnetInfoRuntimeApi_get_subnets_info_v2
+// which includes SubnetIdentityV3 with subnet_name field.
 
 // ── Skill hash derivation ───────────────────────────────
 
@@ -420,13 +343,24 @@ const metagraphCache = new Map<number, CacheEntry<TaoMinerEntry[]>>();
 interface ParsedSubnetInfo {
   netuid: number;
   subnetworkN: number;
+  name?: string;
 }
 
 /**
- * Parse a single SubnetInfo entry from SCALE bytes starting at `pos`.
+ * Read a SCALE BoundedVec<u8> (compact length + raw bytes) and return as UTF-8 string.
+ */
+function decodeBoundedVecString(bytes: number[], pos: number): { value: string; bytesRead: number } {
+  const lenDec = decodeCompactLength(bytes, pos);
+  const strBytes = bytes.slice(pos + lenDec.bytesRead, pos + lenDec.bytesRead + lenDec.value);
+  const value = new TextDecoder().decode(new Uint8Array(strBytes));
+  return { value, bytesRead: lenDec.bytesRead + lenDec.value };
+}
+
+/**
+ * Parse a single SubnetInfov2 entry from SCALE bytes starting at `pos`.
  * Returns the parsed info + bytes consumed, or null on failure.
  *
- * SubnetInfo layout:
+ * SubnetInfov2 layout:
  *   1.netuid(compact) 2.rho(compact) 3.kappa(compact) 4.difficulty(compact)
  *   5.immunity_period(compact) 6.max_allowed_validators(compact)
  *   7.min_allowed_weights(compact) 8.max_weights_limit(compact)
@@ -435,7 +369,10 @@ interface ParsedSubnetInfo {
  *   13.tempo(compact) 14.network_modality(compact)
  *   15.network_connect(Vec<[u16;2]>) 16.emission_values(compact)
  *   17.burn(compact) 18.owner(AccountId32=32B)
- *   19.identity(Option<SubnetIdentityV2>)
+ *   19.identity(Option<SubnetIdentityV3>)
+ *       SubnetIdentityV3: subnet_name, github_repo, subnet_contact,
+ *         subnet_url, discord, description, additional, logo_url
+ *         (all BoundedVec<u8>)
  */
 function parseSubnetInfoEntry(bytes: number[], startPos: number): { info: ParsedSubnetInfo; bytesRead: number } | null {
   try {
@@ -473,7 +410,28 @@ function parseSubnetInfoEntry(bytes: number[], startPos: number): { info: Parsed
     // Field 18: owner — AccountId32 (32 bytes)
     pos += 32;
 
-    return { info: { netuid, subnetworkN }, bytesRead: pos - startPos };
+    // Field 19: identity — Option<SubnetIdentityV3>
+    let name: string | undefined;
+    if (pos < bytes.length) {
+      const optByte = bytes[pos];
+      pos += 1;
+      if (optByte === 1) {
+        // Some — parse SubnetIdentityV3 (8 BoundedVec<u8> fields)
+        // First field is subnet_name
+        const nameDec = decodeBoundedVecString(bytes, pos);
+        name = nameDec.value || undefined;
+        pos += nameDec.bytesRead;
+        // Skip remaining 7 fields: github_repo, subnet_contact, subnet_url,
+        // discord, description, additional, logo_url
+        for (let i = 0; i < 7; i++) {
+          const fieldDec = decodeCompactLength(bytes, pos);
+          pos += fieldDec.bytesRead + fieldDec.value;
+        }
+      }
+      // optByte === 0 means None — no identity, name stays undefined
+    }
+
+    return { info: { netuid, subnetworkN, name }, bytesRead: pos - startPos };
   } catch {
     return null;
   }
@@ -520,9 +478,9 @@ export async function fetchTaoSubnets(): Promise<TaoSubnetEntry[]> {
     return subnetCache.entry.data;
   }
 
-  // Single bulk call to get all subnet info at once
+  // Single bulk call to get all subnet info (v2 includes on-chain identity/name)
   const bulkHex = await rpcCall<string>('state_call', [
-    'SubnetInfoRuntimeApi_get_subnets_info', '0x',
+    'SubnetInfoRuntimeApi_get_subnets_info_v2', '0x',
   ]);
   const discovered = parseAllSubnetInfos(bulkHex);
 
@@ -530,12 +488,12 @@ export async function fetchTaoSubnets(): Promise<TaoSubnetEntry[]> {
   const subnets: TaoSubnetEntry[] = [];
   const hashes: string[] = [];
 
-  for (const { netuid, subnetworkN } of discovered) {
+  for (const { netuid, subnetworkN, name: onChainName } of discovered) {
     const hash = computeTaoSubnetHash(netuid);
     hashes.push(hash);
     subnets.push({
       netuid,
-      name: SUBNET_NAMES[netuid] || `Subnet ${netuid}`,
+      name: onChainName || `Subnet ${netuid}`,
       minerCount: subnetworkN,
       validatorCount: 0,
       aegisSkillHash: hash,
