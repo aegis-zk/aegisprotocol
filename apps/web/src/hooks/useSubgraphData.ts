@@ -6,10 +6,11 @@ const INDEXER_URL =
   "https://indexer.aegisprotocol.tech";
 
 async function indexerFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${INDEXER_URL}${path}`, {
-    signal: AbortSignal.timeout(10_000),
+  const url = `${INDEXER_URL}${path}`;
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(30_000),
   });
-  if (!res.ok) throw new Error(`Indexer error: ${res.status}`);
+  if (!res.ok) throw new Error(`Indexer ${res.status} on ${path}`);
   const json = await res.json();
   return json.data as T;
 }
