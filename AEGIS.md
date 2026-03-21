@@ -963,20 +963,19 @@ Done:      A9 (v5 referral rewards) ✅ — deployed, dual-contract indexing liv
            A12 (DApp features) ✅ — revocation, unstaking, disputes, fee exemption, audit queue
            Indexer deployed to VPS ✅ — systemd service, nginx reverse proxy, SSL
            Frontend deployed to Vercel ✅ — aegisprotocol.tech
+           A13 (Frontend indexer migration) ✅ — all pages use indexer API, zero direct RPC
+           ↳ Removed all on-chain fallbacks from useSubgraphData.ts (-959 lines)
+           ↳ Deleted useOnChainData.ts (dead code, was scanning chain from browser)
+           ↳ Removed Bittensor Finney RPC fallback from useTaoData.ts
+           ↳ Vercel rewrite proxy: /api/* → indexer.aegisprotocol.tech/*
+             (solves VPS connectivity issues — George couldn't reach VPS IP directly)
+           ↳ Root cause of original issue: frontend had "smart fallback" that scanned
+             entire blockchain via eth_getLogs from every visitor's browser when indexer
+             hiccupped — 593 RPC calls just to load the Bounty Board
+           ↳ Indexer pm2 memory fix: --max-old-space-size=256 (was OOMing at 36MB heap)
+           ↳ Tester George confirmed working 2026-03-21
 In flight: awesome-mcp-servers PR + Glama listing (pending review)
-Next:      **Fix frontend RPC rate limiting (critical)**
-           ↳ Registry page + Dashboard Overview hit Base mainnet.base.org directly via viem eth_getLogs
-           ↳ Gets 429 "over rate limit" → shows "Failed to load registry" and blank dashboard stats
-           ↳ Root cause: frontend fetches on-chain events directly instead of using the indexer
-           ↳ Fix: Registry page and Dashboard Overview should fetch from indexer API
-             (indexer.aegisprotocol.tech already has /skills, /stats, /auditors/leaderboard, /stats/events)
-             instead of making raw eth_getLogs calls to mainnet.base.org
-           ↳ Tester feedback (George): "Make sure claude is indexing all the data and storing it
-             in a database that is persistent — it seems like he's not storing it locally and serving
-             it via the API"
-           ↳ The indexer IS storing data in SQLite (aegis-indexer.db) and serving via REST API —
-             but the frontend pages aren't using it. They make direct RPC calls which get rate-limited.
-           Publish @aegisaudit/sdk@0.8.0 to npm
+Next:      Publish @aegisaudit/sdk@0.8.0 to npm
            ↳ Remote prover service (deferred — plan saved in memory)
 ```
 
