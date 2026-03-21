@@ -28,6 +28,10 @@ AEGIS is a protocol for verifiable AI agent skill attestation. Auditors evaluate
 3. The attestation (proof + result) is submitted on-chain to the AEGIS Registry
 4. Anyone can verify the proof on-chain or dispute a fraudulent attestation
 
+<a href="https://glama.ai/mcp/servers/aegis-zk/aegis-zk">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/aegis-zk/aegis-zk/badge" alt="Aegis-ZK MCP server" />
+</a>
+
 ## How to Use
 
 AEGIS is a **trust verification layer** for AI agent skills — it does not execute skills. Use it to check whether a skill has been audited before you run it.
