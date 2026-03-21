@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 // ── Indexer API base URL ──────────────────────────────
 const INDEXER_URL =
   (import.meta as any).env?.VITE_INDEXER_URL?.replace(/\/$/, "") ||
-  "https://indexer.aegisprotocol.tech";
+  "/api";
 
 async function indexerFetch<T>(path: string): Promise<T> {
   const url = `${INDEXER_URL}${path}`;

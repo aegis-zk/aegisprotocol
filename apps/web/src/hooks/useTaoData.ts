@@ -4,7 +4,7 @@ import { keccak256, toHex } from "viem";
 // ── Indexer URL ─────────────────────────────────────────
 const INDEXER_URL =
   (import.meta.env.VITE_INDEXER_URL as string)?.replace(/\/$/, "") ||
-  "https://indexer.aegisprotocol.tech";
+  "/api";
 
 // ── Types ───────────────────────────────────────────────
 
